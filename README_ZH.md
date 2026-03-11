@@ -137,6 +137,7 @@ skills:
   dir: ~/.metaclaw/skills   # 你的 Skill 库目录
   retrieval_mode: template  # template | embedding
   top_k: 6
+  task_specific_top_k: 10   # task-specific skills 上限（默认 10）
   auto_evolve: true         # 会话结束后自动总结 Skill
 
 rl:
@@ -148,9 +149,12 @@ rl:
   prm_api_key: ""
   lora_rank: 32
   batch_size: 4
+  resume_from_ckpt: ""      # 可选：从 checkpoint 恢复训练
   evolver_api_base: ""      # 留空则复用 llm.api_base
   evolver_api_key: ""
   evolver_model: gpt-5.2
+
+max_context_tokens: 20000   # 截断前的 prompt token 上限
 ```
 
 ---

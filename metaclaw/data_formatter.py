@@ -160,6 +160,11 @@ def sample_to_datum(
     # Build model input from all tokens except the last
     model_input = tinker.ModelInput.from_ints(all_tokens[:-1])
 
+    # Note: "mask" is NOT included in loss_fn_inputs.  The Tinker server
+    # rejects unknown keys (only target_tokens, logprobs, advantages, weights,
+    # clip_*_threshold are accepted).  The mask information is already encoded
+    # in the advantages (0.0 for prompt / masked positions).  The cookbook
+    # likewise strips mask via remove_mask() before calling forward_backward.
     return tinker.Datum(
         model_input=model_input,
         loss_fn_inputs={
@@ -171,9 +176,6 @@ def sample_to_datum(
             ),
             "advantages": TensorData.from_torch(
                 torch.tensor(advantages, dtype=torch.float32)
-            ),
-            "mask": TensorData.from_torch(
-                torch.tensor(mask, dtype=torch.float32)
             ),
         },
     )

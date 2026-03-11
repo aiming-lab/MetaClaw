@@ -24,7 +24,7 @@
 
 ## 🔥 News
 
-- **[03/10/2026]** **v0.2** — One-click deployment via `metaclaw` CLI. Skills enabled by default, RL is now opt-in.
+- **[03/11/2026]** **v0.2.0** — One-click deployment via `metaclaw` CLI. Skills enabled by default, RL is now opt-in.
 - **[03/09/2026]** We release **MetaClaw** — Just talk to your agent and let it evolve automatically. **NO** GPU deployment required; just plug into the **API**.
 
 ---

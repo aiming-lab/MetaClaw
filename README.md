@@ -260,7 +260,7 @@ See `examples/run_conversation_opd.py` for a programmatic example and `scripts/r
 
 ```bibtex
 @misc{xia2026metaclaw,
-  author       = {Xia, Peng and Chen, Jianwen and Yang, Xinyu and Han, Siwei and Qiu, Shi and Zheng, Zeyu and Xie, Cihang and Yao, Huaxiu},
+  author       = {Xia, Peng and Chen, Jianwen and Yang, Xinyu and Tu, Haoqin and Han, Siwei and Qiu, Shi and Zheng, Zeyu and Xie, Cihang and Yao, Huaxiu},
   title        = {MetaClaw},
   year         = {2026},
   organization = {GitHub},

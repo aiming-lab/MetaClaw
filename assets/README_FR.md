@@ -46,7 +46,7 @@ metaclaw start --mode rl    # optionnel : + entraînement RL en direct via Tinke
 
 ## 🔥 Actualités
 
-- **[10/03/2026]** **v0.2** — Déploiement en un clic via la CLI `metaclaw`. Les skills sont activés par défaut, le RL est désormais optionnel.
+- **[11/03/2026]** **v0.2** — Déploiement en un clic via la CLI `metaclaw`. Les skills sont activés par défaut, le RL est désormais optionnel.
 - **[09/03/2026]** Lancement de **MetaClaw** — Parlez simplement à votre agent et laissez-le évoluer automatiquement. **Aucun** déploiement GPU requis ; connectez-vous simplement à l'**API**.
 
 ---

@@ -107,9 +107,10 @@ El serving, el modelado de recompensas y el entrenamiento están completamente d
 pip install -e .            # modo skills_only (ligero)
 pip install -e ".[rl]"      # + soporte de entrenamiento RL (torch, transformers, tinker)
 pip install -e ".[evolve]"  # + evolución de skills via LLM compatible con OpenAI
+pip install mindlab-toolkit # + backend de compatibilidad MinT opcional
 ```
 
-Si quieres usar `rl.backend=mint`, instala el paquete de compatibilidad de MinT por separado en el mismo entorno, por ejemplo [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit). La documentación oficial de MinT está en [`mint-doc-alpha.macaron.im`](https://mint-doc-alpha.macaron.im/). MetaClaw deja esa dependencia fuera del paquete por defecto para que puedas elegir explícitamente entre Tinker y MinT.
+Usa `mindlab-toolkit` solo si quieres `rl.backend=mint`. Enlaces de MinT: [overview](https://mint-doc.macaron.im/), [compatibilidad con Tinker](https://mint-doc.macaron.im/using-the-api/tinker-compatibility), [lista de modelos](https://mint-doc.macaron.im/using-the-api/model-lineup), [GitHub](https://github.com/MindLab-Research/mindlab-toolkit).
 
 ### 2. Configuración
 
@@ -119,14 +120,16 @@ metaclaw setup
 
 El asistente interactivo te pedirá que elijas tu proveedor de LLM (Kimi, Qwen o personalizado), tu clave API y si deseas activar el entrenamiento RL.
 
-La ruta RL de MetaClaw puede cambiar explícitamente entre `tinker` y `mint`. `auto` es el valor recomendado y seguirá detectando MinT a partir de credenciales o base URLs con formato Mint cuando el paquete de compatibilidad de MinT esté instalado. En la práctica, puedes reutilizar el mismo flujo de entrenamiento y apuntarlo a Tinker Cloud o a un despliegue de MinT solo cambiando configuración.
+La ruta RL de MetaClaw mantiene a Tinker como backend de referencia por defecto. `rl.backend=auto` es el valor recomendado y también puede detectar MinT a partir de credenciales o base URLs estilo Mint cuando el paquete de compatibilidad de MinT está instalado. Si quieres apuntar el mismo flujo a MinT, puedes configurar:
 
 ```bash
 metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
-metaclaw config rl.base_url https://mint.macaron.xin/
+metaclaw config rl.base_url https://mint-cn.macaron.xin/  # China continental; fuera de China usa https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
 ```
+
+Usa `https://mint-cn.macaron.xin/` para China continental o `https://mint.macaron.xin/` en otros casos.
 
 Los alias heredados `rl.tinker_api_key` y `rl.tinker_base_url` siguen siendo válidos por compatibilidad.
 
@@ -158,7 +161,7 @@ metaclaw config KEY VALUE   # Establecer un valor de configuración
 metaclaw config rl.enabled true           # Activar entrenamiento RL
 metaclaw config rl.backend auto           # auto | tinker | mint
 metaclaw config rl.api_key sk-...         # Establecer clave del backend RL
-metaclaw config rl.base_url https://mint.macaron.xin/  # Endpoint opcional del backend, p. ej. MinT
+metaclaw config rl.base_url https://mint-cn.macaron.xin/  # Endpoint de MinT para China continental; fuera de China usa https://mint.macaron.xin/
 metaclaw config skills.auto_evolve false  # Desactivar resumen automático de skills
 metaclaw config proxy.port 31000          # Cambiar puerto del proxy
 ```
@@ -194,7 +197,7 @@ rl:
   backend: auto             # "auto" | "tinker" | "mint"
   model: moonshotai/Kimi-K2.5
   api_key: ""
-  base_url: ""              # endpoint opcional del backend, p. ej. https://mint.macaron.xin/ para MinT
+  base_url: ""              # endpoint opcional del backend, p. ej. https://mint-cn.macaron.xin/ (China continental) o https://mint.macaron.xin/ para MinT
   tinker_api_key: ""        # alias heredado de api_key
   tinker_base_url: ""       # alias heredado de base_url
   prm_url: https://api.openai.com/v1
@@ -235,26 +238,32 @@ cp -r memory_data/skills/* ~/.metaclaw/skills/
 
 ## 🔬 Avanzado: Modo RL
 
-Activa el entrenamiento RL para afinar continuamente el modelo a partir de conversaciones en vivo con Tinker o MinT:
+Activa el entrenamiento RL para afinar continuamente el modelo a partir de conversaciones en vivo. Tinker sigue siendo la ruta de referencia por defecto, y MetaClaw también puede apuntar a MinT como alternativa compatible con Tinker:
 
 ```bash
 metaclaw config rl.enabled true
-metaclaw config rl.backend mint
+metaclaw config rl.backend auto
 metaclaw config rl.api_key sk-...
-metaclaw config rl.base_url https://mint.macaron.xin/
-metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
 metaclaw config rl.prm_url https://api.openai.com/v1
 metaclaw config rl.prm_api_key sk-...
 metaclaw start
 ```
 
+Si quieres ejecutar el mismo flujo sobre MinT, añade backend, endpoint y modelo:
+
+```bash
+metaclaw config rl.backend mint
+metaclaw config rl.base_url https://mint-cn.macaron.xin/  # China continental; fuera de China usa https://mint.macaron.xin/
+metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+```
+
 En modo RL:
 - Cada turno de conversación se tokeniza y se envía como muestra de entrenamiento
 - Un LLM juez (PRM) puntúa las respuestas de forma asíncrona
-- Un backend compatible con Tinker, como Tinker Cloud o MinT, ejecuta el fine-tuning LoRA; los pesos actualizados se hot-swap cada `batch_size` muestras
+- Por defecto, Tinker Cloud ejecuta el fine-tuning LoRA; MetaClaw también puede funcionar con una alternativa compatible como MinT, y los pesos actualizados se hot-swap cada `batch_size` muestras
 - Un LLM evolucionador dedicado extrae nuevos skills de los episodios fallidos
 
-Si prefieres usar Tinker Cloud, cambia `rl.backend` a `tinker` o deja `auto` y no configures el endpoint de MinT.
+Si te quedas con Tinker Cloud, usa `rl.backend=auto` o `rl.backend=tinker`. Si usas MinT, cambia a `rl.backend=mint` y configura el endpoint correspondiente.
 
 **Rollout programático** (sin TUI de OpenClaw): establece `openclaw_env_data_dir` en un directorio de archivos JSONL de tareas:
 
@@ -298,14 +307,16 @@ Consulta `examples/run_conversation_opd.py` para un ejemplo programático y `scr
 
 ## 🙏 Agradecimientos
 
-MetaClaw se construye sobre los siguientes proyectos de código abierto:
+MetaClaw se construye sobre los siguientes proyectos de código abierto y colaboraciones:
 
 - [OpenClaw](https://openclaw.ai) — el framework central de agentes.
 - [SkillRL](https://github.com/aiming-lab/SkillRL) — nuestro framework RL aumentado con skills.
-- [Tinker](https://www.thinkingmachines.ai/tinker/) — usado para entrenamiento RL en línea.
-- [MinT](https://mint-doc-alpha.macaron.im/) — soportado como backend RL compatible con Tinker a través de [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit).
+- [Tinker](https://www.thinkingmachines.ai/tinker/) — el backend de referencia principal para el entrenamiento RL en línea de MetaClaw.
+- [MinT](https://mint-doc.macaron.im/) — una alternativa compatible con Tinker de [Mind Lab](https://macaron.im/mindlab), disponible vía [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit); los modelos soportados están en la [página oficial](https://mint-doc.macaron.im/using-the-api/model-lineup).
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL) — inspiración para nuestro diseño RL.
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) — proporciona la base de nuestro banco de skills.
+
+El trabajo de compatibilidad con MinT en este repositorio es uno de los resultados de la colaboración entre el equipo del proyecto MetaClaw y [Mind Lab](https://macaron.im/mindlab). En esa colaboración, Mind Lab se ha centrado principalmente en la investigación de infraestructura y en la optimización de algoritmos LoRA RL.
 
 ---
 

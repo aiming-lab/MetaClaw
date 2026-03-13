@@ -107,9 +107,10 @@ MetaClaw 同时支持：
 pip install -e .            # skills_only 模式（轻量）
 pip install -e ".[rl]"      # + RL 训练支持（torch、transformers、tinker）
 pip install -e ".[evolve]"  # + 通过 OpenAI 兼容 LLM 进行 Skill 进化
+pip install mindlab-toolkit # + 可选的 MinT 兼容后端
 ```
 
-如果你要使用 `rl.backend=mint`，需要在同一个环境里额外安装 MinT 兼容包，例如 [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit)。官方 MinT 文档可参考 [`mint-doc-alpha.macaron.im`](https://mint-doc-alpha.macaron.im/)。MetaClaw 默认不会把这个依赖直接打进安装列表，这样你可以明确选择训练后端是 Tinker 还是 MinT。
+只有在你要使用 `rl.backend=mint` 时才需要安装 `mindlab-toolkit`。MinT 相关资料见：[总览](https://mint-doc.macaron.im/)、[Tinker 兼容说明](https://mint-doc.macaron.im/using-the-api/tinker-compatibility)、[模型列表](https://mint-doc.macaron.im/using-the-api/model-lineup)、[GitHub](https://github.com/MindLab-Research/mindlab-toolkit)。
 
 ### 2. 配置
 
@@ -119,14 +120,16 @@ metaclaw setup
 
 交互式向导会引导你选择 LLM 提供商（Kimi、Qwen 或自定义），填写 API Key，并可选开启 RL 训练。
 
-MetaClaw 的 RL 路径现在可以显式在 `tinker` 和 `mint` 之间切换。推荐默认值是 `auto`；当环境里安装了 MinT 兼容包时，它仍然会根据 Mint 风格的凭证或 base URL 自动识别。也就是说，同一套训练流程可以只靠改配置，在 Tinker 云端和 MinT 部署之间切换。
+MetaClaw 的 RL 路径默认仍以 Tinker 为参考后端。推荐默认值是 `rl.backend=auto`；当环境里安装了 MinT 兼容包时，它也可以根据 Mint 风格的凭证或 base URL 自动识别 MinT。如果你想把同一套流程切到 MinT，可以这样配置：
 
 ```bash
 metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
-metaclaw config rl.base_url https://mint.macaron.xin/
+metaclaw config rl.base_url https://mint-cn.macaron.xin/  # 中国大陆；其他地区可用 https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
 ```
+
+中国大陆可使用 `https://mint-cn.macaron.xin/`，其他地区可使用 `https://mint.macaron.xin/`。
 
 兼容旧配置的 `rl.tinker_api_key` 和 `rl.tinker_base_url` 仍然可以继续使用。
 
@@ -158,7 +161,7 @@ metaclaw config KEY VALUE   # 设置配置项
 metaclaw config rl.enabled true           # 开启 RL 训练
 metaclaw config rl.backend auto           # auto | tinker | mint
 metaclaw config rl.api_key sk-...         # 设置 RL 后端 Key
-metaclaw config rl.base_url https://mint.macaron.xin/  # 可选：指定 MinT 等后端 endpoint
+metaclaw config rl.base_url https://mint-cn.macaron.xin/  # MinT 中国大陆 endpoint；其他地区可用 https://mint.macaron.xin/
 metaclaw config skills.auto_evolve false  # 关闭 Skill 自动总结
 metaclaw config proxy.port 31000          # 修改代理端口
 ```
@@ -194,7 +197,7 @@ rl:
   backend: auto             # "auto" | "tinker" | "mint"
   model: moonshotai/Kimi-K2.5
   api_key: ""
-  base_url: ""              # 可选后端 endpoint，例如用于 MinT 的 https://mint.macaron.xin/
+  base_url: ""              # 可选后端 endpoint，例如用于 MinT 的 https://mint-cn.macaron.xin/（中国大陆）或 https://mint.macaron.xin/
   tinker_api_key: ""        # api_key 的兼容别名
   tinker_base_url: ""       # base_url 的兼容别名
   prm_url: https://api.openai.com/v1
@@ -235,26 +238,32 @@ cp -r memory_data/skills/* ~/.metaclaw/skills/
 
 ## 🔬 进阶：RL 模式
 
-开启 RL 训练，通过 Tinker 或 MinT 从实时对话中持续微调模型：
+开启 RL 训练，从实时对话中持续微调模型。Tinker 仍是默认参考路径，MetaClaw 也支持把同一套流程切到作为 Tinker 兼容替代方案的 MinT：
 
 ```bash
 metaclaw config rl.enabled true
-metaclaw config rl.backend mint
+metaclaw config rl.backend auto
 metaclaw config rl.api_key sk-...
-metaclaw config rl.base_url https://mint.macaron.xin/
-metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
 metaclaw config rl.prm_url https://api.openai.com/v1
 metaclaw config rl.prm_api_key sk-...
 metaclaw start
 ```
 
+如果你要切到 MinT，再额外配置 backend、endpoint 和 model：
+
+```bash
+metaclaw config rl.backend mint
+metaclaw config rl.base_url https://mint-cn.macaron.xin/  # 中国大陆；其他地区可用 https://mint.macaron.xin/
+metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+```
+
 RL 模式下：
 - 每轮对话被 tokenize 并作为训练样本提交
 - 裁判 LLM（PRM）异步为回复打分
-- Tinker 兼容后端（如 Tinker 云端或 MinT）执行 LoRA 微调，每累积 `batch_size` 个样本热更新权重
+- 默认由 Tinker 云端执行 LoRA 微调；MetaClaw 也可以接到 MinT 这类兼容替代后端上，并在每累积 `batch_size` 个样本后热更新权重
 - 专属进化器 LLM 从失败的 episode 中提取新 Skill
 
-如果你想继续使用 Tinker 云端，只需要把 `rl.backend` 改成 `tinker`，或者保留 `auto` 并不配置 MinT endpoint。
+如果你继续使用 Tinker 云端，保留 `rl.backend=auto` 或显式设成 `rl.backend=tinker` 即可；如果你使用 MinT，则把 `rl.backend` 改成 `mint` 并配置对应 endpoint。
 
 **程序化 rollout**（无需 OpenClaw TUI）：将 `openclaw_env_data_dir` 设为包含 JSONL 任务文件的目录：
 
@@ -298,14 +307,16 @@ metaclaw start --mode rl
 
 ## 🙏 致谢
 
-MetaClaw 基于以下开源项目构建：
+MetaClaw 基于以下开源项目与协作成果构建：
 
 - [OpenClaw](https://openclaw.ai) —— 核心 Agent 框架。
 - [SkillRL](https://github.com/aiming-lab/SkillRL) —— 我们的 Skill 增强 RL 框架。
-- [Tinker](https://www.thinkingmachines.ai/tinker/) —— 用于在线 RL 训练。
-- [MinT](https://mint-doc-alpha.macaron.im/) —— 通过 [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit) 接入的 Tinker 兼容 RL 后端。
+- [Tinker](https://www.thinkingmachines.ai/tinker/) —— MetaClaw 在线 RL 训练的主要参考后端。
+- [MinT](https://mint-doc.macaron.im/) —— 来自 [Mind Lab](https://macaron.im/mindlab) 的 Tinker 兼容替代方案，可通过 [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit) 使用；当前支持的模型见[官方模型列表](https://mint-doc.macaron.im/using-the-api/model-lineup)。
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL) —— 我们 RL 设计的灵感来源。
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) —— 为我们的 Skill 库提供基础。
+
+仓库中的 MinT 兼容工作，是 MetaClaw 项目组与 [Mind Lab](https://macaron.im/mindlab) 协作成果的一部分。Mind Lab 在这项协作中主要聚焦于基础设施研究以及 LoRA RL 算法优化。
 
 ---
 

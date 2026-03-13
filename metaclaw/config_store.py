@@ -22,7 +22,7 @@ _DEFAULTS: dict = {
         "api_base": "",
         "api_key": "",
     },
-    "proxy": {"port": 30000, "host": "0.0.0.0"},
+    "proxy": {"port": 30000, "host": "0.0.0.0", "api_key": ""},
     "skills": {
         "enabled": True,
         "dir": str(Path.home() / ".metaclaw" / "skills"),
@@ -33,8 +33,12 @@ _DEFAULTS: dict = {
     },
     "rl": {
         "enabled": False,
+        "backend": "auto",
         "model": "",
+        "api_key": "",
+        "base_url": "",
         "tinker_api_key": "",
+        "tinker_base_url": "",
         "prm_url": "https://api.openai.com/v1",
         "prm_model": "gpt-5.2",
         "prm_api_key": "",
@@ -141,6 +145,9 @@ class ConfigStore:
         skills_dir = str(
             Path(skills.get("dir", str(CONFIG_DIR / "skills"))).expanduser()
         )
+        rl_backend = str(rl.get("backend", "auto") or "auto")
+        rl_api_key = str(rl.get("api_key") or rl.get("tinker_api_key", "") or "")
+        rl_base_url = str(rl.get("base_url") or rl.get("tinker_base_url", "") or "")
 
         return MetaClawConfig(
             # Mode
@@ -152,6 +159,7 @@ class ConfigStore:
             # Proxy
             proxy_port=proxy.get("port", 30000),
             proxy_host=proxy.get("host", "0.0.0.0"),
+            proxy_api_key=str(proxy.get("api_key", "") or ""),
             served_model_name=llm.get("model_id") or "metaclaw-model",
             # Skills
             use_skills=bool(skills.get("enabled", True)),
@@ -162,10 +170,15 @@ class ConfigStore:
             enable_skill_evolution=bool(skills.get("auto_evolve", True)),
             skill_evolution_history_path=str(Path(skills_dir) / "evolution_history.jsonl"),
             # RL training
+            backend=rl_backend,
             model_name=rl.get("model") or llm.get("model_id") or "Qwen/Qwen3-4B",
             lora_rank=int(rl.get("lora_rank", 32)),
             batch_size=int(rl.get("batch_size", 4)),
             resume_from_ckpt=str(rl.get("resume_from_ckpt", "") or ""),
+            api_key=rl_api_key,
+            base_url=rl_base_url,
+            tinker_api_key=str(rl.get("tinker_api_key", "") or ""),
+            tinker_base_url=str(rl.get("tinker_base_url", "") or ""),
             # PRM (only meaningful in rl mode)
             use_prm=bool(rl.get("prm_url")) and rl_enabled,
             prm_url=rl.get("prm_url", "https://api.openai.com/v1"),
@@ -197,7 +210,9 @@ class ConfigStore:
         ]
         if rl.get("enabled"):
             lines += [
+                f"rl.backend:      {rl.get('backend', 'auto')}",
                 f"rl.model:        {rl.get('model', '?')}",
+                f"rl.base_url:     {rl.get('base_url') or rl.get('tinker_base_url', '')}",
                 f"rl.prm_url:      {rl.get('prm_url', '?')}",
                 f"rl.evolver_model:{rl.get('evolver_model', '?')}",
                 f"rl.resume_ckpt:  {rl.get('resume_from_ckpt', '')}",

@@ -3,7 +3,15 @@ from typing import Any
 import os
 import subprocess
 
-def run_llm(messages):    
+def _fallback_content(messages) -> str:
+    for message in reversed(messages):
+        content = message.get("content", "") if isinstance(message, dict) else ""
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+    return ""
+
+
+def run_llm(messages):
     # Prefer MetaClaw PRM config so RL mode can reuse configured judge endpoint.
     prm_url = ""
     prm_api_key = ""
@@ -24,6 +32,10 @@ def run_llm(messages):
     api_key = prm_api_key or os.environ.get("OPENAI_API_KEY", "")
     base_url = prm_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model_id = prm_model or os.environ.get("PRM_MODEL", "gpt-5.2")
+    fallback = _fallback_content(messages)
+    if not api_key and base_url.rstrip("/") == "https://api.openai.com/v1":
+        return fallback
+
     client_kwargs: dict[str, Any] = {"api_key": api_key}
     client_kwargs["base_url"] = base_url
     client = OpenAI(**client_kwargs)
@@ -46,12 +58,15 @@ def run_llm(messages):
     )
     rewrite_messages = [{"role": "system", "content": compression_instruction}, *messages]
 
-    response = client.chat.completions.create(
-        model=model_id,
-        messages=rewrite_messages,
-        max_completion_tokens=2500,
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=rewrite_messages,
+            max_completion_tokens=2500,
+        )
+    except Exception:
+        return fallback
+    return response.choices[0].message.content or fallback
 
 
 def run_turn(message: str) -> str:

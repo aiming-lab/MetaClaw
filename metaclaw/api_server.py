@@ -36,6 +36,7 @@ from openai import OpenAI
 from .config import MetaClawConfig
 from .data_formatter import ConversationSample
 from .prm_scorer import PRMScorer
+from .sdk_backend import resolve_sdk_backend
 from .skill_manager import SkillManager
 from .utils import run_llm
 
@@ -298,10 +299,10 @@ def _rewrite_new_session_bootstrap_prompt(messages: list[dict]) -> tuple[list[di
 # ------------------------------------------------------------------ #
 
 class MetaClawAPIServer:
-    """Proxy between OpenClaw and Tinker for RL training data collection.
+    """Proxy between OpenClaw and the active RL backend for data collection.
 
     OpenClaw sends ``X-Session-Id`` and ``X-Turn-Type`` headers with every
-    request.  The proxy forwards to Tinker SamplingClient, and when
+    request.  The proxy forwards to the active sampling client, and when
     ``turn_type`` is ``"main"`` it tokenises the full prompt+response and
     submits a training sample.  Side tasks (``turn_type != "main"``) are
     forwarded but produce no training data.
@@ -317,7 +318,7 @@ class MetaClawAPIServer:
         threading.Event that gates sample submission.
         Set = accepting samples; clear = paused for weight update.
     sampling_client:
-        Tinker SamplingClient. Can be None and set later via
+        Tinker/MinT-compatible SamplingClient. Can be None and set later via
         update_sampling_client().
     skill_manager:
         Optional SkillManager for injecting skills into system prompts.
@@ -336,6 +337,8 @@ class MetaClawAPIServer:
         skill_evolver=None,
     ):
         self.config = config
+        self.backend = resolve_sdk_backend(config) if config.mode == "rl" else None
+        self._sdk = self.backend.module if self.backend is not None else None
         self.output_queue = output_queue
         self.submission_enabled = submission_enabled
         self._sampling_client = sampling_client
@@ -344,7 +347,7 @@ class MetaClawAPIServer:
         self.skill_evolver = skill_evolver
 
         self._served_model = config.served_model_name
-        self._expected_api_key = config.api_key
+        self._expected_api_key = config.proxy_api_key
         os.makedirs(config.record_dir, exist_ok=True)
         self._system_prompt_cache_file = os.path.join(
             config.record_dir, "system_prompt_cache.json"
@@ -750,7 +753,7 @@ class MetaClawAPIServer:
         if self.config.mode == "skills_only":
             output = await self._forward_to_llm(forward_body)
         else:
-            output = await self._forward_to_tinker(forward_body)
+            output = await self._forward_to_backend(forward_body)
 
         choice = output.get("choices", [{}])[0]
         assistant_msg = choice.get("message", {})
@@ -884,15 +887,18 @@ class MetaClawAPIServer:
         return {"response": output}
 
     # ------------------------------------------------------------------ #
-    # Tinker forwarding                                                    #
+    # RL backend forwarding                                                #
     # ------------------------------------------------------------------ #
 
-    async def _forward_to_tinker(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Forward the request to Tinker via SamplingClient.sample_async."""
-        import tinker
-
+    async def _forward_to_backend(self, body: dict[str, Any]) -> dict[str, Any]:
+        """Forward the request to the active RL backend via sample_async."""
+        if self.backend is None or self._sdk is None:
+            raise HTTPException(status_code=503, detail="no RL backend configured")
         if self._sampling_client is None:
-            raise HTTPException(status_code=503, detail="no Tinker sampling client available")
+            raise HTTPException(
+                status_code=503,
+                detail=f"no {self.backend.label} sampling client available",
+            )
         if self._tokenizer is None:
             raise HTTPException(status_code=503, detail="no tokenizer available")
 
@@ -904,7 +910,14 @@ class MetaClawAPIServer:
             max_tokens = int(body.get("max_tokens") or 2048)
             stop = body.get("stop")
 
-            logger.info("[OpenClaw] _forward_to_tinker msgs=%d max_tokens=%d", len(norm_msgs), max_tokens)
+            backend_key = self.backend.key
+            backend_label = self.backend.label
+            logger.info(
+                "[OpenClaw] _forward_to_backend backend=%s msgs=%d max_tokens=%d",
+                backend_key,
+                len(norm_msgs),
+                max_tokens,
+            )
 
             # Apply chat template using the full conversation history.
             # Use tokenize=False then encode() to always get a plain list of ints.
@@ -916,9 +929,9 @@ class MetaClawAPIServer:
             )
             prompt_ids = self._tokenizer.encode(prompt_text, add_special_tokens=False)
 
-            # Build Tinker ModelInput
-            chunk = tinker.EncodedTextChunk(tokens=list(prompt_ids), type="encoded_text")
-            model_input = tinker.ModelInput(chunks=[chunk])
+            # Build SDK ModelInput
+            chunk = self._sdk.EncodedTextChunk(tokens=list(prompt_ids), type="encoded_text")
+            model_input = self._sdk.ModelInput(chunks=[chunk])
 
             # Build SamplingParams
             sp_kwargs: dict[str, Any] = dict(
@@ -929,9 +942,9 @@ class MetaClawAPIServer:
             )
             if stop is not None:
                 sp_kwargs["stop"] = stop
-            sampling_params = tinker.SamplingParams(**sp_kwargs)
+            sampling_params = self._sdk.SamplingParams(**sp_kwargs)
 
-            # Call Tinker
+            # Call active backend
             response = await self._sampling_client.sample_async(
                 prompt=model_input,
                 num_samples=1,
@@ -951,8 +964,11 @@ class MetaClawAPIServer:
                     json.dumps(parsed_tool_calls, ensure_ascii=False)[:800],
                 )
             logger.info(
-                "[OpenClaw] Tinker tokens=%d stop=%s decoded=%r",
-                len(seq.tokens), seq.stop_reason, response_text[:200],
+                "[OpenClaw] %s tokens=%d stop=%s decoded=%r",
+                backend_label,
+                len(seq.tokens),
+                seq.stop_reason,
+                response_text[:200],
             )
 
             # Build OpenAI-compatible response
@@ -964,7 +980,7 @@ class MetaClawAPIServer:
             if parsed_tool_calls:
                 assistant_message["tool_calls"] = parsed_tool_calls
             return {
-                "id": f"chatcmpl-tinker-{int(time.time())}",
+                "id": f"chatcmpl-{backend_key}-{int(time.time())}",
                 "object": "chat.completion",
                 "created": int(time.time()),
                 "model": body.get("model", self._served_model),
@@ -983,8 +999,9 @@ class MetaClawAPIServer:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error("[OpenClaw] Tinker sample_async failed: %s", e, exc_info=True)
-            raise HTTPException(status_code=502, detail=f"Tinker inference error: {e}") from e
+            backend_label = self.backend.label if self.backend is not None else "RL backend"
+            logger.error("[OpenClaw] %s sample_async failed: %s", backend_label, e, exc_info=True)
+            raise HTTPException(status_code=502, detail=f"{backend_label} inference error: {e}") from e
 
     # ------------------------------------------------------------------ #
     # LLM forwarding (skills_only mode)                                   #
@@ -1312,7 +1329,11 @@ class MetaClawAPIServer:
 
     def _print_ready_banner(self):
         time.sleep(3)
-        backend = "Tinker cloud RL" if self.config.mode == "rl" else f"LLM ({self.config.llm_model_id or 'upstream'})"
+        backend = (
+            self.backend.banner if self.backend is not None else self.config.training_backend_banner()
+            if self.config.mode == "rl"
+            else f"LLM ({self.config.llm_model_id or 'upstream'})"
+        )
         banner = (
             f"\n{'=' * 70}\n"
             f"  MetaClaw proxy ready  [mode={self.config.mode}]\n"
@@ -1329,11 +1350,11 @@ class MetaClawAPIServer:
             self._thread.join(timeout=5)
 
     # ------------------------------------------------------------------ #
-    # Tinker-specific interface                                            #
+    # RL backend interface                                                 #
     # ------------------------------------------------------------------ #
 
     def update_sampling_client(self, new_client):
-        """Hot-swap the Tinker sampling client after a weight update."""
+        """Hot-swap the active RL sampling client after a weight update."""
         self._sampling_client = new_client
         logger.info("[OpenClaw] sampling client updated")
 

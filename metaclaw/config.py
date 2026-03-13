@@ -4,7 +4,7 @@ Unified configuration for MetaClaw training.
 Dataclass-based config compatible with command-line overrides.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -24,7 +24,12 @@ class MetaClawConfig:
     max_steps: int = 1000
     loss_fn: str = "importance_sampling"  # "ppo" | "importance_sampling" | "cispo"
     save_weights_timeout_s: float = 200.0  # timeout for sampling-client refresh
+    backend: str = "auto"         # "auto" | "tinker" | "mint"
+    api_key: str = ""             # neutral RL backend API key
+    base_url: str = ""            # neutral RL backend base URL
     resume_from_ckpt: str = ""    # optional Tinker resume path, e.g. tinker://.../weights/step_0003
+    tinker_api_key: str = ""      # legacy alias for api_key
+    tinker_base_url: str = ""     # legacy alias for base_url
 
     # ------------------------------------------------------------------ #
     # Reward / PRM                                                        #
@@ -70,9 +75,9 @@ class MetaClawConfig:
     # ------------------------------------------------------------------ #
     proxy_port: int = 30000
     proxy_host: str = "0.0.0.0"
+    proxy_api_key: str = ""                # optional bearer token enforced by local proxy
     tinker_sampling_url: str = "http://localhost:8080"  # Tinker sampling endpoint
     served_model_name: str = "qwen3-4b"
-    api_key: str = ""                         # Optional bearer token check
     record_enabled: bool = True
     record_dir: str = "records/"
 
@@ -110,3 +115,43 @@ class MetaClawConfig:
     evolver_api_key: str = ""            # leave empty to reuse llm_api_key
     evolver_model_id: str = "gpt-5.2"
     skill_evolution_history_path: str = "memory_data/skills/evolution_history.jsonl"
+
+    def configured_backend(self) -> str:
+        from .sdk_backend import configured_backend_name
+        return configured_backend_name(self)
+
+    def configured_api_key(self) -> str:
+        from .sdk_backend import configured_api_key
+        return configured_api_key(self)
+
+    def configured_base_url(self) -> str:
+        from .sdk_backend import configured_base_url
+        return configured_base_url(self)
+
+    def resolved_api_key(self) -> str:
+        from .sdk_backend import resolve_api_key
+        return resolve_api_key(self)
+
+    def resolved_base_url(self) -> str:
+        from .sdk_backend import resolve_base_url
+        return resolve_base_url(self)
+
+    def resolved_backend_key(self) -> str:
+        from .sdk_backend import infer_backend_key
+        return infer_backend_key(self)
+
+    def training_backend_label(self) -> str:
+        return "MinT" if self.resolved_backend_key() == "mint" else "Tinker"
+
+    def training_backend_banner(self) -> str:
+        return f"{self.training_backend_label()} cloud RL"
+
+    # Backward-compatible accessors used by older code paths and configs.
+    def resolved_tinker_api_key(self) -> str:
+        return self.resolved_api_key()
+
+    def resolved_tinker_base_url(self) -> str:
+        return self.resolved_base_url()
+
+    def training_backend_key(self) -> str:
+        return self.resolved_backend_key()

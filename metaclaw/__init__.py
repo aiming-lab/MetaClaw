@@ -4,7 +4,7 @@ MetaClaw — OpenClaw skill injection and RL training, one-click deployment.
 Integrates:
   - OpenClaw online dialogue data collection (FastAPI proxy)
   - Skill injection and auto-summarization (skills_only mode)
-  - Tinker cloud LoRA RL training (rl mode, optional)
+  - Tinker-compatible cloud LoRA RL training, including MinT (rl mode, optional)
 
 Quick start:
     metaclaw setup    # configure LLM, skills, RL toggle

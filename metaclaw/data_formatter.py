@@ -1,5 +1,5 @@
 """
-Data formatter: converts ConversationSample → tinker.Datum.
+Data formatter: converts ConversationSample → backend Datum.
 
 The Datum structure follows the tinker-cookbook RL convention
 (see tinker-cookbook/tinker_cookbook/rl/data_processing.py):
@@ -53,10 +53,11 @@ class ConversationSample:
 def sample_to_datum(
     sample: ConversationSample,
     advantage: float,
+    sdk,
     kl_penalty_coef: float = 0.0,
 ):
     """
-    Convert one ConversationSample + scalar advantage into a ``tinker.Datum``.
+    Convert one ConversationSample + scalar advantage into a backend ``Datum``.
 
     When ``sample.teacher_logprobs`` is present and *kl_penalty_coef* > 0,
     a reverse-KL penalty (``-coef * (log p_student - log p_teacher)``) is
@@ -65,16 +66,9 @@ def sample_to_datum(
 
     Returns
     -------
-    tinker.Datum
+    Datum
     """
-    try:
-        import tinker
-        from tinker import TensorData
-    except ImportError as e:
-        raise ImportError(
-            "tinker SDK is required for data formatting. "
-            "Install via: pip install tinker  (or the appropriate private package)"
-        ) from e
+    TensorData = sdk.TensorData
 
     prompt_len = len(sample.prompt_tokens)
     all_tokens = sample.prompt_tokens + sample.response_tokens
@@ -158,14 +152,14 @@ def sample_to_datum(
         )
 
     # Build model input from all tokens except the last
-    model_input = tinker.ModelInput.from_ints(all_tokens[:-1])
+    model_input = sdk.ModelInput.from_ints(all_tokens[:-1])
 
     # Note: "mask" is NOT included in loss_fn_inputs.  The Tinker server
     # rejects unknown keys (only target_tokens, logprobs, advantages, weights,
     # clip_*_threshold are accepted).  The mask information is already encoded
     # in the advantages (0.0 for prompt / masked positions).  The cookbook
     # likewise strips mask via remove_mask() before calling forward_backward.
-    return tinker.Datum(
+    return sdk.Datum(
         model_input=model_input,
         loss_fn_inputs={
             "target_tokens": TensorData.from_torch(
@@ -188,6 +182,7 @@ def sample_to_datum(
 def batch_to_datums(
     batch: list[ConversationSample],
     advantages: list[float],
+    sdk,
     kl_penalty_coef: float = 0.0,
 ) -> list:
     """
@@ -198,7 +193,7 @@ def batch_to_datums(
     datums = []
     for sample, adv in zip(batch, advantages):
         try:
-            datums.append(sample_to_datum(sample, adv, kl_penalty_coef=kl_penalty_coef))
+            datums.append(sample_to_datum(sample, adv, sdk=sdk, kl_penalty_coef=kl_penalty_coef))
         except Exception as e:
             logger.warning(
                 "[data_formatter] skipping sample session=%s turn=%d: %s",

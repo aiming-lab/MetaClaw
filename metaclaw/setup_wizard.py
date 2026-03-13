@@ -4,6 +4,7 @@ Interactive first-time setup wizard for MetaClaw.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from .config_store import CONFIG_DIR, ConfigStore
@@ -146,14 +147,31 @@ class SetupWizard:
 
         if rl_enabled:
             print("\n--- RL Training Configuration ---")
+            backend = _prompt_choice(
+                "RL backend",
+                ["auto", "tinker", "mint"],
+                default=str(rl_config.get("backend", "auto") or "auto"),
+            )
             rl_model = _prompt(
                 "Base model for RL training",
                 default=rl_config.get("model") or model_id,
             )
-            tinker_api_key = _prompt(
-                "Tinker API key",
-                default=rl_config.get("tinker_api_key", ""),
+            backend_api_key = _prompt(
+                "RL backend API key",
+                default=(
+                    rl_config.get("api_key")
+                    or rl_config.get("tinker_api_key", "")
+                ),
                 hide=True,
+            )
+            backend_base_url = _prompt(
+                "RL backend base URL (optional)",
+                default=(
+                    rl_config.get("base_url")
+                    or rl_config.get("tinker_base_url")
+                    or os.environ.get("TINKER_BASE_URL", "")
+                    or os.environ.get("MINT_BASE_URL", "")
+                ),
             )
             prm_url = _prompt(
                 "PRM (reward model) URL",
@@ -199,8 +217,10 @@ class SetupWizard:
 
             rl_config = {
                 "enabled": True,
+                "backend": backend,
                 "model": rl_model,
-                "tinker_api_key": tinker_api_key,
+                "api_key": backend_api_key,
+                "base_url": backend_base_url,
                 "prm_url": prm_url,
                 "prm_model": prm_model,
                 "prm_api_key": prm_api_key,
@@ -216,6 +236,9 @@ class SetupWizard:
             rl_config["enabled"] = False
 
         # ---- Write config ----
+        proxy_config = dict(current_proxy)
+        proxy_config["port"] = proxy_port
+        proxy_config.setdefault("host", "0.0.0.0")
         data = {
             "mode": mode,
             "llm": {
@@ -224,7 +247,7 @@ class SetupWizard:
                 "api_base": api_base,
                 "api_key": api_key,
             },
-            "proxy": {"port": proxy_port, "host": "0.0.0.0"},
+            "proxy": proxy_config,
             "skills": {
                 "enabled": skills_enabled,
                 "dir": skills_dir,

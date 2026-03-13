@@ -142,11 +142,9 @@ class MetaClawLauncher:
         # Set evolver env vars (may use dedicated evolver or fallback to llm)
         self._setup_evolver_env(cfg)
 
-        # Set Tinker API key if provided
-        data = self.cs.load()
-        tinker_key = data.get("rl", {}).get("tinker_api_key", "")
-        if tinker_key:
-            os.environ.setdefault("TINKER_API_KEY", tinker_key)
+        # Seed both alias families so downstream SDKs and helper scripts can
+        # resolve the same configured backend credentials.
+        self._seed_rl_backend_env(cfg)
 
         trainer = MetaClawTrainer(cfg)
         self._trainer_task = asyncio.create_task(trainer.run())
@@ -175,6 +173,17 @@ class MetaClawLauncher:
         if cfg.evolver_model_id:
             os.environ.setdefault("SKILL_EVOLVER_MODEL", cfg.evolver_model_id)
 
+    def _seed_rl_backend_env(self, cfg):
+        """Export configured RL backend credentials under both alias families."""
+        api_key = cfg.configured_api_key()
+        base_url = cfg.configured_base_url()
+        if api_key:
+            os.environ.setdefault("TINKER_API_KEY", api_key)
+            os.environ.setdefault("MINT_API_KEY", api_key)
+        if base_url:
+            os.environ.setdefault("TINKER_BASE_URL", base_url)
+            os.environ.setdefault("MINT_BASE_URL", base_url)
+
     # ------------------------------------------------------------------ #
     # OpenClaw wiring                                                      #
     # ------------------------------------------------------------------ #
@@ -185,7 +194,7 @@ class MetaClawLauncher:
         provider_json = json.dumps({
             "api": "openai-completions",
             "baseUrl": f"http://127.0.0.1:{cfg.proxy_port}/v1",
-            "apiKey": cfg.api_key or "metaclaw",
+            "apiKey": cfg.proxy_api_key or "metaclaw",
             "models": [{
                 "id": model_id,
                 "name": model_id,

@@ -1,7 +1,7 @@
 """
 Main training loop for MetaClaw.
 
-Uses Tinker cloud LoRA training instead of Megatron + SGLang.
+Uses a Tinker-compatible cloud LoRA backend instead of Megatron + SGLang.
 
 Training clock cycle (interleaved for throughput):
   1. Resume rollout worker → collect batch from API server
@@ -27,6 +27,7 @@ from .data_formatter import ConversationSample, batch_to_datums, compute_advanta
 from .openclaw_env_rollout import rollout_loop
 from .prm_scorer import PRMScorer
 from .rollout import AsyncRolloutWorker, _drain_output_queue
+from .sdk_backend import resolve_sdk_backend
 from .skill_evolver import SkillEvolver
 from .skill_manager import SkillManager
 
@@ -38,7 +39,8 @@ _RESET = "\033[0m"
 
 class MetaClawTrainer:
     """
-    End-to-end RL trainer using Tinker LoRA + OpenClaw-style data collection.
+    End-to-end RL trainer using a Tinker-compatible LoRA backend + OpenClaw-style
+    data collection.
 
     Parameters
     ----------
@@ -48,6 +50,8 @@ class MetaClawTrainer:
 
     def __init__(self, config: MetaClawConfig):
         self.config = config
+        self.backend = resolve_sdk_backend(config)
+        self._sdk = self.backend.module
         self.training_client = None
         self.sampling_client = None
         self.rollout_worker: Optional[AsyncRolloutWorker] = None
@@ -60,8 +64,7 @@ class MetaClawTrainer:
     # ------------------------------------------------------------------ #
 
     async def setup(self):
-        """Initialise Tinker clients, SkillManager, PRMScorer, and rollout worker."""
-        import tinker
+        """Initialise backend clients, SkillManager, PRMScorer, and rollout worker."""
 
         # Optional Weights & Biases logging.
         # Enable by setting WANDB_DISABLED to anything except "true"/"1"/"yes"/"on".
@@ -81,9 +84,15 @@ class MetaClawTrainer:
             except Exception as e:
                 logger.warning("[Trainer] wandb init failed; continuing without wandb: %s", e)
 
-        # 1. Tinker service + LoRA training client
-        logger.info("[Trainer] connecting to Tinker service …")
-        service_client = tinker.ServiceClient()
+        # 1. Tinker-compatible service + LoRA training client
+        backend_label = self.backend.label
+        logger.info("[Trainer] connecting to %s service …", backend_label)
+        service_kwargs = {}
+        if self.backend.base_url:
+            service_kwargs["base_url"] = self.backend.base_url
+        if self.backend.api_key:
+            service_kwargs["api_key"] = self.backend.api_key
+        service_client = self._sdk.ServiceClient(**service_kwargs)
         self.training_client = await service_client.create_lora_training_client_async(
             base_model=self.config.model_name,
             rank=self.config.lora_rank,
@@ -106,7 +115,7 @@ class MetaClawTrainer:
         self.sampling_client = (
             await self.training_client.save_weights_and_get_sampling_client_async()
         )
-        logger.info("[Trainer] initial sampling client ready")
+        logger.info("[Trainer] initial sampling client ready (%s)", backend_label)
 
         # 3. SkillManager
         if self.config.use_skills:
@@ -157,18 +166,34 @@ class MetaClawTrainer:
         logger.info("[Trainer] rollout worker configured on %s:%d",
                     self.config.proxy_host, self.config.proxy_port)
 
+    async def _wait_for_proxy_ready(self, timeout_s: float = 30.0):
+        """Block until the local proxy responds on /healthz."""
+        import httpx
+
+        url = f"http://127.0.0.1:{self.config.proxy_port}/healthz"
+        deadline = asyncio.get_running_loop().time() + timeout_s
+        async with httpx.AsyncClient(timeout=1.0) as client:
+            while True:
+                try:
+                    resp = await client.get(url)
+                    if resp.status_code == 200:
+                        return
+                except Exception:
+                    pass
+                if asyncio.get_running_loop().time() >= deadline:
+                    raise RuntimeError(f"proxy did not become ready within {timeout_s:.1f}s: {url}")
+                await asyncio.sleep(0.2)
+
     # ------------------------------------------------------------------ #
     # Training step                                                        #
     # ------------------------------------------------------------------ #
 
     async def _train_on_batch(self, batch: list[ConversationSample], step_idx: int):
         """Run one GRPO-style RL update on *batch*."""
-        import tinker
-
         # Compute advantages (centre-normalise within batch)
         advantages = compute_advantages(batch)
         kl_coef = self.config.kl_penalty_coef if self.config.use_opd else 0.0
-        data_D = batch_to_datums(batch, advantages, kl_penalty_coef=kl_coef)
+        data_D = batch_to_datums(batch, advantages, sdk=self._sdk, kl_penalty_coef=kl_coef)
 
         if not data_D:
             logger.warning("[Trainer] empty data batch — skipping step")
@@ -183,7 +208,7 @@ class MetaClawTrainer:
 
         logger.info("[Trainer] optim_step_async starting …")
         await self.training_client.optim_step_async(
-            tinker.AdamParams(learning_rate=self.config.learning_rate)
+            self._sdk.AdamParams(learning_rate=self.config.learning_rate)
         )
         logger.info("[Trainer] optim_step_async done")
 
@@ -283,6 +308,7 @@ class MetaClawTrainer:
             "[Trainer] proxy server starting at http://%s:%d",
             self.config.proxy_host, self.config.proxy_port,
         )
+        await self._wait_for_proxy_ready()
 
         # Optionally start the programmatic task rollout loop as a background task.
         # Set openclaw_env_data_dir to a directory containing <split>.jsonl task files.
@@ -299,6 +325,7 @@ class MetaClawTrainer:
                     max_steps_per_episode=self.config.openclaw_env_max_steps,
                     temperature=0.6,
                     model_id=self.config.served_model_name,
+                    proxy_api_key=self.config.proxy_api_key,
                 )
             )
             logger.info(

@@ -38,7 +38,7 @@ def setup():
 @metaclaw.command()
 @click.option(
     "--mode",
-    type=click.Choice(["auto", "skills_only", "rl"]),
+    type=click.Choice(["madmax", "skills_only", "rl"]),
     default=None,
     help="Override operating mode for this session.",
 )

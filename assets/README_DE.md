@@ -77,7 +77,7 @@ Einmal mit `metaclaw setup` konfigurieren, dann startet `metaclaw start` den Pro
 
 | Modus | Standard | Funktion |
 |-------|---------|----------|
-| `auto` | ✅ | RL + Smart-Scheduler. Skills immer aktiv; RL-Gewichtsupdates laufen nur in Schlaf-/Leerlauf-/Meeting-Fenstern. |
+| `madmax` | ✅ | RL + Smart-Scheduler. Skills immer aktiv; RL-Gewichtsupdates laufen nur in Schlaf-/Leerlauf-/Meeting-Fenstern. |
 | `rl` | — | RL ohne Scheduler. Trainiert sofort, wenn ein Batch voll ist (v0.2-Verhalten). |
 | `skills_only` | — | Proxy → deine LLM-API. Skills werden injiziert und nach jeder Session automatisch zusammengefasst. Kein GPU/Tinker erforderlich. |
 
@@ -161,7 +161,7 @@ metaclaw config proxy.port 31000          # Proxy-Port ändern
 Die Konfiguration liegt in `~/.metaclaw/config.yaml`, erstellt durch `metaclaw setup`.
 
 ```yaml
-mode: auto                 # "auto" | "rl" | "skills_only"
+mode: madmax               # "madmax" | "rl" | "skills_only"
 
 llm:
   provider: kimi            # kimi | qwen | openai | minimax | custom
@@ -203,8 +203,8 @@ opd:
 
 max_context_tokens: 20000   # Token-Obergrenze vor Kürzung
 
-scheduler:                  # v0.3: Meta-Learning-Scheduler (auto-aktiviert im auto-Modus)
-  enabled: false            # auto-Modus aktiviert automatisch; für rl-Modus manuell setzen
+scheduler:                  # v0.3: Meta-Learning-Scheduler (auto-aktiviert im madmax-Modus)
+  enabled: false            # madmax-Modus aktiviert automatisch; für rl-Modus manuell setzen
   sleep_start: "23:00"
   sleep_end: "07:00"
   idle_threshold_minutes: 30
@@ -277,7 +277,7 @@ Siehe `examples/run_conversation_opd.py` für ein programmatisches Beispiel und 
 
 ## 🧠 Erweitert: Meta-Learning-Scheduler (v0.3)
 
-Im RL-Modus pausiert der Gewichts-Hot-Swap-Schritt den Agenten für mehrere Minuten. Der Scheduler (im `auto`-Modus standardmäßig aktiviert) verschiebt RL-Updates in Benutzer-Inaktivitätsfenster, damit der Agent während der aktiven Nutzung nie unterbrochen wird.
+Im RL-Modus pausiert der Gewichts-Hot-Swap-Schritt den Agenten für mehrere Minuten. Der Scheduler (im madmax-Modus standardmäßig aktiviert) verschiebt RL-Updates in Benutzer-Inaktivitätsfenster, damit der Agent während der aktiven Nutzung nie unterbrochen wird.
 
 ```bash
 metaclaw config scheduler.sleep_start "23:00"

@@ -92,10 +92,10 @@ class MetaClawConfig:
     # ------------------------------------------------------------------ #
     # Operating mode                                                      #
     # ------------------------------------------------------------------ #
-    # "auto"        — v0.3: RL + scheduler (trains during idle/sleep windows)
+    # "madmax"        — v0.3: RL + scheduler (trains during idle/sleep windows)
     # "rl"          — v0.2: RL without scheduler (trains immediately on full batch)
     # "skills_only" — proxy + skill injection only (no Tinker, no RL)
-    mode: str = "auto"
+    mode: str = "madmax"
 
     # ------------------------------------------------------------------ #
     # Scheduler (meta-learning: gate slow RL updates to idle windows)     #

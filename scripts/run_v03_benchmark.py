@@ -42,7 +42,7 @@ async def run_training():
 
     config = MetaClawConfig(
         # Mode
-        mode="auto",
+        mode="madmax",
 
         # Model
         model_name="Qwen/Qwen3-8B",
@@ -289,7 +289,7 @@ async def run_evaluation(config):
 async def main():
     logger.info("=" * 60)
     logger.info("  MetaClaw v0.3 Benchmark")
-    logger.info("  batch_size=2  max_steps=5  mode=auto")
+    logger.info("  batch_size=2  max_steps=5  mode=madmax")
     logger.info("  PRM: Bedrock Sonnet 4.6  Evolver: Bedrock Sonnet 4.6")
     logger.info("=" * 60)
 

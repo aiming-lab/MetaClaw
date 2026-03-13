@@ -92,10 +92,10 @@ class SetupWizard:
         existing = cs.load() if cs.exists() else {}
 
         # ---- Operating mode ----
-        current_mode = existing.get("mode", "auto")
+        current_mode = existing.get("mode", "madmax")
         mode = _prompt_choice(
             "Operating mode",
-            ["auto", "skills_only", "rl"],
+            ["madmax", "skills_only", "rl"],
             default=current_mode,
         )
 
@@ -146,7 +146,7 @@ class SetupWizard:
 
         # ---- RL config (only if mode uses RL) ----
         rl_config: dict = existing.get("rl", {})
-        rl_enabled = mode in ("rl", "auto")
+        rl_enabled = mode in ("rl", "madmax")
 
         if rl_enabled:
             print("\n--- RL Training Configuration ---")

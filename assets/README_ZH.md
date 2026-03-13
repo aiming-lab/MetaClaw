@@ -34,7 +34,7 @@
 
 ```bash
 metaclaw setup              # 首次配置向导
-metaclaw start              # 默认 auto 模式：Skills + 定时 RL 训练
+metaclaw start              # 默认 madmax 模式：Skills + 定时 RL 训练
 metaclaw start --mode rl    # 无调度器 RL（batch 满即训练）
 metaclaw start --mode skills_only  # 仅 Skills，无 RL（无需 Tinker）
 ```
@@ -77,7 +77,7 @@ https://github.com/user-attachments/assets/d86a41a8-4181-4e3a-af0e-dc453a6b8594
 
 | 模式 | 默认 | 功能说明 |
 |------|------|----------|
-| `auto` | ✅ | RL + 智能调度器。Skill 持续注入；RL 权重更新只在睡眠/空闲/会议窗口进行。 |
+| `madmax` | ✅ | RL + 智能调度器。Skill 持续注入；RL 权重更新只在睡眠/空闲/会议窗口进行。 |
 | `rl` | — | 无调度器 RL。batch 满后立即训练（v0.2 行为）。 |
 | `skills_only` | — | 代理 → 你的 LLM API。注入 Skill，会话结束后自动总结。无需 GPU / Tinker。 |
 
@@ -136,7 +136,7 @@ metaclaw start
 
 ```
 metaclaw setup                  # 首次交互式配置向导
-metaclaw start                  # 启动 MetaClaw（默认 auto 模式）
+metaclaw start                  # 启动 MetaClaw（默认 madmax 模式）
 metaclaw start --mode rl        # 本次会话强制启用 RL 模式（无调度器）
 metaclaw start --mode skills_only  # 本次会话强制仅 Skills 模式
 metaclaw stop                   # 停止正在运行的 MetaClaw 实例
@@ -161,7 +161,7 @@ metaclaw config proxy.port 31000          # 修改代理端口
 配置文件位于 `~/.metaclaw/config.yaml`，由 `metaclaw setup` 自动生成。
 
 ```yaml
-mode: auto                 # "auto" | "rl" | "skills_only"
+mode: madmax               # "madmax" | "rl" | "skills_only"
 
 llm:
   provider: kimi            # kimi | qwen | openai | minimax | custom
@@ -203,8 +203,8 @@ opd:
 
 max_context_tokens: 20000   # 截断前的 prompt token 上限
 
-scheduler:                  # v0.3：元学习调度器（auto 模式下自动启用）
-  enabled: false            # auto 模式自动启用；rl 模式需手动设置
+scheduler:                  # v0.3：元学习调度器（madmax 模式下自动启用）
+  enabled: false            # madmax 模式自动启用；rl 模式需手动设置
   sleep_start: "23:00"
   sleep_end: "07:00"
   idle_threshold_minutes: 30
@@ -277,7 +277,7 @@ metaclaw start --mode rl
 
 ## 🧠 进阶：元学习调度器 (v0.3)
 
-RL 模式下，权重热更新会暂停 Agent 数分钟。调度器（`auto` 模式默认启用）将 RL 更新推迟到用户不活跃的窗口，确保活跃使用期间不受干扰。
+RL 模式下，权重热更新会暂停 Agent 数分钟。调度器（madmax 模式默认启用）将 RL 更新推迟到用户不活跃的窗口，确保活跃使用期间不受干扰。
 
 ```bash
 metaclaw config scheduler.sleep_start "23:00"

@@ -32,7 +32,7 @@
 
 ```bash
 metaclaw setup              # one-time config wizard
-metaclaw start              # default: auto mode — skills + scheduled RL training
+metaclaw start              # default: madmax mode — skills + scheduled RL training
 metaclaw start --mode rl    # RL without scheduler (trains immediately on full batch)
 metaclaw start --mode skills_only  # skills only, no RL (no Tinker needed)
 ```
@@ -75,7 +75,7 @@ Configure once with `metaclaw setup`, then `metaclaw start` brings up the proxy,
 
 | Mode | Default | What it does |
 |------|---------|--------------|
-| `auto` | ✅ | RL + smart scheduler. Skills always on; RL weight updates only run during sleep/idle/meeting windows. |
+| `madmax` | ✅ | RL + smart scheduler. Skills always on; RL weight updates only run during sleep/idle/meeting windows. |
 | `rl` | — | RL without scheduler. Trains immediately when a batch is full (original v0.2 behavior). |
 | `skills_only` | — | Proxy → your LLM API. Skills injected, auto-summarized after each session. No GPU/Tinker required. |
 
@@ -134,7 +134,7 @@ That's it. MetaClaw starts the proxy, automatically configures OpenClaw to use i
 
 ```
 metaclaw setup                  # Interactive first-time configuration wizard
-metaclaw start                  # Start MetaClaw (default: auto mode)
+metaclaw start                  # Start MetaClaw (default: madmax mode)
 metaclaw start --mode rl        # Force RL mode (no scheduler) for this session
 metaclaw start --mode skills_only  # Force skills-only mode for this session
 metaclaw stop                   # Stop a running MetaClaw instance
@@ -159,7 +159,7 @@ metaclaw config proxy.port 31000          # Change proxy port
 Configuration lives in `~/.metaclaw/config.yaml`, created by `metaclaw setup`.
 
 ```yaml
-mode: auto                 # "auto" | "rl" | "skills_only"
+mode: madmax               # "madmax" | "rl" | "skills_only"
 
 llm:
   provider: kimi            # kimi | qwen | openai | minimax | custom
@@ -201,8 +201,8 @@ opd:
 
 max_context_tokens: 20000   # prompt token cap before truncation
 
-scheduler:                  # v0.3: meta-learning scheduler (auto-enabled in auto mode)
-  enabled: false            # auto mode enables this automatically; set manually for rl mode
+scheduler:                  # v0.3: meta-learning scheduler (auto-enabled in madmax mode)
+  enabled: false            # madmax mode enables this automatically; set manually for rl mode
   sleep_start: "23:00"      # HH:MM local time — start of sleep window
   sleep_end: "07:00"        # HH:MM local time — end of sleep window
   idle_threshold_minutes: 30  # trigger RL after N minutes of keyboard inactivity
@@ -275,7 +275,7 @@ See `examples/run_conversation_opd.py` for a programmatic example and `scripts/r
 
 ## 🧠 Advanced: Meta-Learning Scheduler (v0.3)
 
-In RL mode, the weight hot-swap step pauses the agent for several minutes. The scheduler (enabled by default in `auto` mode) defers RL updates to user-inactive windows so the agent is never interrupted during active use.
+In RL mode, the weight hot-swap step pauses the agent for several minutes. The scheduler (enabled by default in `madmax` mode) defers RL updates to user-inactive windows so the agent is never interrupted during active use.
 
 ```bash
 metaclaw config scheduler.sleep_start "23:00"

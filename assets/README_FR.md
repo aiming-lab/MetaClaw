@@ -34,7 +34,7 @@
 
 ```bash
 metaclaw setup              # assistant de configuration unique
-metaclaw start              # par défaut : mode auto — skills + entraînement RL planifié
+metaclaw start              # par défaut : mode madmax — skills + entraînement RL planifié
 metaclaw start --mode rl    # RL sans planificateur (entraîne dès qu'un batch est plein)
 metaclaw start --mode skills_only  # skills uniquement, pas de RL (Tinker non requis)
 ```
@@ -77,7 +77,7 @@ Configurez une fois avec `metaclaw setup`, puis `metaclaw start` lance le proxy,
 
 | Mode | Par défaut | Fonctionnement |
 |------|-----------|----------------|
-| `auto` | ✅ | RL + planificateur intelligent. Skills toujours actifs ; mises à jour RL uniquement pendant les fenêtres de sommeil/inactivité/réunion. |
+| `madmax` | ✅ | RL + planificateur intelligent. Skills toujours actifs ; mises à jour RL uniquement pendant les fenêtres de sommeil/inactivité/réunion. |
 | `rl` | — | RL sans planificateur. Entraîne immédiatement quand un batch est plein (comportement v0.2). |
 | `skills_only` | — | Proxy → votre API LLM. Skills injectés, résumés automatiquement après chaque session. Pas de GPU/Tinker requis. |
 
@@ -136,7 +136,7 @@ C'est tout. MetaClaw démarre le proxy, configure automatiquement OpenClaw et re
 
 ```
 metaclaw setup                  # Assistant de configuration interactif initial
-metaclaw start                  # Démarrer MetaClaw (par défaut : mode auto)
+metaclaw start                  # Démarrer MetaClaw (par défaut : mode madmax)
 metaclaw start --mode rl        # Forcer le mode RL pour cette session (sans planificateur)
 metaclaw start --mode skills_only  # Forcer le mode skills uniquement pour cette session
 metaclaw stop                   # Arrêter une instance MetaClaw en cours
@@ -161,7 +161,7 @@ metaclaw config proxy.port 31000          # Changer le port du proxy
 La configuration se trouve dans `~/.metaclaw/config.yaml`, créée par `metaclaw setup`.
 
 ```yaml
-mode: auto                 # "auto" | "rl" | "skills_only"
+mode: madmax               # "madmax" | "rl" | "skills_only"
 
 llm:
   provider: kimi            # kimi | qwen | openai | minimax | custom
@@ -203,8 +203,8 @@ opd:
 
 max_context_tokens: 20000   # limite de tokens de prompt avant troncature
 
-scheduler:                  # v0.3 : planificateur de méta-apprentissage (auto-activé en mode auto)
-  enabled: false            # le mode auto l'active automatiquement ; à définir manuellement pour rl
+scheduler:                  # v0.3 : planificateur de méta-apprentissage (auto-activé en mode madmax)
+  enabled: false            # le mode madmax l'active automatiquement ; à définir manuellement pour rl
   sleep_start: "23:00"
   sleep_end: "07:00"
   idle_threshold_minutes: 30
@@ -277,7 +277,7 @@ Consultez `examples/run_conversation_opd.py` pour un exemple programmatique et `
 
 ## 🧠 Avancé : Planificateur de méta-apprentissage (v0.3)
 
-En mode RL, l'étape de hot-swap des poids met l'agent en pause pendant plusieurs minutes. Le planificateur (activé par défaut en mode `auto`) reporte les mises à jour RL aux fenêtres d'inactivité de l'utilisateur pour éviter toute interruption.
+En mode RL, l'étape de hot-swap des poids met l'agent en pause pendant plusieurs minutes. Le planificateur (activé par défaut en mode madmax) reporte les mises à jour RL aux fenêtres d'inactivité de l'utilisateur pour éviter toute interruption.
 
 ```bash
 metaclaw config scheduler.sleep_start "23:00"

@@ -1319,7 +1319,7 @@ class MetaClawAPIServer:
 
     def _print_ready_banner(self):
         time.sleep(3)
-        backend = "Tinker cloud RL" if self.config.mode in ("rl", "auto") else f"LLM ({self.config.llm_model_id or 'upstream'})"
+        backend = "Tinker cloud RL" if self.config.mode in ("rl", "madmax") else f"LLM ({self.config.llm_model_id or 'upstream'})"
         banner = (
             f"\n{'=' * 70}\n"
             f"  MetaClaw proxy ready  [mode={self.config.mode}]\n"

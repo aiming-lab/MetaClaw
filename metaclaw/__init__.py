@@ -11,21 +11,12 @@ Quick start:
     metaclaw start    # one-click launch
 """
 
+from __future__ import annotations
+
+import importlib
+
 from .config import MetaClawConfig
 from .config_store import ConfigStore
-from .api_server import MetaClawAPIServer
-from .rollout import AsyncRolloutWorker
-from .prm_scorer import PRMScorer
-from .skill_manager import SkillManager
-from .skill_evolver import SkillEvolver
-from .launcher import MetaClawLauncher
-
-# RL-only imports (guarded to avoid hard dep on torch/backend SDKs in skills_only mode)
-try:
-    from .data_formatter import ConversationSample, batch_to_datums, compute_advantages
-    from .trainer import MetaClawTrainer
-except ImportError:
-    pass
 
 __all__ = [
     "MetaClawConfig",
@@ -36,4 +27,32 @@ __all__ = [
     "SkillManager",
     "SkillEvolver",
     "MetaClawLauncher",
+    "ConversationSample",
+    "batch_to_datums",
+    "compute_advantages",
+    "MetaClawTrainer",
 ]
+
+
+_LAZY_IMPORTS = {
+    "MetaClawAPIServer": (".api_server", "MetaClawAPIServer"),
+    "AsyncRolloutWorker": (".rollout", "AsyncRolloutWorker"),
+    "PRMScorer": (".prm_scorer", "PRMScorer"),
+    "SkillManager": (".skill_manager", "SkillManager"),
+    "SkillEvolver": (".skill_evolver", "SkillEvolver"),
+    "MetaClawLauncher": (".launcher", "MetaClawLauncher"),
+    "ConversationSample": (".data_formatter", "ConversationSample"),
+    "batch_to_datums": (".data_formatter", "batch_to_datums"),
+    "compute_advantages": (".data_formatter", "compute_advantages"),
+    "MetaClawTrainer": (".trainer", "MetaClawTrainer"),
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_IMPORTS:
+        module_name, attr_name = _LAZY_IMPORTS[name]
+        module = importlib.import_module(module_name, __name__)
+        value = getattr(module, attr_name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

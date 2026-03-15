@@ -1,9 +1,10 @@
 """
 Runtime backend selection for RL SDK clients.
 
-MetaClaw can talk to either:
-  - ``tinker`` directly
-  - ``mint`` via the MindLab compatibility package
+MetaClaw can talk to:
+- ``tinker`` directly
+- ``mint`` via the MindLab compatibility package
+- ``mlx`` for local Apple Silicon training (no cloud required)
 """
 
 from __future__ import annotations
@@ -18,8 +19,8 @@ from urllib.parse import urlparse
 if TYPE_CHECKING:
     from .config import MetaClawConfig
 
-_VALID_BACKENDS = {"auto", "tinker", "mint"}
-_BACKEND_LABELS = {"tinker": "Tinker", "mint": "MinT"}
+_VALID_BACKENDS = {"auto", "tinker", "mint", "mlx"}
+_BACKEND_LABELS = {"tinker": "Tinker", "mint": "MinT", "mlx": "MLX (local)"}
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,8 @@ class SDKBackend:
 
     @property
     def banner(self) -> str:
+        if self.key == "mlx":
+            return f"{self.label} local RL"
         return f"{self.label} cloud RL"
 
 
@@ -120,14 +123,31 @@ def _has_mint_signal(config: "MetaClawConfig") -> bool:
 
 def infer_backend_key(config: "MetaClawConfig") -> str:
     configured = configured_backend_name(config)
-    if configured in {"tinker", "mint"}:
+    if configured in {"tinker", "mint", "mlx"}:
         return configured
+
+    # auto mode: check for MinT signals first
     if _has_mint_signal(config) and _module_available("mint"):
         return "mint"
+
+    # Then check for cloud credentials (Tinker or MinT env vars)
+    api_key = configured_api_key(config)
+    base_url = configured_base_url(config)
+    cloud_env = _first_env("TINKER_API_KEY", "MINT_API_KEY")
+
+    if api_key or base_url or cloud_env:
+        return "tinker"
+
+    # No cloud credentials at all — fall back to MLX if available
+    if _module_available("mlx") and _module_available("mlx_lm"):
+        return "mlx"
+
     return "tinker"
 
 
 def resolve_api_key(config: "MetaClawConfig", backend_key: str | None = None) -> str:
+    if backend_key == "mlx":
+        return ""
     configured = configured_api_key(config)
     if configured:
         return configured
@@ -136,6 +156,8 @@ def resolve_api_key(config: "MetaClawConfig", backend_key: str | None = None) ->
 
 
 def resolve_base_url(config: "MetaClawConfig", backend_key: str | None = None) -> str:
+    if backend_key == "mlx":
+        return ""
     configured = configured_base_url(config)
     if configured:
         return configured
@@ -144,6 +166,14 @@ def resolve_base_url(config: "MetaClawConfig", backend_key: str | None = None) -
 
 
 def _import_backend_module(backend_key: str, configured_backend: str):
+    if backend_key == "mlx":
+        if not _module_available("mlx") or not _module_available("mlx_lm"):
+            raise RuntimeError(
+                "rl.backend='mlx' requires mlx and mlx-lm. "
+                "Install with: pip install mlx mlx-lm"
+            )
+        return importlib.import_module("metaclaw.mlx_backend")
+
     if backend_key == "mint" and configured_backend == "mint" and not _module_available("mint"):
         raise RuntimeError(
             "rl.backend=mint requires the MinT compatibility package. "

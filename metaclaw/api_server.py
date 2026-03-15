@@ -722,10 +722,21 @@ class MetaClawAPIServer:
                     raw_system = _flatten_message_content(m.get("content"))
                     break
             if raw_system:
-                cached_system = await asyncio.to_thread(
-                    run_llm,
-                    [{"role": "user", "content": raw_system}],
-                )
+                # System prompt compression requires an external LLM API.
+                # When running with a local-only backend (e.g. MLX) and no
+                # llm_api_key configured, skip compression and use raw prompt.
+                if self.config.llm_api_key:
+                    try:
+                        cached_system = await asyncio.to_thread(
+                            run_llm,
+                            [{"role": "user", "content": raw_system}],
+                        )
+                    except Exception as exc:
+                        logger.warning(
+                            "[OpenClaw] system prompt compression failed, "
+                            "using raw prompt: %s", exc,
+                        )
+                        cached_system = None
                 cached_system = (cached_system or raw_system).strip()
                 self._write_cached_system_prompt(cached_system)
 
@@ -953,13 +964,17 @@ class MetaClawAPIServer:
             sampling_params = self._sdk.SamplingParams(**sp_kwargs)
 
             # Call active backend
-            response = await self._sampling_client.sample_async(
+            # include_prompt_logprobs / topk_prompt_logprobs are Tinker-specific;
+            # MLX (and potentially other local backends) don't support them.
+            sample_kwargs: dict[str, Any] = dict(
                 prompt=model_input,
                 num_samples=1,
                 sampling_params=sampling_params,
-                include_prompt_logprobs=False,
-                topk_prompt_logprobs=0,
             )
+            if backend_key != "mlx":
+                sample_kwargs["include_prompt_logprobs"] = False
+                sample_kwargs["topk_prompt_logprobs"] = 0
+            response = await self._sampling_client.sample_async(**sample_kwargs)
 
             # Decode response tokens → text
             seq = response.sequences[0]

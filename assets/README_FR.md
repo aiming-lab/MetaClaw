@@ -8,6 +8,46 @@
 
 <p>Inspire par l'apprentissage du cerveau. Meta-apprenez et faites evoluer votre 🦞 a partir de chaque conversation. Sans GPU. Compatible Kimi, Qwen, Claude, MiniMax, et plus.</p>
 
+🦞 Supported CLI Agents
+
+<table>
+<tr>
+<td align="center" width="100">
+  <a href="https://openclaw.ai">
+    <img src="https://github.com/OpenClaw.png?size=200" width="48" height="48" alt="OpenClaw" />
+  </a><br/>
+  <sub><a href="https://openclaw.ai"><b>OpenClaw</b></a></sub>
+</td>
+<td align="center" width="100">
+  <a href="https://github.com/agentscope-ai/CoPaw">
+    <img src="https://github.com/agentscope-ai.png?size=200" width="48" height="48" alt="CoPaw" />
+  </a><br/>
+  <sub><a href="https://github.com/agentscope-ai/CoPaw"><b>CoPaw</b></a></sub>
+</td>
+<td align="center" width="100">
+  <a href="https://github.com/nearai/ironclaw">
+    <img src="https://github.com/nearai.png?size=200" width="48" height="48" alt="IronClaw" />
+  </a><br/>
+  <sub><a href="https://github.com/nearai/ironclaw"><b>IronClaw</b></a></sub>
+</td>
+<td align="center" width="100">
+  <a href="https://github.com/sipeed/picoclaw">
+    <img src="https://github.com/sipeed.png?size=200" width="48" height="48" alt="PicoClaw" />
+  </a><br/>
+  <sub><a href="https://github.com/sipeed/picoclaw"><b>PicoClaw</b></a></sub>
+</td>
+<td align="center" width="100">
+  <a href="https://github.com/zeroclaw-labs/zeroclaw">
+    <img src="https://github.com/zeroclaw-labs.png?size=200" width="48" height="48" alt="ZeroClaw" />
+  </a><br/>
+  <sub><a href="https://github.com/zeroclaw-labs/zeroclaw"><b>ZeroClaw</b></a></sub>
+</td>
+<td align="center" width="100">
+  <sub><b>More<br/>Coming</b></sub>
+</td>
+</tr>
+</table>
+
 ⚡ Supported LLM Providers & Platforms
 
 <table>
@@ -47,6 +87,12 @@
     <img src="https://cdn.simpleicons.org/googlegemini/8E75B2" width="48" height="48" alt="Gemini" />
   </a><br/>
   <sub><a href="https://gemini.google.com"><b>Gemini</b></a></sub>
+</td>
+<td align="center" width="100">
+  <a href="https://openrouter.ai">
+    <img src="https://openrouter.ai/favicon.ico" width="48" height="48" alt="OpenRouter" />
+  </a><br/>
+  <sub><a href="https://openrouter.ai"><b>OpenRouter</b></a></sub>
 </td>
 <td align="center" width="100">
   <sub><b>+ Much<br/>More</b></sub>

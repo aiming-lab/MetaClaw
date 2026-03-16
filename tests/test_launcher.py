@@ -47,16 +47,16 @@ def test_seed_rl_backend_env_preserves_existing_values(monkeypatch):
 
 
 def test_configure_openclaw_uses_proxy_api_key_not_rl_api_key(monkeypatch):
-    launcher = MetaClawLauncher(ConfigStore())
     calls = []
 
     def fake_run(cmd, **kwargs):
         calls.append(cmd)
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr("metaclaw.launcher.subprocess.run", fake_run)
+    monkeypatch.setattr("metaclaw.claw_adapter.subprocess.run", fake_run)
 
-    launcher._configure_openclaw(
+    from metaclaw.claw_adapter import _configure_openclaw
+    _configure_openclaw(
         MetaClawConfig(
             api_key="rl-backend-key",
             proxy_api_key="proxy-key",

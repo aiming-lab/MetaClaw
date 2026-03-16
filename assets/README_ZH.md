@@ -8,7 +8,7 @@
 
 <p>受大脑学习方式启发。让你的 🦞 在真实对话中持续元学习与进化。无需 GPU。支持 Kimi、Qwen、Claude、MiniMax 等。</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>

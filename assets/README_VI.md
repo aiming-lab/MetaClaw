@@ -8,7 +8,7 @@
 
 <p>Lay cam hung tu cach bo nao hoc tap. Meta-learning va tien hoa 🦞 cua ban tu moi cuoc hoi thoai thuc te. Khong can GPU. Ho tro Kimi, Qwen, Claude, MiniMax va nhieu hon nua.</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>

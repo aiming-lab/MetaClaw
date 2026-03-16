@@ -8,7 +8,7 @@
 
 <p>Вдохновлено тем, как учится мозг. Мета-обучение и эволюция вашего 🦞 в каждом реальном диалоге. GPU не требуется. Поддерживает Kimi, Qwen, Claude, MiniMax и другие.</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>

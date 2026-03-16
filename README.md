@@ -8,7 +8,7 @@
 
 <p>Inspired by how the brain learns. Meta-learn and evolve your 🦞 from every conversation in the wild. No GPU required. Works with Kimi, Qwen, Claude, MiniMax, and more.</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>
@@ -180,14 +180,14 @@ https://github.com/user-attachments/assets/d86a41a8-4181-4e3a-af0e-dc453a6b8594
 **MetaClaw is an agent that meta-learns and evolves in the wild.**
 Just talk to your agent as you normally would — MetaClaw turns every live conversation into a learning signal, enabling the agent to continuously improve through real-world deployment rather than offline training alone.
 
-Under the hood, it places your model behind an OpenAI-compatible proxy that intercepts interactions from your CLI agent (OpenClaw, CoPaw, IronClaw, or any OpenAI-compatible client), injects relevant skills at each turn, and meta-learns from accumulated experience. Skills are summarized automatically after each session; with RL enabled, a meta-learning scheduler defers weight updates to idle windows so the agent is never interrupted during active use.
+Under the hood, it places your model behind an OpenAI-compatible proxy that intercepts interactions from your personal agent (OpenClaw, CoPaw, IronClaw, or any OpenAI-compatible client), injects relevant skills at each turn, and meta-learns from accumulated experience. Skills are summarized automatically after each session; with RL enabled, a meta-learning scheduler defers weight updates to idle windows so the agent is never interrupted during active use.
 
 No GPU cluster required. MetaClaw works with any OpenAI-compatible LLM API out of the box, and uses a Tinker-compatible backend for cloud-based LoRA training. [Tinker](https://www.thinkingmachines.ai/tinker/) is the default reference path, and MinT can be enabled through a separate compatibility package when needed.
 
 ## 🤖 Key Features
 
 ### **One-click deployment**
-Configure once with `metaclaw setup`, then `metaclaw start` brings up the proxy, injects skills, and wires your chosen CLI agent (OpenClaw, CoPaw, or IronClaw) automatically. No manual shell scripts needed.
+Configure once with `metaclaw setup`, then `metaclaw start` brings up the proxy, injects skills, and wires your chosen personal agent (OpenClaw, CoPaw, or IronClaw) automatically. No manual shell scripts needed.
 
 ### **Three operating modes**
 
@@ -223,7 +223,7 @@ metaclaw setup
 ```
 
 The interactive wizard will ask you to:
-1. **Choose your CLI agent** — `openclaw`, `copaw`, `ironclaw`, or `none` (MetaClaw will auto-configure it on start)
+1. **Choose your personal agent** — `openclaw`, `copaw`, `ironclaw`, or `none` (MetaClaw will auto-configure it on start)
 2. **Choose your LLM provider** — Kimi, Qwen, MiniMax, or custom
 3. **Enter your API key** and optionally enable RL training
 
@@ -254,13 +254,13 @@ Legacy aliases `rl.tinker_api_key` and `rl.tinker_base_url` are still accepted f
 metaclaw start
 ```
 
-That's it. MetaClaw starts the proxy, automatically configures your chosen CLI agent to use it, and restarts the gateway. Open your agent and start chatting — skills are injected at every turn, and the session is automatically summarized into new skills when you're done.
+That's it. MetaClaw starts the proxy, automatically configures your chosen personal agent to use it, and restarts the gateway. Open your agent and start chatting — skills are injected at every turn, and the session is automatically summarized into new skills when you're done.
 
 ---
 
 ## 🦞 Multi-Claw Support
 
-MetaClaw works as a transparent proxy in front of any CLI agent that supports an OpenAI-compatible LLM backend. The `claw_type` setting tells MetaClaw which agent to auto-configure when it starts.
+MetaClaw works as a transparent proxy in front of any personal agent that supports an OpenAI-compatible LLM backend. The `claw_type` setting tells MetaClaw which agent to auto-configure when it starts.
 
 | `claw_type` | Agent | What MetaClaw does on `start` |
 |---|---|---|
@@ -276,7 +276,7 @@ MetaClaw works as a transparent proxy in front of any CLI agent that supports an
 Pick your agent during `metaclaw setup` (the first question in the wizard):
 
 ```
-CLI agent to configure (openclaw/copaw/ironclaw/picoclaw/zeroclaw/none) [openclaw]:
+Personal agent to configure (openclaw/copaw/ironclaw/picoclaw/zeroclaw/none) [openclaw]:
 ```
 
 Or set it directly at any time:
@@ -505,9 +505,9 @@ Each `ConversationSample` is tagged with a `skill_generation` version. When skil
 
 MetaClaw builds on top of the following open-source projects:
 
-- [OpenClaw](https://openclaw.ai) – the primary supported CLI agent.
-- [CoPaw](https://github.com/agentscope-ai/CoPaw) – multi-channel CLI agent support.
-- [IronClaw](https://github.com/nearai/ironclaw) – Rust-native CLI agent support.
+- [OpenClaw](https://openclaw.ai) – the primary supported personal agent.
+- [CoPaw](https://github.com/agentscope-ai/CoPaw) – multi-channel personal agent support.
+- [IronClaw](https://github.com/nearai/ironclaw) – Rust-native personal agent support.
 - [SkillRL](https://github.com/aiming-lab/SkillRL) – our skill-augmented RL framework.
 - [Tinker](https://www.thinkingmachines.ai/tinker/) – used for online RL training.
 - [MinT](https://github.com/MindLab-Research/mindlab-toolkit) – alternative backend for online RL training.

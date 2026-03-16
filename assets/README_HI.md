@@ -8,7 +8,7 @@
 
 <p>मस्तिष्क की सीखने की प्रक्रिया से प्रेरित। अपने 🦞 को वास्तविक बातचीत में मेटा-लर्निंग और विकास करने दें। GPU की आवश्यकता नहीं। Kimi, Qwen, Claude, MiniMax आदि के साथ काम करता है।</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>

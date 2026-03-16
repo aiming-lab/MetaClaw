@@ -8,7 +8,7 @@
 
 <p>مستوحى من طريقة تعلّم الدماغ. اجعل 🦞 الخاص بك يتعلّم ويتطوّر من كل محادثة حقيقية. لا حاجة لوحدات GPU. يدعم Kimi وQwen وClaude وMiniMax والمزيد.</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>

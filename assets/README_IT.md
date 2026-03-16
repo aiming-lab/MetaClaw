@@ -8,7 +8,7 @@
 
 <p>Ispirato al modo in cui il cervello apprende. Meta-apprendi e fai evolvere il tuo 🦞 da ogni conversazione reale. Nessuna GPU necessaria. Funziona con Kimi, Qwen, Claude, MiniMax e altri.</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>

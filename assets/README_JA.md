@@ -8,7 +8,7 @@
 
 <p>脳の学習メカニズムに着想を得て。あなたの 🦞 を日常の会話からメタ学習・進化させます。GPU不要。Kimi、Qwen、Claude、MiniMax など対応。</p>
 
-🦞 Supported CLI Agents
+🦞 Supported Personal Agents
 
 <table>
 <tr>

@@ -146,8 +146,6 @@ def infer_backend_key(config: "MetaClawConfig") -> str:
 
 
 def resolve_api_key(config: "MetaClawConfig", backend_key: str | None = None) -> str:
-    if backend_key == "mlx":
-        return ""
     configured = configured_api_key(config)
     if configured:
         return configured
@@ -156,8 +154,6 @@ def resolve_api_key(config: "MetaClawConfig", backend_key: str | None = None) ->
 
 
 def resolve_base_url(config: "MetaClawConfig", backend_key: str | None = None) -> str:
-    if backend_key == "mlx":
-        return ""
     configured = configured_base_url(config)
     if configured:
         return configured

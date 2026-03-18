@@ -11,11 +11,9 @@ Also configures OpenClaw to point at the proxy.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 import signal
-import subprocess
 import threading
 import time
 from pathlib import Path
@@ -138,9 +136,9 @@ class MetaClawLauncher:
 
         logger.info("[Launcher] proxy ready at http://%s:%d", cfg.proxy_host, cfg.proxy_port)
 
-        # Configure openclaw to point at the proxy (skip for standalone deployments)
-        if cfg.configure_openclaw:
-            self._configure_openclaw(cfg)
+        # Configure the chosen CLI agent to point at the MetaClaw proxy
+        from .claw_adapter import configure_claw
+        configure_claw(cfg)
 
         # Keep running until stopped
         while not self._stop_event.is_set():
@@ -213,10 +211,10 @@ class MetaClawLauncher:
             last_request_tracker=request_tracker if cfg.scheduler_enabled else None,
         )
 
-        # Configure openclaw once the proxy is about to be ready
-        if cfg.configure_openclaw:
-            await asyncio.sleep(3)
-            self._configure_openclaw(cfg)
+        # Configure the chosen CLI agent once the proxy is about to be ready
+        await asyncio.sleep(3)
+        from .claw_adapter import configure_claw
+        configure_claw(cfg)
 
         tasks = [asyncio.create_task(trainer.run())]
         if scheduler is not None:
@@ -254,62 +252,6 @@ class MetaClawLauncher:
         if base_url:
             os.environ.setdefault("TINKER_BASE_URL", base_url)
             os.environ.setdefault("MINT_BASE_URL", base_url)
-
-    # ------------------------------------------------------------------ #
-    # OpenClaw wiring                                                      #
-    # ------------------------------------------------------------------ #
-
-    def _configure_openclaw(self, cfg):
-        """Auto-configure OpenClaw to use the MetaClaw proxy."""
-        model_id = cfg.llm_model_id or cfg.served_model_name or "metaclaw-model"
-        provider_json = json.dumps({
-            "api": "openai-completions",
-            "baseUrl": f"http://127.0.0.1:{cfg.proxy_port}/v1",
-            "apiKey": cfg.proxy_api_key or "metaclaw",
-            "models": [{
-                "id": model_id,
-                "name": model_id,
-                "reasoning": False,
-                "input": ["text"],
-                "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
-                "contextWindow": 32768,
-                "maxTokens": 8192,
-            }],
-        })
-
-        commands = [
-            ["openclaw", "config", "set", "models.providers.metaclaw",
-             "--json", provider_json],
-            ["openclaw", "config", "set", "agents.defaults.model.primary",
-             f"metaclaw/{model_id}"],
-            ["openclaw", "config", "set", "agents.defaults.sandbox.mode", "off"],
-            ["openclaw", "gateway", "restart"],
-        ]
-
-        for cmd in commands:
-            try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=15,
-                )
-                if result.returncode != 0:
-                    logger.warning(
-                        "[Launcher] openclaw command failed: %s\n  stderr: %s",
-                        " ".join(cmd),
-                        result.stderr.strip(),
-                    )
-                else:
-                    logger.info("[Launcher] %s → ok", " ".join(cmd[:4]))
-            except FileNotFoundError:
-                logger.warning(
-                    "[Launcher] 'openclaw' not found in PATH — skipping auto-config. "
-                    "Run openclaw_model_*.sh manually."
-                )
-                break
-            except Exception as e:
-                logger.warning("[Launcher] openclaw config command error: %s", e)
 
     # ------------------------------------------------------------------ #
     # PID / signals                                                        #

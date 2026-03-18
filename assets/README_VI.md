@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="new_logo.png" alt="MetaClaw" width="600">
+<img src="new_logo2.png" alt="MetaClaw" width="600">
 
 <br/>
 
@@ -8,73 +8,7 @@
 
 <p>Lay cam hung tu cach bo nao hoc tap. Meta-learning va tien hoa 🦞 cua ban tu moi cuoc hoi thoai thuc te. Khong can GPU. Ho tro Kimi, Qwen, Claude, MiniMax va nhieu hon nua.</p>
 
-⚡ Supported LLM Providers & Platforms
-
-<table>
-<tr>
-<td align="center" width="100">
-  <a href="https://kimi.ai">
-    <img src="https://github.com/MoonshotAI.png?size=200" width="48" height="48" alt="Kimi" />
-  </a><br/>
-  <sub><a href="https://kimi.ai"><b>Kimi</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://qwen.ai">
-    <img src="https://github.com/QwenLM.png?size=200" width="48" height="48" alt="Qwen" />
-  </a><br/>
-  <sub><a href="https://qwen.ai"><b>Qwen</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://www.anthropic.com/claude">
-    <img src="https://cdn.simpleicons.org/claude/D97757" width="48" height="48" alt="Claude" />
-  </a><br/>
-  <sub><a href="https://www.anthropic.com/claude"><b>Claude</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://www.minimax.io">
-    <img src="https://github.com/minimax-ai.png?size=200" width="48" height="48" alt="MiniMax" />
-  </a><br/>
-  <sub><a href="https://www.minimax.io"><b>MiniMax</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://openai.com">
-    <img src="https://github.com/openai.png?size=200" width="48" height="48" alt="OpenAI" />
-  </a><br/>
-  <sub><a href="https://openai.com"><b>OpenAI</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://gemini.google.com">
-    <img src="https://cdn.simpleicons.org/googlegemini/8E75B2" width="48" height="48" alt="Gemini" />
-  </a><br/>
-  <sub><a href="https://gemini.google.com"><b>Gemini</b></a></sub>
-</td>
-<td align="center" width="100">
-  <sub><b>+ Much<br/>More</b></sub>
-</td>
-</tr>
-</table>
-
-🧬 RL Training Backends for Weight Evolution
-
-<table>
-<tr>
-<td align="center" width="100">
-  <a href="https://www.thinkingmachines.ai/tinker/">
-    <img src="tinker.jpg" width="48" height="48" alt="Tinker" />
-  </a><br/>
-  <sub><a href="https://www.thinkingmachines.ai/tinker/"><b>Tinker</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://github.com/MindLab-Research/mindlab-toolkit">
-    <img src="https://github.com/MindLab-Research.png?size=200" width="48" height="48" alt="MinT" />
-  </a><br/>
-  <sub><a href="https://github.com/MindLab-Research/mindlab-toolkit"><b>MinT</b></a></sub>
-</td>
-<td align="center" width="100">
-  <sub><b>More<br/>Coming</b></sub>
-</td>
-</tr>
-</table>
+<img src="metaclaw_mainfig_v2.png" alt="MetaClaw Architecture" width="800">
 
 <p>
   <a href="https://github.com/aiming-lab/MetaClaw"><img src="https://img.shields.io/badge/github-MetaClaw-181717?style=flat&labelColor=555&logo=github&logoColor=white" alt="GitHub"></a>
@@ -105,6 +39,8 @@
 ```bash
 metaclaw setup              # trinh huong dan cau hinh lan dau
 metaclaw start              # mac dinh: che do madmax, Skills + huan luyen RL theo lich
+metaclaw start --daemon     # chay ngam, log -> ~/.metaclaw/metaclaw.log
+metaclaw start --daemon --log-file /tmp/metaclaw.log  # duong dan log tuy chinh
 metaclaw start --mode rl    # RL khong co bo lap lich (huan luyen ngay khi du batch)
 metaclaw start --mode skills_only  # chi Skills, khong RL (khong can Tinker)
 ```
@@ -117,6 +53,7 @@ metaclaw start --mode skills_only  # chi Skills, khong RL (khong can Tinker)
 
 ## 🔥 Tin moi
 
+- **[16/03/2026]** **v0.3.2** Ho tro da Claw: IronClaw, PicoClaw, ZeroClaw, CoPaw, NanoClaw va NemoClaw nay duoc ho tro cung voi OpenClaw. NanoClaw qua endpoint tuong thich Anthropic `/v1/messages` moi; NemoClaw qua dinh tuyen suy luan OpenShell. Them OpenRouter lam nen tang LLM.
 - **[13/03/2026]** **v0.3.1** MinT backend duoc ho tro: huan luyen RL hien ho tro ca Tinker va MinT. Cau hinh qua `rl.backend` (auto/tinker/mint).
 - **[13/03/2026]** **v0.3** Ho tro meta-learning lien tuc: cap nhat RL cham chi chay trong gio ngu, thoi gian ranh hoac cuoc hop Google Calendar. Them phan tach tap support/query de ngan tin hieu thuong qua thoi lam nhiem mo hinh.
 - **[11/03/2026]** **v0.2** Trien khai mot cu nhap qua `metaclaw` CLI. Skill duoc bat mac dinh, RL la tuy chon.
@@ -135,7 +72,7 @@ https://github.com/user-attachments/assets/d86a41a8-4181-4e3a-af0e-dc453a6b8594
 **MetaClaw la mot agent meta-learning va tien hoa trong moi truong thuc te.**
 Chi can noi chuyen voi agent nhu binh thuong. MetaClaw bien moi cuoc hoi thoai truc tiep thanh tin hieu hoc tap, giup agent lien tuc cai thien thong qua trien khai thuc te thay vi chi huan luyen ngoai tuyen.
 
-Ben trong, MetaClaw dat mo hinh cua ban phia sau mot proxy tuong thich OpenAI, chan cac tuong tac tu OpenClaw, tiem cac Skill phu hop o moi luot hoi thoai va meta-learning tu kinh nghiem tich luy. Skill duoc tu dong tom tat sau moi phien; khi bat RL, bo lap lich meta-learning se hoan cap nhat trong so den cac khoang thoi gian ranh de agent khong bi gian doan khi dang su dung.
+Ben trong, MetaClaw dat mo hinh cua ban phia sau mot proxy tuong thich OpenAI (cung cap endpoint tuong thich Anthropic `/v1/messages` cho cac agent nhu NanoClaw), chan cac tuong tac tu OpenClaw, NanoClaw, NemoClaw va cac Agent duoc ho tro khac, tiem cac Skill phu hop o moi luot hoi thoai va meta-learning tu kinh nghiem tich luy. Skill duoc tu dong tom tat sau moi phien; khi bat RL, bo lap lich meta-learning se hoan cap nhat trong so den cac khoang thoi gian ranh de agent khong bi gian doan khi dang su dung.
 
 Khong can cum GPU. MetaClaw hoat dong voi bat ky LLM API tuong thich OpenAI nao va su dung backend tuong thich Tinker de huan luyen LoRA tren dam may. [Tinker](https://www.thinkingmachines.ai/tinker/) la duong dan tham chieu mac dinh, con MinT co the duoc kich hoat thong qua goi tuong thich rieng khi can.
 
@@ -219,6 +156,8 @@ Tep cau hinh nam tai `~/.metaclaw/config.yaml`, duoc tao boi `metaclaw setup`.
 ```
 metaclaw setup                  # Trinh huong dan cau hinh lan dau
 metaclaw start                  # Khoi dong MetaClaw (mac dinh: che do madmax)
+metaclaw start --daemon         # Khoi dong MetaClaw chay ngam
+metaclaw start --daemon --log-file /tmp/metaclaw.log  # Duong dan log tuy chinh
 metaclaw start --mode rl        # Bat che do RL cho phien nay (khong co bo lap lich)
 metaclaw start --mode skills_only  # Bat che do chi Skills cho phien nay
 metaclaw stop                   # Dung phien ban MetaClaw dang chay
@@ -226,6 +165,8 @@ metaclaw status                 # Kiem tra tinh trang proxy, che do chay va tran
 metaclaw config show            # Xem cau hinh hien tai
 metaclaw config KEY VALUE       # Dat gia tri cau hinh
 ```
+
+Khi khoi dong MetaClaw voi `--daemon`, lenh se doi cho den khi proxy cuc bo san sang truoc khi tra ve. Su dung `metaclaw status` de kiem tra trang thai va `metaclaw stop` de dung tien trinh chay ngam.
 
 <details>
 <summary><b>Tham chieu cau hinh day du (nhan de mo rong)</b></summary>
@@ -417,6 +358,8 @@ MetaClaw duoc xay dung tren cac du an ma nguon mo sau:
 - [MinT](https://github.com/MindLab-Research/mindlab-toolkit) , backend thay the cho huan luyen RL truc tuyen.
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL) , nguon cam hung cho thiet ke RL cua chung toi.
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) , cung cap nen tang cho kho Skill cua chung toi.
+- [NanoClaw](https://github.com/qwibitai/nanoclaw) , agent Claude ca nhan cua qwibitai, ket noi qua endpoint tuong thich Anthropic `/v1/messages`.
+- [NemoClaw](https://github.com/NVIDIA/NemoClaw) , plugin agent OpenShell cua NVIDIA cho suy luan.
 
 ---
 

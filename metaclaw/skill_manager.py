@@ -29,9 +29,12 @@ Valid categories: general, coding, research, data_analysis, security,
 import glob
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
+_SAFE_NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,63}$")
 
 # ------------------------------------------------------------------ #
 # Conversation task-type keywords                                      #
@@ -376,6 +379,9 @@ class SkillManager:
         if not name:
             logger.warning("[SkillManager] add_skill called with missing name")
             return False
+        if not _SAFE_NAME_RE.match(name):
+            logger.warning("[SkillManager] rejected invalid skill name: %s", name)
+            return False
 
         existing = self._get_all_skill_names()
         if name in existing:
@@ -419,6 +425,10 @@ class SkillManager:
         """Persist a single skill to its SKILL.md file inside a subdirectory of skills_dir."""
         name = skill.get("name", "unknown")
         skill_dir = os.path.join(self._skills_dir, name)
+        canonical = os.path.realpath(skill_dir)
+        if not canonical.startswith(os.path.realpath(self._skills_dir) + os.sep):
+            logger.warning("[SkillManager] blocked path traversal in skill name: %s", name)
+            return
         os.makedirs(skill_dir, exist_ok=True)
         path = os.path.join(skill_dir, "SKILL.md")
         description = skill.get("description", "")

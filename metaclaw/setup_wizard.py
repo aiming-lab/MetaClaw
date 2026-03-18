@@ -25,7 +25,7 @@ _PROVIDER_PRESETS = {
     },
     "minimax": {
         "api_base": "https://api.minimax.io/v1",
-        "model_id": "MiniMax-M2.5",
+        "model_id": "MiniMax-M2.7",
     },
     "openrouter": {
         "api_base": "https://openrouter.ai/api/v1",

@@ -17,6 +17,7 @@
 
 
 <p>
+  <a href="https://arxiv.org/abs/2603.17187"><img src="https://img.shields.io/badge/📄_Technical_Report-purple?style=flat-square" alt="Tech Report" /></a>
   <a href="https://github.com/aiming-lab/MetaClaw"><img src="https://img.shields.io/badge/github-MetaClaw-181717?style=flat&labelColor=555&logo=github&logoColor=white" alt="GitHub"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat&labelColor=555" alt="License MIT"></a>
   <img src="https://img.shields.io/badge/⚡_Fully_Async-yellow?style=flat&labelColor=555" alt="Fully Async" />
@@ -57,6 +58,7 @@ metaclaw start --mode skills_only  # skills only, no RL (no Tinker needed)
 
 ## 🔥 News
 
+- **[03/18/2026]** Our technical report "[MetaClaw: Just Talk An Agent That Meta-Learns and Evolves in the Wild](https://arxiv.org/pdf/2603.17187)" is out! Check it out!
 - **[03/16/2026]** **v0.3.2** — Multi-claw support: IronClaw, PicoClaw, ZeroClaw, CoPaw, NanoClaw, and NemoClaw now supported alongside OpenClaw. NanoClaw connected via new `/v1/messages` Anthropic-compatible endpoint; NemoClaw via OpenShell inference routing. Added OpenRouter as a supported LLM platform.
 - **[03/13/2026]** **v0.3.1** — MinT backend support: RL training now works with both Tinker and MinT. Configurable via `rl.backend` (auto/tinker/mint).
 - **[03/13/2026]** **v0.3** — Continual meta-learning support: slow RL updates now only run during sleep hours, idle time, or Google Calendar meetings. Added support/query set separation to prevent stale reward signals from polluting model updates.
@@ -403,12 +405,11 @@ Each `ConversationSample` is tagged with a `skill_generation` version. When skil
 ## 📚 Citation
 
 ```bibtex
-@misc{xia2026metaclaw,
-  author       = {Xia, Peng and Chen, Jianwen and Yang, Xinyu and Tu, Haoqin and Han, Siwei and Qiu, Shi and Zheng, Zeyu and Xie, Cihang and Yao, Huaxiu},
-  title        = {MetaClaw: Just Talk --- An Agent That Meta-Learns and Evolves in the Wild},
-  year         = {2026},
-  organization = {GitHub},
-  url          = {https://github.com/aiming-lab/MetaClaw},
+@article{xia2026metaclaw,
+  title={MetaClaw: Just Talk An Agent That Meta-Learns and Evolves in the Wild},
+  author={Xia, Peng and Chen, Jianwen and Yang, Xinyu and Tu, Haoqin and Liu, Jiaqi and Xiong, Kaiwen and Han, Siwei and Qiu, Shi and Ji, Haonian and Zhou, Yuyin and Zheng, Zeyu and Xie, Cihang and Yao, Huaxiu},
+  journal={arXiv preprint arXiv:2603.17187},
+  year={2026}
 }
 ```
 

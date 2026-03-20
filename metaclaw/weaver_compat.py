@@ -80,8 +80,11 @@ class _SamplingClientWrapper:
     """Wraps a Weaver ``SamplingClient`` to expose ``sample_async()``
     and converts dict responses to attribute-access objects."""
 
-    def __init__(self, inner):
+    def __init__(self, inner, service_client: weaver.ServiceClient):
         self._inner = inner
+        # Keep the connected ServiceClient alive so it is not garbage-collected
+        # while this sampling client still references it internally.
+        self._service = service_client
 
     async def sample_async(
         self,
@@ -157,7 +160,7 @@ class _TrainingClientWrapper:
             self._inner.save_weights_and_get_sampling_client,
             name=name, wait=True, **kwargs,
         )
-        return _SamplingClientWrapper(sc)
+        return _SamplingClientWrapper(sc, self._service)
 
     async def save_state_async(self, name: str | None = None, **kwargs):
         return await asyncio.to_thread(
@@ -207,11 +210,5 @@ class ServiceClient:
         """Cleanly shut down the underlying Weaver session."""
         try:
             self._inner.close()
-        except Exception:
-            pass
-
-    def __del__(self):
-        try:
-            self.close()
         except Exception:
             pass

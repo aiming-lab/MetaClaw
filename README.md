@@ -405,6 +405,56 @@ Each `ConversationSample` is tagged with a `skill_generation` version. When skil
 
 ---
 
+## 🍎 MLX Backend (Apple Silicon Local RL)
+
+MetaClaw supports **local RL training on Apple Silicon Macs** via the MLX backend. This enables RL training without cloud GPU instances — everything runs locally on your M-series chip.
+
+### Quick Start
+
+```bash
+# Install with MLX extras
+pip install -e ".[mlx]"
+
+# Configure
+metaclaw setup   # select backend → mlx
+
+# Or via env
+export METACLAW_RL_BACKEND=mlx
+metaclaw start
+```
+
+### Configuration
+
+Add to `config.py`:
+```python
+# MLX backend settings
+mlx_model_path: str = ""          # local path or HF repo (e.g. mlx-community/Qwen2.5-7B-4bit)
+mlx_output_dir: str = "./mlx_metaclaw_output"
+```
+
+In `setup_wizard.py`, add `"mlx"` to the backend selection list:
+```python
+# Before:
+["auto", "tinker", "mint"],
+# After:
+["auto", "tinker", "mint", "mlx"],
+```
+
+### Requirements
+
+- Apple Silicon Mac (M1/M2/M3/M4)
+- macOS 13+
+- Python 3.10+
+- `mlx>=0.22.0`, `mlx-lm>=0.21.0`, `safetensors`
+
+### Architecture
+
+The MLX backend implements the same `ServiceClient`, `SamplingClient`, and `LoraTrainingClient` interfaces as the cloud backends, ensuring full compatibility with the MetaClaw training pipeline.
+
+See [`INTEGRATION_NOTES.md`](INTEGRATION_NOTES.md) for the full integration guide.
+
+---
+
 ## 🙏 Acknowledgements
 
 MetaClaw builds on top of the following open-source projects:

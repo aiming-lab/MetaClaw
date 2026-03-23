@@ -3,7 +3,12 @@ import types
 import pytest
 
 from metaclaw.config import MetaClawConfig
-from metaclaw.sdk_backend import resolve_api_key, resolve_base_url, resolve_sdk_backend
+from metaclaw.sdk_backend import (
+    _backend_env_order,
+    resolve_api_key,
+    resolve_base_url,
+    resolve_sdk_backend,
+)
 
 
 def _fake_find_spec_factory(*available_names):
@@ -142,3 +147,94 @@ def test_explicit_mint_requires_compat_package(monkeypatch):
                 base_url="https://mint.macaron.xin/",
             )
         )
+
+
+# ------------------------------------------------------------------ #
+# Weaver backend tests                                                 #
+# ------------------------------------------------------------------ #
+
+
+def test_resolve_sdk_backend_explicit_weaver(monkeypatch):
+    weaver_compat = types.SimpleNamespace(__name__="metaclaw.weaver_compat")
+    monkeypatch.setattr(
+        "metaclaw.sdk_backend.importlib.util.find_spec",
+        _fake_find_spec_factory("weaver"),
+    )
+    monkeypatch.setattr(
+        "metaclaw.sdk_backend.importlib.import_module",
+        lambda name: weaver_compat if name == "metaclaw.weaver_compat" else None,
+    )
+
+    backend = resolve_sdk_backend(
+        MetaClawConfig(
+            backend="weaver",
+            api_key="sk-weaver-test-123",
+            base_url="https://weaver-console.nex-agi.cn",
+        )
+    )
+
+    assert backend.key == "weaver"
+    assert backend.label == "Weaver"
+    assert backend.module is weaver_compat
+    assert backend.api_key == "sk-weaver-test-123"
+    assert backend.base_url == "https://weaver-console.nex-agi.cn"
+
+
+def test_auto_detects_weaver_from_env(monkeypatch):
+    weaver_compat = types.SimpleNamespace(__name__="metaclaw.weaver_compat")
+    monkeypatch.setenv("WEAVER_API_KEY", "sk-from-env")
+    monkeypatch.setattr(
+        "metaclaw.sdk_backend.importlib.util.find_spec",
+        _fake_find_spec_factory("weaver", "tinker"),
+    )
+    monkeypatch.setattr(
+        "metaclaw.sdk_backend.importlib.import_module",
+        lambda name: weaver_compat if name == "metaclaw.weaver_compat" else None,
+    )
+
+    backend = resolve_sdk_backend(MetaClawConfig(backend="auto"))
+
+    assert backend.key == "weaver"
+    assert backend.label == "Weaver"
+
+
+def test_auto_detects_weaver_from_url(monkeypatch):
+    weaver_compat = types.SimpleNamespace(__name__="metaclaw.weaver_compat")
+    monkeypatch.setattr(
+        "metaclaw.sdk_backend.importlib.util.find_spec",
+        _fake_find_spec_factory("weaver", "tinker"),
+    )
+    monkeypatch.setattr(
+        "metaclaw.sdk_backend.importlib.import_module",
+        lambda name: weaver_compat if name == "metaclaw.weaver_compat" else None,
+    )
+
+    backend = resolve_sdk_backend(
+        MetaClawConfig(
+            backend="auto",
+            base_url="https://weaver-console.nex-agi.cn",
+        )
+    )
+
+    assert backend.key == "weaver"
+
+
+def test_explicit_weaver_requires_sdk(monkeypatch):
+    monkeypatch.setattr(
+        "metaclaw.sdk_backend.importlib.util.find_spec",
+        _fake_find_spec_factory("tinker"),  # weaver NOT available
+    )
+
+    with pytest.raises(RuntimeError, match="nex-weaver"):
+        resolve_sdk_backend(
+            MetaClawConfig(
+                backend="weaver",
+                api_key="sk-weaver-123",
+                base_url="https://weaver-console.nex-agi.cn",
+            )
+        )
+
+
+def test_weaver_env_order():
+    assert _backend_env_order("api_key", "weaver") == ("WEAVER_API_KEY", "TINKER_API_KEY")
+    assert _backend_env_order("base_url", "weaver") == ("WEAVER_BASE_URL", "TINKER_BASE_URL")

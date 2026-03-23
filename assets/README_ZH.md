@@ -74,7 +74,7 @@ https://github.com/user-attachments/assets/d86a41a8-4181-4e3a-af0e-dc453a6b8594
 
 在底层,它将你的模型封装为 OpenAI 兼容代理（对 NanoClaw 等 Anthropic 原生 Agent 还提供 `/v1/messages` 兼容端点），通过 OpenClaw、NanoClaw、NemoClaw 等支持的 Agent 拦截实时对话,在每轮对话中注入相关 Skill,并从积累的交互经验中元学习。每次会话结束后自动总结新 Skill；开启 RL 后,元学习调度器会将权重更新推迟到空闲窗口,确保活跃使用期间不受干扰。
 
-无需 GPU 集群。MetaClaw 兼容任意 OpenAI 格式的 LLM API,并通过 Tinker 兼容后端进行云端 LoRA 微调。[Tinker](https://www.thinkingmachines.ai/tinker/) 是默认参考路径；如果需要,也可以通过单独安装的兼容包接入 MinT。
+无需 GPU 集群。MetaClaw 兼容任意 OpenAI 格式的 LLM API,并通过 Tinker 兼容后端进行云端 LoRA 微调。[Tinker](https://www.thinkingmachines.ai/tinker/) 是默认参考路径；如果需要,也可以通过单独安装的兼容包接入 MinT 或 Weaver。
 
 ## 🤖 核心功能
 
@@ -106,7 +106,7 @@ pip install -e ".[scheduler]"           # + Google Calendar 调度器集成
 pip install -e ".[rl,evolve,scheduler]" # 推荐：完整 RL + 调度器配置
 ```
 
-如果你要使用 `rl.backend=mint`,请在同一环境里额外安装 MinT 兼容包,例如 [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit)。MetaClaw 不会把这个依赖放进默认安装中,这样 RL 用户可以明确选择 Tinker 或 MinT。
+如果你要使用 `rl.backend=mint`,请在同一环境里额外安装 MinT 兼容包,例如 [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit)。如果你要使用 `rl.backend=weaver`,请另行安装 [`nex-weaver`](https://github.com/nex-agi/weaver)。MetaClaw 不会把这些依赖放进默认安装中,这样 RL 用户可以明确选择 Tinker、MinT 或 Weaver。
 
 ### 2. 配置
 
@@ -116,7 +116,7 @@ metaclaw setup
 
 交互式向导会引导你选择 LLM 提供商（Kimi、Qwen、MiniMax 或自定义）,填写 API Key,并可选开启 RL 训练。
 
-MetaClaw 的 RL 路径可以显式切换 `tinker` 和 `mint`。推荐默认值是 `auto`；当环境里安装了 MinT 兼容包时,它仍然可以根据 Mint 风格的凭证或 base URL 自动识别 MinT。
+MetaClaw 的 RL 路径可以显式切换 `tinker`、`mint` 和 `weaver`。推荐默认值是 `auto`；当环境里安装了 MinT 或 Weaver 兼容包时,它仍然可以根据对应风格的凭证或 base URL 自动识别。
 
 **Tinker**（默认）:
 
@@ -133,6 +133,15 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 ```
 
 兼容旧配置的 `rl.tinker_api_key` 和 `rl.tinker_base_url` 仍然可以继续使用。
@@ -194,10 +203,10 @@ skills:
 
 rl:
   enabled: false            # 设为 true 开启 RL 训练
-  backend: auto             # "auto" | "tinker" | "mint"
+  backend: auto             # "auto" | "tinker" | "mint" | "weaver"
   model: moonshotai/Kimi-K2.5
   api_key: ""
-  base_url: ""              # 可选后端 endpoint，例如 MinT 的 https://mint.macaron.xin/
+  base_url: ""              # 可选后端 endpoint，例如 MinT 的 https://mint.macaron.xin/ 或 Weaver 的 https://weaver-console.nex-agi.cn
   tinker_api_key: ""        # api_key 的兼容别名
   tinker_base_url: ""       # base_url 的兼容别名
   prm_url: https://api.openai.com/v1
@@ -255,7 +264,7 @@ cp -r memory_data/skills/* ~/.metaclaw/skills/
 
 **`metaclaw start --mode rl`**
 
-在 Skills 模式基础上,增加基于实时对话的持续 RL 微调。每轮对话被 tokenize 并作为训练样本提交。裁判 LLM（PRM）异步为回复打分,Tinker 兼容后端（Tinker 云端或 MinT）执行 LoRA 微调并热更新权重。
+在 Skills 模式基础上,增加基于实时对话的持续 RL 微调。每轮对话被 tokenize 并作为训练样本提交。裁判 LLM（PRM）异步为回复打分,Tinker 兼容后端（Tinker 云端、MinT 或 Weaver）执行 LoRA 微调并热更新权重。
 
 **Tinker**（默认）:
 
@@ -275,6 +284,18 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+metaclaw config rl.prm_url https://api.openai.com/v1
+metaclaw config rl.prm_api_key sk-...
+metaclaw start --mode rl
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 metaclaw config rl.prm_url https://api.openai.com/v1
 metaclaw config rl.prm_api_key sk-...
 metaclaw start --mode rl
@@ -356,6 +377,7 @@ MetaClaw 基于以下开源项目构建：
 - [SkillRL](https://github.com/aiming-lab/SkillRL), 我们的 Skill 增强 RL 框架。
 - [Tinker](https://www.thinkingmachines.ai/tinker/), 用于在线 RL 训练。
 - [MinT](https://github.com/MindLab-Research/mindlab-toolkit), 在线 RL 训练的备选后端。
+- [Weaver](https://github.com/nex-agi/weaver), 在线 RL 训练的备选后端。
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL), 我们 RL 设计的灵感来源。
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills), 为我们的 Skill 库提供基础。
 - [NanoClaw](https://github.com/qwibitai/nanoclaw) , qwibitai 开发的个人 Claude Agent，通过 `/v1/messages` 兼容端点接入。

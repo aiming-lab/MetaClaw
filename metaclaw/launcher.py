@@ -249,9 +249,11 @@ class MetaClawLauncher:
         if api_key:
             os.environ.setdefault("TINKER_API_KEY", api_key)
             os.environ.setdefault("MINT_API_KEY", api_key)
+            os.environ.setdefault("WEAVER_API_KEY", api_key)
         if base_url:
             os.environ.setdefault("TINKER_BASE_URL", base_url)
             os.environ.setdefault("MINT_BASE_URL", base_url)
+            os.environ.setdefault("WEAVER_BASE_URL", base_url)
 
     # ------------------------------------------------------------------ #
     # PID / signals                                                        #

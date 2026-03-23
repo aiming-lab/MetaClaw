@@ -24,7 +24,7 @@ class MetaClawConfig:
     max_steps: int = 1000
     loss_fn: str = "importance_sampling"  # "ppo" | "importance_sampling" | "cispo"
     save_weights_timeout_s: float = 200.0  # timeout for sampling-client refresh
-    backend: str = "auto"         # "auto" | "tinker" | "mint"
+    backend: str = "auto"         # "auto" | "tinker" | "mint" | "weaver"
     api_key: str = ""             # neutral RL backend API key
     base_url: str = ""            # neutral RL backend base URL
     resume_from_ckpt: str = ""    # optional Tinker resume path, e.g. tinker://.../weights/step_0003
@@ -200,7 +200,9 @@ class MetaClawConfig:
         return infer_backend_key(self)
 
     def training_backend_label(self) -> str:
-        return "MinT" if self.resolved_backend_key() == "mint" else "Tinker"
+        from .sdk_backend import _BACKEND_LABELS
+
+        return _BACKEND_LABELS.get(self.resolved_backend_key(), "Tinker")
 
     def training_backend_banner(self) -> str:
         return f"{self.training_backend_label()} cloud RL"

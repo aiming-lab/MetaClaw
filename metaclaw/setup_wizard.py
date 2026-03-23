@@ -219,7 +219,7 @@ class SetupWizard:
             print("\n--- RL Training Configuration ---")
             backend = _prompt_choice(
                 "RL backend",
-                ["auto", "tinker", "mint"],
+                ["auto", "tinker", "mint", "weaver"],
                 default=str(rl_config.get("backend", "auto") or "auto"),
             )
             rl_model = _prompt(
@@ -241,6 +241,7 @@ class SetupWizard:
                     or rl_config.get("tinker_base_url")
                     or os.environ.get("TINKER_BASE_URL", "")
                     or os.environ.get("MINT_BASE_URL", "")
+                    or os.environ.get("WEAVER_BASE_URL", "")
                 ),
             )
             prm_url = _prompt(

@@ -74,7 +74,7 @@ Chi can noi chuyen voi agent nhu binh thuong. MetaClaw bien moi cuoc hoi thoai t
 
 Ben trong, MetaClaw dat mo hinh cua ban phia sau mot proxy tuong thich OpenAI (cung cap endpoint tuong thich Anthropic `/v1/messages` cho cac agent nhu NanoClaw), chan cac tuong tac tu OpenClaw, NanoClaw, NemoClaw va cac Agent duoc ho tro khac, tiem cac Skill phu hop o moi luot hoi thoai va meta-learning tu kinh nghiem tich luy. Skill duoc tu dong tom tat sau moi phien; khi bat RL, bo lap lich meta-learning se hoan cap nhat trong so den cac khoang thoi gian ranh de agent khong bi gian doan khi dang su dung.
 
-Khong can cum GPU. MetaClaw hoat dong voi bat ky LLM API tuong thich OpenAI nao va su dung backend tuong thich Tinker de huan luyen LoRA tren dam may. [Tinker](https://www.thinkingmachines.ai/tinker/) la duong dan tham chieu mac dinh, con MinT co the duoc kich hoat thong qua goi tuong thich rieng khi can.
+Khong can cum GPU. MetaClaw hoat dong voi bat ky LLM API tuong thich OpenAI nao va su dung backend tuong thich Tinker de huan luyen LoRA tren dam may. [Tinker](https://www.thinkingmachines.ai/tinker/) la duong dan tham chieu mac dinh, con MinT hoac Weaver co the duoc kich hoat thong qua goi tuong thich rieng khi can.
 
 ## 🤖 Tinh nang chinh
 
@@ -106,7 +106,7 @@ pip install -e ".[scheduler]"           # + tich hop Google Calendar cho bo lap 
 pip install -e ".[rl,evolve,scheduler]" # khuyen nghi: cau hinh day du RL + bo lap lich
 ```
 
-Neu ban muon su dung `rl.backend=mint`, hay cai dat goi tuong thich MinT rieng trong cung moi truong, vi du [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit). MetaClaw khong dua phu thuoc nay vao goi mac dinh de nguoi dung RL co the chon ro rang Tinker hoac MinT.
+Neu ban muon su dung `rl.backend=mint`, hay cai dat goi tuong thich MinT rieng trong cung moi truong, vi du [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit). Neu ban muon su dung `rl.backend=weaver`, hay cai dat [`nex-weaver`](https://github.com/nex-agi/weaver) rieng. MetaClaw khong dua cac phu thuoc nay vao goi mac dinh de nguoi dung RL co the chon ro rang Tinker, MinT hoac Weaver.
 
 ### 2. Cau hinh
 
@@ -116,7 +116,7 @@ metaclaw setup
 
 Trinh huong dan tuong tac se yeu cau ban chon nha cung cap LLM (Kimi, Qwen, MiniMax hoac tuy chinh), nhap API key va tuy chon bat huan luyen RL.
 
-Duong dan RL cua MetaClaw co the chuyen doi ro rang giua `tinker` va `mint`. `auto` la gia tri mac dinh duoc khuyen nghi va van se tu dong nhan dien MinT tu cac thong tin xac thuc hoac base URL kieu Mint khi goi MinT da duoc cai dat.
+Duong dan RL cua MetaClaw co the chuyen doi ro rang giua `tinker`, `mint` va `weaver`. `auto` la gia tri mac dinh duoc khuyen nghi va van se tu dong nhan dien MinT hoac Weaver tu cac thong tin xac thuc hoac base URL tuong ung khi goi da duoc cai dat.
 
 **Tinker** (mặc định):
 
@@ -133,6 +133,15 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 ```
 
 Cac bi danh cu `rl.tinker_api_key` va `rl.tinker_base_url` van duoc chap nhan de tuong thich nguoc.
@@ -194,10 +203,10 @@ skills:
 
 rl:
   enabled: false            # dat thanh true de bat huan luyen RL
-  backend: auto             # "auto" | "tinker" | "mint"
+  backend: auto             # "auto" | "tinker" | "mint" | "weaver"
   model: moonshotai/Kimi-K2.5
   api_key: ""
-  base_url: ""              # endpoint backend tuy chon, vi du https://mint.macaron.xin/ cho MinT
+  base_url: ""              # endpoint backend tuy chon, vi du https://mint.macaron.xin/ cho MinT hoac https://weaver-console.nex-agi.cn cho Weaver
   tinker_api_key: ""        # bi danh tuong thich cho api_key
   tinker_base_url: ""       # bi danh tuong thich cho base_url
   prm_url: https://api.openai.com/v1
@@ -255,7 +264,7 @@ cp -r memory_data/skills/* ~/.metaclaw/skills/
 
 **`metaclaw start --mode rl`**
 
-Tat ca tinh nang cua Che do Skills, cong them tinh chinh RL lien tuc tu cac cuoc hoi thoai truc tiep. Moi luot hoi thoai duoc tokenize va gui di lam mau huan luyen. LLM giam khao (PRM) cham diem phan hoi bat dong bo, va backend tuong thich Tinker (Tinker cloud hoac MinT) thuc hien tinh chinh LoRA voi cap nhat nong trong so.
+Tat ca tinh nang cua Che do Skills, cong them tinh chinh RL lien tuc tu cac cuoc hoi thoai truc tiep. Moi luot hoi thoai duoc tokenize va gui di lam mau huan luyen. LLM giam khao (PRM) cham diem phan hoi bat dong bo, va backend tuong thich Tinker (Tinker cloud, MinT hoac Weaver) thuc hien tinh chinh LoRA voi cap nhat nong trong so.
 
 **Tinker** (mặc định):
 
@@ -275,6 +284,18 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+metaclaw config rl.prm_url https://api.openai.com/v1
+metaclaw config rl.prm_api_key sk-...
+metaclaw start --mode rl
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 metaclaw config rl.prm_url https://api.openai.com/v1
 metaclaw config rl.prm_api_key sk-...
 metaclaw start --mode rl
@@ -356,6 +377,7 @@ MetaClaw duoc xay dung tren cac du an ma nguon mo sau:
 - [SkillRL](https://github.com/aiming-lab/SkillRL) , framework RL tang cuong Skill cua chung toi.
 - [Tinker](https://www.thinkingmachines.ai/tinker/) , dung cho huan luyen RL truc tuyen.
 - [MinT](https://github.com/MindLab-Research/mindlab-toolkit) , backend thay the cho huan luyen RL truc tuyen.
+- [Weaver](https://github.com/nex-agi/weaver) , backend thay the cho huan luyen RL truc tuyen.
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL) , nguon cam hung cho thiet ke RL cua chung toi.
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) , cung cap nen tang cho kho Skill cua chung toi.
 - [NanoClaw](https://github.com/qwibitai/nanoclaw) , agent Claude ca nhan cua qwibitai, ket noi qua endpoint tuong thich Anthropic `/v1/messages`.

@@ -74,7 +74,7 @@ https://github.com/user-attachments/assets/d86a41a8-4181-4e3a-af0e-dc453a6b8594
 
 في الخلفية، يضع MetaClaw نموذجك خلف وكيل وسيط متوافق مع OpenAI (مع نقطة نهاية `/v1/messages` متوافقة مع Anthropic للوكلاء مثل NanoClaw) يعترض التفاعلات من OpenClaw وNanoClaw وNemoClaw وغيرها من الوكلاء المدعومين، ويحقن المهارات ذات الصلة في كل دور، ويتعلّم فوقيًا من التجارب المتراكمة. تُلخَّص المهارات تلقائيًا بعد كل جلسة. عند تفعيل RL، يؤجّل مُجدوِل التعلّم الفوقي تحديثات الأوزان إلى فترات الخمول حتى لا يُقاطَع الوكيل أثناء الاستخدام النشط.
 
-لا حاجة لمجموعة GPU. يعمل MetaClaw مع أي واجهة LLM API متوافقة مع OpenAI مباشرةً، ويستخدم واجهة خلفية متوافقة مع Tinker لتدريب LoRA السحابي. [Tinker](https://www.thinkingmachines.ai/tinker/) هو المسار المرجعي الافتراضي، ويمكن تفعيل MinT من خلال حزمة توافق منفصلة عند الحاجة.
+لا حاجة لمجموعة GPU. يعمل MetaClaw مع أي واجهة LLM API متوافقة مع OpenAI مباشرةً، ويستخدم واجهة خلفية متوافقة مع Tinker لتدريب LoRA السحابي. [Tinker](https://www.thinkingmachines.ai/tinker/) هو المسار المرجعي الافتراضي، ويمكن تفعيل MinT أو Weaver من خلال حزم توافق منفصلة عند الحاجة.
 
 ## 🤖 الميزات الرئيسية
 
@@ -106,7 +106,7 @@ pip install -e ".[scheduler]"           # + تكامل Google Calendar مع ال
 pip install -e ".[rl,evolve,scheduler]" # موصى به: إعداد RL + مُجدوِل كامل
 ```
 
-إذا كنت تريد استخدام `rl.backend=mint`، قم بتثبيت حزمة توافق MinT بشكل منفصل في نفس البيئة، مثل [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit). لا يضمّن MetaClaw هذه التبعية في الحزمة الافتراضية حتى يتمكّن مستخدمو RL من اختيار Tinker أو MinT بشكل صريح.
+إذا كنت تريد استخدام `rl.backend=mint`، قم بتثبيت حزمة توافق MinT بشكل منفصل في نفس البيئة، مثل [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit). لاستخدام `rl.backend=weaver`، قم بتثبيت [`nex-weaver`](https://github.com/nex-agi/weaver) بشكل منفصل. لا يضمّن MetaClaw هذه التبعيات في الحزمة الافتراضية حتى يتمكّن مستخدمو RL من اختيار Tinker أو MinT أو Weaver بشكل صريح.
 
 ### 2. الإعداد
 
@@ -116,7 +116,7 @@ metaclaw setup
 
 سيرشدك المعالج التفاعلي لاختيار مزوّد LLM (Kimi أو Qwen أو MiniMax أو مخصّص)، وإدخال مفتاح API الخاص بك، وتفعيل تدريب RL اختياريًا.
 
-يمكن لمسار RL في MetaClaw التبديل صراحةً بين `tinker` و`mint`. القيمة الافتراضية الموصى بها هي `auto` وستظل تستنتج MinT من بيانات الاعتماد أو عناوين URL ذات النمط المشابه لـ Mint عندما تكون حزمة MinT مثبّتة.
+يمكن لمسار RL في MetaClaw التبديل صراحةً بين `tinker` و`mint` و`weaver`. القيمة الافتراضية الموصى بها هي `auto` وستظل تستنتج MinT أو Weaver من بيانات الاعتماد أو عناوين URL المقابلة عندما تكون الحزم مثبّتة.
 
 **Tinker** (الافتراضي):
 
@@ -133,6 +133,15 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 ```
 
 الأسماء المستعارة القديمة `rl.tinker_api_key` و`rl.tinker_base_url` لا تزال مقبولة للتوافق مع الإصدارات السابقة.
@@ -194,10 +203,10 @@ skills:
 
 rl:
   enabled: false            # اضبط على true لتفعيل تدريب RL
-  backend: auto             # "auto" | "tinker" | "mint"
+  backend: auto             # "auto" | "tinker" | "mint" | "weaver"
   model: moonshotai/Kimi-K2.5
   api_key: ""
-  base_url: ""              # نقطة نهاية خلفية اختيارية، مثل https://mint.macaron.xin/ لـ MinT
+  base_url: ""              # نقطة نهاية خلفية اختيارية، مثل https://mint.macaron.xin/ لـ MinT أو https://weaver-console.nex-agi.cn لـ Weaver
   tinker_api_key: ""        # اسم مستعار متوافق لـ api_key
   tinker_base_url: ""       # اسم مستعار متوافق لـ base_url
   prm_url: https://api.openai.com/v1
@@ -255,7 +264,7 @@ cp -r memory_data/skills/* ~/.metaclaw/skills/
 
 **`metaclaw start --mode rl`**
 
-كل ما في وضع المهارات، بالإضافة إلى الضبط الدقيق المستمر بالتعلّم المعزّز من المحادثات الحيّة. يتم تحويل كل دور محادثة إلى رموز وإرساله كعيّنة تدريب. يقوم نموذج LLM حكم (PRM) بتقييم الاستجابات بشكل غير متزامن، وتُجري واجهة خلفية متوافقة مع Tinker (مثل Tinker السحابي أو MinT) ضبطًا دقيقًا لـ LoRA مع تبديل الأوزان تلقائيًا.
+كل ما في وضع المهارات، بالإضافة إلى الضبط الدقيق المستمر بالتعلّم المعزّز من المحادثات الحيّة. يتم تحويل كل دور محادثة إلى رموز وإرساله كعيّنة تدريب. يقوم نموذج LLM حكم (PRM) بتقييم الاستجابات بشكل غير متزامن، وتُجري واجهة خلفية متوافقة مع Tinker (مثل Tinker السحابي أو MinT أو Weaver) ضبطًا دقيقًا لـ LoRA مع تبديل الأوزان تلقائيًا.
 
 **Tinker** (الافتراضي):
 
@@ -275,6 +284,18 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+metaclaw config rl.prm_url https://api.openai.com/v1
+metaclaw config rl.prm_api_key sk-...
+metaclaw start --mode rl
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 metaclaw config rl.prm_url https://api.openai.com/v1
 metaclaw config rl.prm_api_key sk-...
 metaclaw start --mode rl
@@ -356,6 +377,7 @@ MetaClaw مبني على المشاريع مفتوحة المصدر التالي
 - [SkillRL](https://github.com/aiming-lab/SkillRL) , إطار عمل RL المُعزَّز بالمهارات.
 - [Tinker](https://www.thinkingmachines.ai/tinker/) , يُستخدم لتدريب RL عبر الإنترنت.
 - [MinT](https://github.com/MindLab-Research/mindlab-toolkit) , واجهة خلفية بديلة لتدريب RL عبر الإنترنت.
+- [Weaver](https://github.com/nex-agi/weaver) , واجهة خلفية بديلة لتدريب RL عبر الإنترنت.
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL) , مصدر إلهام لتصميم RL الخاص بنا.
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) , يوفّر الأساس لبنك المهارات الخاص بنا.
 - [NanoClaw](https://github.com/qwibitai/nanoclaw) , وكيل Claude الشخصي من qwibitai، يتصل عبر نقطة النهاية `/v1/messages` المتوافقة مع Anthropic.

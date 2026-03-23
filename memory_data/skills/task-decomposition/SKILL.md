@@ -1,7 +1,6 @@
 ---
 name: task-decomposition
-description: Use this skill when a user presents a large, vague goal. Break it into concrete, ordered sub-tasks before starting any work. Apply whenever the request is larger than a single focused action.
-category: productivity
+description: "Use this skill when a user presents a large or vague goal like 'build this feature', 'set up this system', or 'migrate this codebase'. Breaks the goal into concrete, ordered sub-tasks, identifies dependencies and unknowns, and confirms the plan before execution — preventing wasted effort from jumping in too early."
 ---
 
 # Task Decomposition

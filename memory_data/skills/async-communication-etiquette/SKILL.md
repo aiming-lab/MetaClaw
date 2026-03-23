@@ -1,7 +1,6 @@
 ---
 name: async-communication-etiquette
-description: Use this skill when writing messages in async channels (Slack, GitHub issues, email threads) where the reader may not have context and cannot ask follow-up questions immediately.
-category: communication
+description: "Use this skill when drafting Slack messages, GitHub issues, pull request comments, or email threads where the reader may not have context and cannot ask follow-up questions immediately. Structures messages with context, a clear ask, options considered, and a deadline so no round-trips are needed."
 ---
 
 # Async Communication Etiquette

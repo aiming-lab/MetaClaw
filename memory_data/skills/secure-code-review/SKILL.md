@@ -1,7 +1,6 @@
 ---
 name: secure-code-review
-description: Use this skill when reviewing or writing code that handles user input, authentication, file I/O, network requests, or database queries. Always check for common security vulnerabilities before considering the code complete.
-category: coding
+description: "Use this skill when reviewing or auditing code for security issues — especially code that handles user input, authentication, SQL queries, file I/O, or HTTP requests. Use when someone asks to 'review this for security', 'check for vulnerabilities', or 'is this code safe'. Checks for SQL injection, XSS, hardcoded secrets, missing auth checks, and insecure dependencies."
 ---
 
 # Secure Code Review Checklist

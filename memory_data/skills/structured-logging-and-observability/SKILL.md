@@ -1,7 +1,6 @@
 ---
 name: structured-logging-and-observability
-description: Use this skill when building production services, pipelines, or automation that needs to be debugged, monitored, or audited. Add structured logs, metrics, and health checks before shipping any service.
-category: automation
+description: "Use this skill when adding logging, monitoring, or observability to a production service, API, pipeline, or background worker. Use when someone asks to 'add logging', 'set up monitoring', 'make this debuggable', or 'add a health check'. Configures structured JSON logs with correct log levels, exposes key metrics (rate/error/latency), and adds a /health endpoint."
 ---
 
 # Structured Logging and Observability

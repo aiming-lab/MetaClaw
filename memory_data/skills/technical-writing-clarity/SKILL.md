@@ -1,7 +1,6 @@
 ---
 name: technical-writing-clarity
-description: Use this skill when writing documentation, READMEs, technical specs, runbooks, or any text that explains a system or process to other engineers. Apply before writing any developer-facing document.
-category: communication
+description: "Use this skill when writing a README, runbook, technical spec, ADR, or any developer-facing document. Applies principles of clarity — leading with purpose, active voice, one idea per paragraph, concrete examples over abstract descriptions — and provides a standard runbook/how-to structure with overview, prerequisites, numbered steps, verification, and troubleshooting."
 ---
 
 # Technical Writing for Clarity

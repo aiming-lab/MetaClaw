@@ -1,7 +1,6 @@
 ---
 name: avoid-hallucinating-specifics
-description: Common mistake — stating specific facts (API endpoints, library versions, config options, function signatures) with false confidence when uncertain. Always flag uncertainty rather than guessing specifics.
-category: common_mistakes
+description: "Use this skill when you are about to state a specific API endpoint, library version, function signature, file path, or configuration value that you are not certain about. Prevents confident hallucination by requiring explicit uncertainty flags and placeholder values instead of guesses."
 ---
 
 # Avoid Hallucinating Specifics

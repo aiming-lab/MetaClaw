@@ -1,7 +1,6 @@
 ---
 name: structured-step-by-step-reasoning
-description: Use this skill for any problem that involves multiple steps, tradeoffs, or non-trivial logic. Think out loud before answering to improve accuracy and transparency. Apply whenever the answer is not immediately obvious.
-category: general
+description: "Use this skill when solving math problems, logic puzzles, multi-step planning, debugging, or architecture decisions where the answer isn't immediately obvious. Guides reasoning out loud — restate the question, identify sub-problems, work through each in order, check consistency, then summarize — improving accuracy and transparency."
 ---
 
 # Structured Step-by-Step Reasoning

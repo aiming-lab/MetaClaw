@@ -1,7 +1,6 @@
 ---
 name: debug-systematically
-description: Use this skill when diagnosing a bug, unexpected behavior, test failure, or any situation where code does not behave as expected. Follow a structured debugging process instead of randomly changing code.
-category: coding
+description: "Use this skill when a test is failing, code behaves unexpectedly, or there is a bug to diagnose. Follow a structured reproduce-isolate-hypothesize-test-fix-verify cycle instead of randomly changing code or guessing at the cause."
 ---
 
 # Debug Systematically

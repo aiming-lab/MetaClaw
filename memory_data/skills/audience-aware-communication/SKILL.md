@@ -1,7 +1,6 @@
 ---
 name: audience-aware-communication
-description: Use this skill when writing any explanation, documentation, or response that will be read by someone else. Match vocabulary, depth, and format to the audience's expertise level before writing.
-category: general
+description: "Use this skill when writing docs, explanations, READMEs, or any response targeted at a specific reader. Guides you to match vocabulary, depth, and format to the audience's expertise level — beginner, expert, or mixed — before writing."
 ---
 
 # Audience-Aware Communication

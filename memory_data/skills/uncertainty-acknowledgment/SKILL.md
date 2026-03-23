@@ -1,7 +1,6 @@
 ---
 name: uncertainty-acknowledgment
-description: Use this skill when you are not sure about a fact, have outdated knowledge, or the question is contested. Explicitly communicate the level of confidence instead of asserting uncertain things as fact.
-category: research
+description: "Use this skill when answering questions where you may have outdated knowledge, can't verify a specific fact, or the topic is contested among experts. Provides calibrated language templates (high/medium/low confidence), defines when to say 'I don't know', and prevents hallucinating citations or asserting uncertain things as definitive fact."
 ---
 
 # Acknowledge Uncertainty

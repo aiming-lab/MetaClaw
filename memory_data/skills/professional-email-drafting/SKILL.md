@@ -1,7 +1,6 @@
 ---
 name: professional-email-drafting
-description: Use this skill when drafting emails, Slack messages, announcements, or any external/internal communication. Apply professional structure and appropriate tone before writing any message.
-category: communication
+description: "Use this skill when writing or improving a business email, Slack message, announcement, or internal memo. Use when someone says 'draft an email', 'write a message to', 'help me respond to', or 'how should I word this'. Produces structured, appropriately toned communication with a clear subject, body, and call to action."
 ---
 
 # Professional Email Drafting

@@ -1,7 +1,6 @@
 ---
 name: secrets-management
-description: Use this skill when handling API keys, passwords, tokens, private keys, or any sensitive credential. Never hardcode secrets in source code — apply this whenever the word "key", "token", "password", or "secret" appears in the task.
-category: security
+description: "Use this skill when handling API keys, passwords, tokens, private keys, or any sensitive credential. Trigger on the words 'key', 'token', 'password', 'secret', 'credential', or 'env var' in the task. Prevents hardcoding secrets, configures .gitignore, sets up environment variable loading, and recommends secrets managers for production."
 ---
 
 # Secrets Management

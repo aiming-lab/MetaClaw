@@ -1,7 +1,6 @@
 ---
 name: agent-task-handoff
-description: Use this skill when delegating a subtask to a sub-agent, spawning a parallel worker, or handing off work across sessions. Write a self-contained task description so the receiving agent needs no prior context.
-category: agentic
+description: "Use this skill when delegating work to a sub-agent, spawning parallel workers, or resuming a task in a new session. Helps you write self-contained handoff packages covering goal, context, constraints, inputs, and success criteria so the receiving agent needs zero prior knowledge."
 ---
 
 # Agent Task Handoff

@@ -1,7 +1,6 @@
 ---
 name: prioritize-by-impact
-description: Use this skill when the user has a list of tasks and needs help deciding what to do first. Rank by impact and urgency — not order of mention — and surface the highest-leverage work.
-category: productivity
+description: "Use this skill when the user has a list of tasks, items, features, or bugs and needs help deciding what to tackle first. Applies impact-urgency ranking to surface the highest-leverage work — use when someone says 'what should I work on', 'help me prioritize', or 'rank these tasks'."
 ---
 
 # Prioritize by Impact

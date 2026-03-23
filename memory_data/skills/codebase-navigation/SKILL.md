@@ -1,7 +1,6 @@
 ---
 name: codebase-navigation
-description: Use this skill when exploring an unfamiliar codebase, tracing code paths, or answering questions about how the system works. Read before writing, and build a mental model of the architecture before making changes.
-category: coding
+description: "Use this skill when exploring an unfamiliar codebase, tracing how a feature works end-to-end, or finding where a function is defined versus called. Provides a structured read-first strategy — entry points, imports, data model, tests, git log — before making any changes."
 ---
 
 # Codebase Navigation

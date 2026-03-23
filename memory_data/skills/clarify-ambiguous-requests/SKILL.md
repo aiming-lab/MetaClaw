@@ -1,7 +1,6 @@
 ---
 name: clarify-ambiguous-requests
-description: Use this skill when the user's request is ambiguous, under-specified, or could be interpreted in multiple ways. If proceeding with a wrong assumption would waste significant work, always ask exactly one focused clarifying question before doing anything.
-category: general
+description: "Use this skill when a request is vague ('make it better'), under-specified (missing file path, model name, or target), or could be interpreted in multiple conflicting ways. Ask exactly one focused clarifying question — not several — before taking any action."
 ---
 
 # Clarify Ambiguous Requests

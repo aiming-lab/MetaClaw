@@ -9,6 +9,7 @@ Supported agents:
   zeroclaw  — patches ~/.zeroclaw/config.toml, runs `zeroclaw service restart`
   nanoclaw  — patches nanoclaw's .env (ANTHROPIC_BASE_URL), restarts via launchd/systemd
   nemoclaw  — registers metaclaw provider in OpenShell, sets inference route
+  hermes    — patches ~/.hermes/config.yaml custom_providers, runs `hermes gateway restart`
   none      — skip auto-configuration entirely
 
 Add more claws by implementing a `_configure_<name>` function and registering
@@ -58,11 +59,34 @@ def configure_claw(cfg: "MetaClawConfig") -> None:
 # ------------------------------------------------------------------ #
 
 def _configure_openclaw(cfg: "MetaClawConfig") -> None:
-    """Auto-configure OpenClaw to use the MetaClaw proxy."""
+    """Auto-configure OpenClaw to use the MetaClaw proxy.
+
+    Uses the ``anthropic-messages`` API format so that OpenClaw's plugin hook
+    system (``before_prompt_build``) correctly populates ``event.rawMessage``.
+    This is required for memory plugins such as Hindsight, mem0, and
+    memory-lancedb to perform auto-recall.  MetaClaw exposes a full
+    Anthropic-compatible ``/v1/messages`` endpoint, so tool calls, streaming,
+    and all other agent features continue to work unchanged.
+    """
     model_id = cfg.llm_model_id or cfg.served_model_name or "metaclaw-model"
+
+    # Resolve the context window to advertise to OpenClaw.
+    # cfg.context_window == 0 means "auto": use a large window in skills_only
+    # mode (no RL backend → no sequence-length constraint) and a conservative
+    # window in rl/madmax mode (must fit Tinker/MinT training budget).
+    _explicit_cw = getattr(cfg, "context_window", 0)
+    if _explicit_cw > 0:
+        context_window = _explicit_cw
+    elif getattr(cfg, "mode", "madmax") == "skills_only":
+        context_window = 200000
+    else:
+        context_window = 32768
+
+    # Use anthropic-messages API format — OpenClaw appends /v1/messages to
+    # baseUrl, so the base must not include the /v1 path segment.
     provider_json = json.dumps({
-        "api": "openai-completions",
-        "baseUrl": f"http://127.0.0.1:{cfg.proxy_port}/v1",
+        "api": "anthropic-messages",
+        "baseUrl": f"http://127.0.0.1:{cfg.proxy_port}",
         "apiKey": cfg.proxy_api_key or "metaclaw",
         "models": [{
             "id": model_id,
@@ -70,7 +94,7 @@ def _configure_openclaw(cfg: "MetaClawConfig") -> None:
             "reasoning": False,
             "input": ["text"],
             "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
-            "contextWindow": 32768,
+            "contextWindow": context_window,
             "maxTokens": 8192,
         }],
     })
@@ -527,6 +551,91 @@ def _write_nemoclaw_config(endpoint_url: str, model: str, api_key: str) -> None:
 
 
 # ------------------------------------------------------------------ #
+# Hermes adapter                                                      #
+# ------------------------------------------------------------------ #
+
+def _configure_hermes(cfg: "MetaClawConfig") -> None:
+    """Auto-configure Hermes Agent to use the MetaClaw proxy.
+
+    Injects a ``metaclaw`` entry into ``~/.hermes/config.yaml``
+    ``custom_providers`` list and sets it as the active model provider via
+    ``model.provider``.  Attempts a gateway restart so the change takes
+    effect immediately without manual intervention.
+
+    Config file location respects the ``HERMES_HOME`` environment variable
+    (defaults to ``~/.hermes``).
+    """
+    try:
+        import yaml as _yaml
+    except ImportError:
+        logger.warning(
+            "[ClawAdapter] PyYAML not available — configure Hermes manually. "
+            "Add a custom provider with base_url=http://127.0.0.1:%d/v1 "
+            "in ~/.hermes/config.yaml.",
+            cfg.proxy_port,
+        )
+        return
+
+    import os as _os
+    hermes_home = Path(_os.getenv("HERMES_HOME", "") or Path.home() / ".hermes")
+    config_path = hermes_home / "config.yaml"
+    model_id = cfg.llm_model_id or cfg.served_model_name or "metaclaw-model"
+    base_url = f"http://127.0.0.1:{cfg.proxy_port}/v1"
+    api_key = cfg.proxy_api_key or "metaclaw"
+
+    # Resolve context window (same logic as _configure_openclaw).
+    _explicit_cw = getattr(cfg, "context_window", 0)
+    if _explicit_cw > 0:
+        context_window = _explicit_cw
+    elif getattr(cfg, "mode", "madmax") == "skills_only":
+        context_window = 200000
+    else:
+        context_window = 32768
+
+    data: dict = {}
+    if config_path.exists():
+        try:
+            with open(config_path, encoding="utf-8") as fh:
+                data = _yaml.safe_load(fh) or {}
+        except Exception as e:
+            logger.warning("[ClawAdapter] Failed to read %s: %s", config_path, e)
+
+    # Upsert the metaclaw entry in custom_providers (deduplicate by name).
+    providers = data.get("custom_providers")
+    if not isinstance(providers, list):
+        providers = []
+    providers = [p for p in providers if not (isinstance(p, dict) and p.get("name") == "metaclaw")]
+    providers.append({
+        "name": "metaclaw",
+        "base_url": base_url,
+        "api_key": api_key,
+        "models": {model_id: {"context_length": context_window}},
+    })
+    data["custom_providers"] = providers
+
+    # Set metaclaw as the active provider and model.
+    model_cfg = data.get("model")
+    if not isinstance(model_cfg, dict):
+        model_cfg = {}
+    model_cfg["provider"] = "custom:metaclaw"
+    model_cfg["default"] = model_id
+    data["model"] = model_cfg
+
+    try:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w", encoding="utf-8") as fh:
+            _yaml.dump(data, fh, default_flow_style=False, sort_keys=False)
+        logger.info("[ClawAdapter] Hermes config updated: %s", config_path)
+    except Exception as e:
+        logger.error("[ClawAdapter] Failed to write %s: %s", config_path, e)
+        return
+
+    # Restart the Hermes gateway if it is running so the new provider takes
+    # effect immediately (best-effort; ignored if hermes is not in PATH).
+    _run_commands("hermes", [["hermes", "gateway", "restart"]], ignore_missing=True)
+
+
+# ------------------------------------------------------------------ #
 # Noop adapter                                                        #
 # ------------------------------------------------------------------ #
 
@@ -546,6 +655,7 @@ _ADAPTERS: dict[str, Callable[["MetaClawConfig"], None]] = {
     "zeroclaw": _configure_zeroclaw,
     "nanoclaw": _configure_nanoclaw,
     "nemoclaw": _configure_nemoclaw,
+    "hermes": _configure_hermes,
     "none": _configure_none,
 }
 

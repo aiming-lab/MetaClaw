@@ -162,13 +162,14 @@ MetaClaw works as a transparent proxy in front of any personal agent that suppor
 
 | `claw_type` | Agent | What MetaClaw does on `start` |
 |---|---|---|
-| `openclaw` | [OpenClaw](https://openclaw.ai) | Runs `openclaw config set models.providers.metaclaw …` + `gateway restart` |
+| `openclaw` | [OpenClaw](https://openclaw.ai) | Runs `openclaw config set models.providers.metaclaw …` + `gateway restart`. Uses the `anthropic-messages` API format so memory plugins (Hindsight, mem0, memory-lancedb) receive `event.rawMessage` correctly. |
 | `copaw` | [CoPaw](https://github.com/agentscope-ai/CoPaw) | Patches `~/.copaw/config.json` → `models.default` → `openai_compatible` pointing at the proxy port. CoPaw's ConfigWatcher hot-reloads automatically. |
 | `ironclaw` | [IronClaw](https://github.com/nearai/ironclaw) | Patches `~/.ironclaw/.env` → `LLM_BACKEND=openai_compatible` + `LLM_BASE_URL/MODEL/API_KEY`. Runs `ironclaw service restart`. |
 | `picoclaw` | [PicoClaw](https://github.com/sipeed/picoclaw) | Injects a `metaclaw` entry into `~/.picoclaw/config.json` `model_list` and sets it as the default model. Runs `picoclaw gateway restart`. |
 | `zeroclaw` | [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) | Patches `~/.zeroclaw/config.toml` → `provider = "openai-compatible"` + `base_url/model/api_key`. Runs `zeroclaw service restart`. |
 | `nanoclaw` | [NanoClaw](https://github.com/qwibitai/nanoclaw) | Patches nanoclaw's `.env` → `ANTHROPIC_BASE_URL` pointing at the proxy's `/v1/messages` Anthropic-compatible endpoint. Restarts via `launchctl` (macOS) or `systemctl --user` (Linux). |
 | `nemoclaw` | [NemoClaw](https://github.com/NVIDIA/NemoClaw) | Registers a `metaclaw` provider in OpenShell via `openshell provider create` and sets it as the active inference route via `openshell inference set`. Persists config to `~/.nemoclaw/config.json`. |
+| `hermes` | [Hermes Agent](https://github.com/NousResearch/hermes-agent) | Injects a `metaclaw` entry into `~/.hermes/config.yaml` `custom_providers` and sets `model.provider: custom:metaclaw`. Runs `hermes gateway restart`. |
 | `none` | — | Skips auto-configuration. Point your agent at the proxy manually. |
 
 ### Setup
@@ -176,7 +177,7 @@ MetaClaw works as a transparent proxy in front of any personal agent that suppor
 Pick your agent during `metaclaw setup` (the first question in the wizard):
 
 ```
-Personal agent to configure (openclaw/copaw/ironclaw/picoclaw/zeroclaw/nanoclaw/nemoclaw/none) [openclaw]:
+Personal agent to configure (openclaw/copaw/ironclaw/picoclaw/zeroclaw/nanoclaw/nemoclaw/hermes/none) [openclaw]:
 ```
 
 Or set it directly at any time:
@@ -188,6 +189,7 @@ metaclaw config claw_type picoclaw   # switch to PicoClaw
 metaclaw config claw_type zeroclaw   # switch to ZeroClaw
 metaclaw config claw_type nanoclaw   # switch to NanoClaw
 metaclaw config claw_type nemoclaw   # switch to NemoClaw
+metaclaw config claw_type hermes     # switch to Hermes Agent
 metaclaw config claw_type none       # manual / custom agent
 ```
 
@@ -238,7 +240,7 @@ When you start MetaClaw with `--daemon`, the command waits until the local proxy
 
 ```yaml
 mode: madmax               # "madmax" | "rl" | "skills_only"
-claw_type: openclaw        # "openclaw" | "copaw" | "ironclaw" | "picoclaw" | "zeroclaw" | "nanoclaw" | "nemoclaw" | "none"
+claw_type: openclaw        # "openclaw" | "copaw" | "ironclaw" | "picoclaw" | "zeroclaw" | "nanoclaw" | "nemoclaw" | "hermes" | "none"
 
 llm:
   provider: kimi            # kimi | qwen | openai | minimax | custom
@@ -283,7 +285,10 @@ opd:
   teacher_api_key: ""       # teacher model API key
   kl_penalty_coef: 1.0      # KL penalty coefficient for OPD
 
-max_context_tokens: 20000   # prompt token cap before truncation
+max_context_tokens: 20000   # prompt token cap before truncation; 0 = no truncation (recommended
+                            # for skills_only mode with large-context cloud models)
+context_window: 0           # context window advertised to the agent (e.g. OpenClaw compaction
+                            # threshold); 0 = auto (200 000 in skills_only, 32 768 in rl/madmax)
 
 scheduler:                  # v0.3: meta-learning scheduler (auto-enabled in madmax mode)
   enabled: false            # madmax mode enables this automatically; set manually for rl mode

@@ -66,8 +66,23 @@ class MetaClawConfig:
     # ------------------------------------------------------------------ #
     # Context window                                                       #
     # ------------------------------------------------------------------ #
-    max_context_tokens: int = 20000            # hard cap on prompt token count; must match
-                                              # Tinker's max_seq_len minus headroom for response
+    max_context_tokens: int = 20000
+    # Hard cap on prompt token count sent to the upstream LLM.
+    # In rl/madmax mode this must be ≤ (Tinker/MinT max_seq_len − max output
+    # tokens) because the full prompt+response must fit the RL backend's
+    # training sequence length.
+    # Set to 0 to disable truncation entirely.  This is the recommended
+    # setting for skills_only mode with large-context cloud models (MiniMax
+    # M2.7, Kimi K2, etc.) — there is no RL backend, so there is no
+    # sequence-length constraint and truncating arbitrarily loses context.
+
+    context_window: int = 0
+    # Context window advertised to the connected agent (e.g. the value
+    # OpenClaw uses to decide when to compact the session).
+    # 0 = auto: 200 000 for skills_only mode; 32 768 for rl/madmax mode
+    # (where the RL backend's sequence-length budget limits usable context).
+    # Set this explicitly to match your upstream model's actual context window
+    # so OpenClaw compacts only when truly necessary.
 
     # ------------------------------------------------------------------ #
     # API Server                                                          #
@@ -103,7 +118,8 @@ class MetaClawConfig:
     mode: str = "madmax"
 
     # Which CLI agent to auto-configure on startup.
-    # "openclaw" | "copaw" | "ironclaw" | "none"
+    # "openclaw" | "copaw" | "ironclaw" | "picoclaw" | "zeroclaw" |
+    # "nanoclaw" | "nemoclaw" | "hermes" | "none"
     # "none" skips auto-configuration (standalone / custom setup).
     claw_type: str = "openclaw"
 

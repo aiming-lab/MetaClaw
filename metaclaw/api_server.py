@@ -296,7 +296,14 @@ def _rewrite_new_session_bootstrap_prompt(messages: list[dict]) -> tuple[list[di
 # ------------------------------------------------------------------ #
 
 def _anthropic_to_openai_body(body: dict[str, Any]) -> dict[str, Any]:
-    """Convert an Anthropic /v1/messages request body to OpenAI chat format."""
+    """Convert an Anthropic /v1/messages request body to OpenAI chat format.
+
+    Handles:
+    - Top-level ``system`` field → ``messages[0]`` with role ``system``
+    - Assistant messages with ``tool_use`` content blocks → OpenAI ``tool_calls``
+    - User messages with ``tool_result`` content blocks → OpenAI ``tool`` role messages
+    - Anthropic tool definitions → OpenAI ``tools`` array
+    """
     messages: list[dict] = list(body.get("messages", []))
 
     # Anthropic puts the system prompt at top level; move it into messages[0].
@@ -314,19 +321,100 @@ def _anthropic_to_openai_body(body: dict[str, Any]) -> dict[str, Any]:
             system_text = str(system)
         messages = [{"role": "system", "content": system_text}] + messages
 
-    # Flatten Anthropic content blocks → plain strings expected by OpenAI.
+    # Convert Anthropic messages to OpenAI format.
     normalized: list[dict] = []
     for msg in messages:
+        role = msg.get("role")
         content = msg.get("content")
-        if isinstance(content, list):
+
+        if not isinstance(content, list):
+            normalized.append(msg)
+            continue
+
+        if role == "assistant":
+            # Extract text parts and tool_use blocks.
+            text_parts: list[str] = []
+            tool_calls: list[dict] = []
+            for i, blk in enumerate(content):
+                if not isinstance(blk, dict):
+                    continue
+                blk_type = blk.get("type")
+                if blk_type == "text":
+                    t = blk.get("text", "")
+                    if t:
+                        text_parts.append(t)
+                elif blk_type == "tool_use":
+                    args = blk.get("input", {})
+                    if not isinstance(args, str):
+                        try:
+                            args = json.dumps(args, ensure_ascii=False)
+                        except Exception:
+                            args = "{}"
+                    tool_calls.append({
+                        "id": blk.get("id") or f"call_{i}",
+                        "type": "function",
+                        "function": {
+                            "name": blk.get("name") or "unknown_tool",
+                            "arguments": args,
+                        },
+                    })
+            out: dict[str, Any] = {
+                "role": "assistant",
+                "content": " ".join(text_parts).strip() or "",
+            }
+            if tool_calls:
+                out["tool_calls"] = tool_calls
+            normalized.append(out)
+
+        elif role == "user":
+            # Separate tool_result blocks from regular text blocks.
+            tool_results = [
+                blk for blk in content
+                if isinstance(blk, dict) and blk.get("type") == "tool_result"
+            ]
+            other_blocks = [
+                blk for blk in content
+                if isinstance(blk, dict) and blk.get("type") != "tool_result"
+            ]
+
+            # Each tool_result becomes an OpenAI tool-role message.
+            for blk in tool_results:
+                result_content = blk.get("content", "")
+                if isinstance(result_content, list):
+                    result_content = " ".join(
+                        b.get("text", "")
+                        for b in result_content
+                        if isinstance(b, dict) and b.get("type") == "text"
+                    )
+                elif not isinstance(result_content, str):
+                    result_content = str(result_content) if result_content is not None else ""
+                tool_msg: dict[str, Any] = {
+                    "role": "tool",
+                    "tool_call_id": blk.get("tool_use_id") or "",
+                    "content": result_content,
+                }
+                if blk.get("name"):
+                    tool_msg["name"] = blk["name"]
+                normalized.append(tool_msg)
+
+            # Remaining text blocks stay as a user message.
+            if other_blocks:
+                text = " ".join(
+                    blk.get("text", "")
+                    for blk in other_blocks
+                    if blk.get("type") == "text"
+                ).strip()
+                if text:
+                    normalized.append({"role": "user", "content": text})
+
+        else:
+            # system or other roles — flatten to plain text.
             text = " ".join(
                 blk.get("text", "")
                 for blk in content
                 if isinstance(blk, dict) and blk.get("type") == "text"
             )
             normalized.append({**msg, "content": text})
-        else:
-            normalized.append(msg)
 
     openai_body: dict[str, Any] = {
         "model": body.get("model", ""),
@@ -337,15 +425,59 @@ def _anthropic_to_openai_body(body: dict[str, Any]) -> dict[str, Any]:
         if opt in body:
             key = "stop" if opt == "stop_sequences" else opt
             openai_body[key] = body[opt]
+
+    # Convert Anthropic tool definitions to OpenAI tools format.
+    if "tools" in body and isinstance(body["tools"], list):
+        openai_tools = []
+        for tool in body["tools"]:
+            if not isinstance(tool, dict):
+                continue
+            openai_tools.append({
+                "type": "function",
+                "function": {
+                    "name": tool.get("name", ""),
+                    "description": tool.get("description", ""),
+                    "parameters": tool.get("input_schema", {}),
+                },
+            })
+        if openai_tools:
+            openai_body["tools"] = openai_tools
+
     return openai_body
 
 
 def _openai_to_anthropic_response(openai_resp: dict[str, Any], model: str) -> dict[str, Any]:
-    """Convert an OpenAI chat completion response to Anthropic /v1/messages format."""
+    """Convert an OpenAI chat completion response to Anthropic /v1/messages format.
+
+    Handles plain text responses and tool_calls, producing the appropriate
+    Anthropic content block types (``text`` and ``tool_use``).
+    """
     choice = openai_resp.get("choices", [{}])[0]
     message = choice.get("message", {})
     content_text = message.get("content") or ""
+    tool_calls = message.get("tool_calls") or []
     finish_reason = choice.get("finish_reason", "stop")
+
+    # Build Anthropic content blocks.
+    content_blocks: list[dict[str, Any]] = []
+    if content_text:
+        content_blocks.append({"type": "text", "text": content_text})
+    for tc in tool_calls:
+        func = tc.get("function", {})
+        args_raw = func.get("arguments", "{}")
+        try:
+            args_obj = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+        except Exception:
+            args_obj = {}
+        content_blocks.append({
+            "type": "tool_use",
+            "id": tc.get("id") or f"toolu_{abs(hash(str(tc))) % 10**8:08d}",
+            "name": func.get("name") or "unknown_tool",
+            "input": args_obj,
+        })
+
+    if not content_blocks:
+        content_blocks = [{"type": "text", "text": ""}]
 
     stop_reason_map = {
         "stop": "end_turn",
@@ -354,6 +486,9 @@ def _openai_to_anthropic_response(openai_resp: dict[str, Any], model: str) -> di
         "content_filter": "stop_sequence",
     }
     stop_reason = stop_reason_map.get(finish_reason, "end_turn")
+    # If the model returned tool calls but finish_reason was "stop", correct it.
+    if tool_calls and stop_reason == "end_turn":
+        stop_reason = "tool_use"
 
     usage = openai_resp.get("usage", {})
     return {
@@ -361,7 +496,7 @@ def _openai_to_anthropic_response(openai_resp: dict[str, Any], model: str) -> di
         "type": "message",
         "role": "assistant",
         "model": model,
-        "content": [{"type": "text", "text": content_text}],
+        "content": content_blocks,
         "stop_reason": stop_reason,
         "stop_sequence": None,
         "usage": {
@@ -1673,17 +1808,24 @@ class MetaClawAPIServer:
         yield "data: [DONE]\n\n"
 
     async def _stream_anthropic_response(self, result: dict[str, Any], model: str):
-        """Yield Anthropic-format SSE events from an internal result dict."""
+        """Yield Anthropic-format SSE events from an internal result dict.
+
+        Emits text and tool_use content blocks so OpenClaw tool calls work
+        correctly when streamed through the /v1/messages endpoint.
+        """
         payload = result["response"]
         choice = payload.get("choices", [{}])[0]
         message = choice.get("message", {})
         content_text = message.get("content", "") or ""
+        tool_calls = message.get("tool_calls") or []
         finish_reason = choice.get("finish_reason", "stop")
         stop_reason_map = {
             "stop": "end_turn", "length": "max_tokens",
             "tool_calls": "tool_use", "content_filter": "stop_sequence",
         }
         stop_reason = stop_reason_map.get(finish_reason, "end_turn")
+        if tool_calls and stop_reason == "end_turn":
+            stop_reason = "tool_use"
         usage = payload.get("usage", {})
         msg_id = payload.get("id", "msg_metaclaw")
 
@@ -1699,16 +1841,59 @@ class MetaClawAPIServer:
                 "usage": {"input_tokens": usage.get("prompt_tokens", 0), "output_tokens": 0},
             },
         })
-        yield _sse("content_block_start", {
-            "type": "content_block_start", "index": 0,
-            "content_block": {"type": "text", "text": ""},
-        })
         yield _sse("ping", {"type": "ping"})
-        yield _sse("content_block_delta", {
-            "type": "content_block_delta", "index": 0,
-            "delta": {"type": "text_delta", "text": content_text},
-        })
-        yield _sse("content_block_stop", {"type": "content_block_stop", "index": 0})
+
+        block_index = 0
+
+        # Emit text block if present.
+        if content_text:
+            yield _sse("content_block_start", {
+                "type": "content_block_start", "index": block_index,
+                "content_block": {"type": "text", "text": ""},
+            })
+            yield _sse("content_block_delta", {
+                "type": "content_block_delta", "index": block_index,
+                "delta": {"type": "text_delta", "text": content_text},
+            })
+            yield _sse("content_block_stop", {"type": "content_block_stop", "index": block_index})
+            block_index += 1
+
+        # Emit tool_use blocks for each tool call.
+        for tc in tool_calls:
+            func = tc.get("function", {})
+            args_raw = func.get("arguments", "{}")
+            try:
+                args_obj = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+            except Exception:
+                args_obj = {}
+            tc_id = tc.get("id") or f"toolu_{abs(hash(str(tc))) % 10**8:08d}"
+            yield _sse("content_block_start", {
+                "type": "content_block_start", "index": block_index,
+                "content_block": {
+                    "type": "tool_use",
+                    "id": tc_id,
+                    "name": func.get("name") or "unknown_tool",
+                    "input": {},
+                },
+            })
+            yield _sse("content_block_delta", {
+                "type": "content_block_delta", "index": block_index,
+                "delta": {
+                    "type": "input_json_delta",
+                    "partial_json": json.dumps(args_obj, ensure_ascii=False),
+                },
+            })
+            yield _sse("content_block_stop", {"type": "content_block_stop", "index": block_index})
+            block_index += 1
+
+        # If nothing was emitted, send an empty text block.
+        if block_index == 0:
+            yield _sse("content_block_start", {
+                "type": "content_block_start", "index": 0,
+                "content_block": {"type": "text", "text": ""},
+            })
+            yield _sse("content_block_stop", {"type": "content_block_stop", "index": 0})
+
         yield _sse("message_delta", {
             "type": "message_delta",
             "delta": {"stop_reason": stop_reason, "stop_sequence": None},

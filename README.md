@@ -460,7 +460,51 @@ In `setup_wizard.py`, add `"mlx"` to the backend selection list:
 
 The MLX backend implements the same `ServiceClient`, `SamplingClient`, and `LoraTrainingClient` interfaces as the cloud backends, ensuring full compatibility with the MetaClaw training pipeline.
 
-See [`INTEGRATION_NOTES.md`](INTEGRATION_NOTES.md) for the full integration guide.
+### Integration Details
+
+The MLX backend consists of several key files in `metaclaw/mlx_backend/`:
+- `__init__.py` - Package initialization
+- `data_types.py` - MLX-specific data structures
+- `params.py` - MLX training parameters
+- `lora.py` - LoRA implementation for MLX
+- `service_client.py` - MLX implementation of the service client interface
+
+To use MLX backend, you may need to update configurations:
+
+1. Add to `metaclaw/config.py` in the MetaClawConfig class:
+```python
+    # MLX backend settings
+    mlx_model_path: str = ""          # local path or HF repo (e.g. mlx-community/Qwen2.5-7B-4bit)
+    mlx_output_dir: str = "./mlx_metaclaw_output"
+```
+
+2. Update training backend methods around line 186 in `metaclaw/config.py`:
+```python
+def training_backend_label(self) -> str:
+    key = self.resolved_backend_key()
+    if key == "mlx":
+        return "MLX"
+    return "MinT" if key == "mint" else "Tinker"
+
+def training_backend_banner(self) -> str:
+    label = self.training_backend_label()
+    suffix = "local RL" if self.resolved_backend_key() == "mlx" else "cloud RL"
+    return f"{label} {suffix}"
+```
+
+3. Update `metaclaw/setup_wizard.py` to add "mlx" to the backend selection list:
+```python
+# In the backend selection, change from:
+["auto", "tinker", "mint"]
+# To:
+["auto", "tinker", "mint", "mlx"]
+```
+
+### Optional: pyproject.toml extras
+```toml
+[project.optional-dependencies]
+mlx = ["mlx>=0.22.0", "mlx-lm>=0.21.0", "safetensors"]
+```
 
 ---
 

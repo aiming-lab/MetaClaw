@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from .claw_adapter import CLAW_TYPES
 from .config_store import CONFIG_DIR, ConfigStore
 
 _PROVIDER_PRESETS = {
@@ -24,7 +25,15 @@ _PROVIDER_PRESETS = {
     },
     "minimax": {
         "api_base": "https://api.minimax.io/v1",
-        "model_id": "MiniMax-M2.5",
+        "model_id": "MiniMax-M2.7",
+    },
+    "openrouter": {
+        "api_base": "https://openrouter.ai/api/v1",
+        "model_id": "google/gemini-2.5-pro",
+    },
+    "bedrock": {
+        "api_base": "",
+        "model_id": "us.anthropic.claude-sonnet-4-6",
     },
     "custom": {
         "api_base": "",
@@ -101,6 +110,19 @@ class SetupWizard:
         cs = ConfigStore()
         existing = cs.load() if cs.exists() else {}
 
+        # ---- CLI agent (claw type) ----
+        print("\n--- CLI Agent ---")
+        print(
+            "MetaClaw will auto-configure the chosen agent to route its LLM\n"
+            "calls through the MetaClaw proxy (skills + RL training)."
+        )
+        current_claw = existing.get("claw_type", "openclaw")
+        claw_type = _prompt_choice(
+            "CLI agent to configure",
+            CLAW_TYPES,
+            default=current_claw,
+        )
+
         # ---- Operating mode ----
         current_mode = existing.get("mode", "madmax")
         mode = _prompt_choice(
@@ -115,24 +137,64 @@ class SetupWizard:
         current_provider = current_llm.get("provider", "custom")
         provider = _prompt_choice(
             "LLM provider",
-            ["kimi", "qwen", "openai", "minimax", "custom"],
+            ["kimi", "qwen", "openai", "minimax", "openrouter", "bedrock", "custom"],
             default=current_provider,
         )
 
         preset = _PROVIDER_PRESETS[provider]
-        api_base = _prompt(
-            "API base URL",
-            default=current_llm.get("api_base") or preset["api_base"],
-        )
-        model_id = _prompt(
-            "Model ID",
-            default=current_llm.get("model_id") or preset["model_id"],
-        )
-        api_key = _prompt(
-            "API key",
-            default=current_llm.get("api_key", ""),
-            hide=True,
-        )
+        openrouter_config: dict = existing.get("openrouter", {})
+        if provider == "bedrock":
+            api_base = ""
+            api_key = ""
+            model_id = _prompt(
+                "Bedrock model ID (inference profile)",
+                default=current_llm.get("model_id") or preset["model_id"],
+            )
+            bedrock_region = _prompt(
+                "AWS region",
+                default=current_llm.get("bedrock_region", "us-east-1"),
+            )
+        else:
+            bedrock_region = ""
+            api_base = _prompt(
+                "API base URL",
+                default=current_llm.get("api_base") or preset["api_base"],
+            )
+            model_id = _prompt(
+                "Model ID",
+                default=current_llm.get("model_id") or preset["model_id"],
+            )
+            api_key = _prompt(
+                "API key",
+                default=current_llm.get("api_key", ""),
+                hide=True,
+            )
+
+        # OpenRouter-specific options
+        if provider == "openrouter":
+            print("\n--- OpenRouter Options ---")
+            or_route = _prompt_choice(
+                "Routing strategy",
+                ["fallback", "price", "throughput", "latency"],
+                default=openrouter_config.get("route", "fallback"),
+            )
+            or_fallback = _prompt(
+                "Fallback models (comma-separated, optional)",
+                default=openrouter_config.get("fallback_models", ""),
+            )
+            or_data_policy = _prompt_choice(
+                "Data collection policy",
+                ["allow", "deny"],
+                default="deny" if openrouter_config.get("data_policy") == "deny" else "allow",
+            )
+            openrouter_config = {
+                "app_name": "MetaClaw",
+                "route": or_route,
+                "fallback_models": or_fallback,
+                "data_policy": "" if or_data_policy == "allow" else "deny",
+            }
+        else:
+            openrouter_config = {}
 
         # ---- Skills ----
         print("\n--- Skills Configuration ---")
@@ -267,15 +329,17 @@ class SetupWizard:
                 "model": rl_model,
                 "api_key": backend_api_key,
                 "base_url": backend_base_url,
+                "prm_provider": rl_config.get("prm_provider", "openai"),
                 "prm_url": prm_url,
                 "prm_model": prm_model,
                 "prm_api_key": prm_api_key,
-                "lora_rank": lora_rank,
-                "batch_size": rl_config.get("batch_size", 4),
-                "resume_from_ckpt": resume_from_ckpt,
+                "evolver_provider": rl_config.get("evolver_provider", "openai"),
                 "evolver_api_base": evolver_api_base,
                 "evolver_api_key": evolver_api_key,
                 "evolver_model": evolver_model,
+                "lora_rank": lora_rank,
+                "batch_size": rl_config.get("batch_size", 4),
+                "resume_from_ckpt": resume_from_ckpt,
             }
         else:
             rl_config = dict(rl_config)
@@ -365,13 +429,16 @@ class SetupWizard:
         proxy_config["port"] = proxy_port
         proxy_config.setdefault("host", "0.0.0.0")
         data = {
+            "claw_type": claw_type,
             "mode": mode,
             "llm": {
                 "provider": provider,
                 "model_id": model_id,
                 "api_base": api_base,
                 "api_key": api_key,
+                "bedrock_region": bedrock_region,
             },
+            "openrouter": openrouter_config,
             "proxy": proxy_config,
             "skills": {
                 "enabled": skills_enabled,

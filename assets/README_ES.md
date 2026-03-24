@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="new_logo.png" alt="MetaClaw" width="600">
+<img src="new_logo2.png" alt="MetaClaw" width="600">
 
 <br/>
 
@@ -8,73 +8,7 @@
 
 <p>Inspirado en cómo aprende el cerebro. Meta-aprende y evoluciona tu 🦞 con cada conversación. Sin GPU. Compatible con Kimi, Qwen, Claude, MiniMax y más.</p>
 
-⚡ Supported LLM Providers & Platforms
-
-<table>
-<tr>
-<td align="center" width="100">
-  <a href="https://kimi.ai">
-    <img src="https://github.com/MoonshotAI.png?size=200" width="48" height="48" alt="Kimi" />
-  </a><br/>
-  <sub><a href="https://kimi.ai"><b>Kimi</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://qwen.ai">
-    <img src="https://github.com/QwenLM.png?size=200" width="48" height="48" alt="Qwen" />
-  </a><br/>
-  <sub><a href="https://qwen.ai"><b>Qwen</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://www.anthropic.com/claude">
-    <img src="https://cdn.simpleicons.org/claude/D97757" width="48" height="48" alt="Claude" />
-  </a><br/>
-  <sub><a href="https://www.anthropic.com/claude"><b>Claude</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://www.minimax.io">
-    <img src="https://github.com/minimax-ai.png?size=200" width="48" height="48" alt="MiniMax" />
-  </a><br/>
-  <sub><a href="https://www.minimax.io"><b>MiniMax</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://openai.com">
-    <img src="https://github.com/openai.png?size=200" width="48" height="48" alt="OpenAI" />
-  </a><br/>
-  <sub><a href="https://openai.com"><b>OpenAI</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://gemini.google.com">
-    <img src="https://cdn.simpleicons.org/googlegemini/8E75B2" width="48" height="48" alt="Gemini" />
-  </a><br/>
-  <sub><a href="https://gemini.google.com"><b>Gemini</b></a></sub>
-</td>
-<td align="center" width="100">
-  <sub><b>+ Much<br/>More</b></sub>
-</td>
-</tr>
-</table>
-
-🧬 RL Training Backends for Weight Evolution
-
-<table>
-<tr>
-<td align="center" width="100">
-  <a href="https://www.thinkingmachines.ai/tinker/">
-    <img src="tinker.jpg" width="48" height="48" alt="Tinker" />
-  </a><br/>
-  <sub><a href="https://www.thinkingmachines.ai/tinker/"><b>Tinker</b></a></sub>
-</td>
-<td align="center" width="100">
-  <a href="https://github.com/MindLab-Research/mindlab-toolkit">
-    <img src="https://github.com/MindLab-Research.png?size=200" width="48" height="48" alt="MinT" />
-  </a><br/>
-  <sub><a href="https://github.com/MindLab-Research/mindlab-toolkit"><b>MinT</b></a></sub>
-</td>
-<td align="center" width="100">
-  <sub><b>More<br/>Coming</b></sub>
-</td>
-</tr>
-</table>
+<img src="metaclaw_mainfig_v2.png" alt="MetaClaw Architecture" width="800">
 
 <p>
   <a href="https://github.com/aiming-lab/MetaClaw"><img src="https://img.shields.io/badge/github-MetaClaw-181717?style=flat&labelColor=555&logo=github&logoColor=white" alt="GitHub"></a>
@@ -105,6 +39,8 @@
 ```bash
 metaclaw setup              # asistente de configuración inicial
 metaclaw start              # por defecto: modo MadMax, skills + entrenamiento RL programado
+metaclaw start --daemon     # ejecutar en segundo plano, logs -> ~/.metaclaw/metaclaw.log
+metaclaw start --daemon --log-file /tmp/metaclaw.log  # ruta de log personalizada
 metaclaw start --mode rl    # RL sin planificador (entrena inmediatamente al llenar batch)
 metaclaw start --mode skills_only  # solo skills, sin RL (no requiere Tinker)
 ```
@@ -117,6 +53,7 @@ metaclaw start --mode skills_only  # solo skills, sin RL (no requiere Tinker)
 
 ## 🔥 Noticias
 
+- **[16/03/2026]** **v0.3.2** Soporte multi-Claw: IronClaw, PicoClaw, ZeroClaw, CoPaw, NanoClaw y NemoClaw ahora son compatibles junto con OpenClaw. NanoClaw a través del nuevo endpoint compatible con Anthropic `/v1/messages`; NemoClaw a través del enrutamiento de inferencia OpenShell. OpenRouter agregado como plataforma LLM.
 - **[13/03/2026]** **v0.3.1** Soporte de backend MinT: el entrenamiento RL ahora funciona con Tinker y MinT. Configurable via `rl.backend` (auto/tinker/mint).
 - **[13/03/2026]** **v0.3** Soporte de meta-aprendizaje continuo: las actualizaciones RL solo se ejecutan durante horas de sueño, periodos de inactividad o reuniones de Google Calendar. Se agrega separación de conjuntos support/query para evitar que señales de recompensa obsoletas contaminen las actualizaciones del modelo.
 - **[11/03/2026]** **v0.2** Despliegue en un clic mediante la CLI `metaclaw`. Skills activados por defecto, RL ahora es opcional.
@@ -135,7 +72,7 @@ https://github.com/user-attachments/assets/d86a41a8-4181-4e3a-af0e-dc453a6b8594
 **MetaClaw es un agente que meta-aprende y evoluciona en entornos reales.**
 Habla con tu agente como de costumbre. MetaClaw convierte cada conversación en vivo en una señal de aprendizaje, permitiendo que el agente mejore continuamente a través del despliegue real en lugar de depender únicamente del entrenamiento offline.
 
-Internamente, envuelve tu modelo detrás de un proxy compatible con OpenAI, intercepta interacciones desde OpenClaw, inyecta skills relevantes en cada turno y meta-aprende de la experiencia acumulada. Las skills se resumen automáticamente tras cada sesión; con RL activado, un planificador de meta-aprendizaje posterga las actualizaciones de pesos a ventanas de inactividad para no interrumpir al agente durante el uso activo.
+Internamente, envuelve tu modelo detrás de un proxy compatible con OpenAI (con un endpoint compatible con Anthropic `/v1/messages` para agentes como NanoClaw), intercepta interacciones desde OpenClaw, NanoClaw, NemoClaw y otros agentes compatibles, inyecta skills relevantes en cada turno y meta-aprende de la experiencia acumulada. Las skills se resumen automáticamente tras cada sesión; con RL activado, un planificador de meta-aprendizaje posterga las actualizaciones de pesos a ventanas de inactividad para no interrumpir al agente durante el uso activo.
 
 No se necesita cluster GPU. MetaClaw funciona con cualquier API de LLM compatible con OpenAI y usa un backend compatible con Tinker para entrenamiento LoRA en la nube. [Tinker](https://www.thinkingmachines.ai/tinker/) es la ruta de referencia por defecto; si hace falta, MinT puede habilitarse mediante un paquete de compatibilidad separado.
 
@@ -219,6 +156,8 @@ La configuración se encuentra en `~/.metaclaw/config.yaml`, creada por `metacla
 ```
 metaclaw setup                  # Asistente de configuración inicial interactivo
 metaclaw start                  # Iniciar MetaClaw (por defecto: modo MadMax)
+metaclaw start --daemon         # Iniciar MetaClaw en segundo plano
+metaclaw start --daemon --log-file /tmp/metaclaw.log  # Ruta de log personalizada
 metaclaw start --mode rl        # Forzar modo RL para esta sesión (sin planificador)
 metaclaw start --mode skills_only  # Forzar modo solo skills para esta sesión
 metaclaw stop                   # Detener una instancia de MetaClaw en ejecución
@@ -226,6 +165,8 @@ metaclaw status                 # Verificar estado del proxy, modo en ejecución
 metaclaw config show            # Ver configuración actual
 metaclaw config KEY VALUE       # Establecer un valor de configuración
 ```
+
+Al iniciar MetaClaw con `--daemon`, el comando espera hasta que el proxy local esté disponible antes de retornar. Use `metaclaw status` para verificar el estado y `metaclaw stop` para detener el proceso en segundo plano.
 
 <details>
 <summary><b>Referencia completa de configuración (clic para expandir)</b></summary>
@@ -417,6 +358,8 @@ MetaClaw se construye sobre los siguientes proyectos de código abierto:
 - [MinT](https://github.com/MindLab-Research/mindlab-toolkit) - backend alternativo para entrenamiento RL en línea.
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL) - inspiración para nuestro diseño RL.
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) - proporciona la base de nuestro banco de skills.
+- [NanoClaw](https://github.com/qwibitai/nanoclaw) - agente Claude personal de qwibitai, conectado a través del endpoint compatible con Anthropic `/v1/messages`.
+- [NemoClaw](https://github.com/NVIDIA/NemoClaw) - plugin agente OpenShell de NVIDIA para inferencia.
 
 ---
 

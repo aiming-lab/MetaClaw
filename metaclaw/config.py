@@ -101,7 +101,15 @@ class MetaClawConfig:
     # "rl"          — v0.2: RL without scheduler (trains immediately on full batch)
     # "skills_only" — proxy + skill injection only (no Tinker, no RL)
     mode: str = "madmax"
-    configure_openclaw: bool = True  # set to False for standalone deployment
+
+    # Which CLI agent to auto-configure on startup.
+    # "openclaw" | "copaw" | "ironclaw" | "none"
+    # "none" skips auto-configuration (standalone / custom setup).
+    claw_type: str = "openclaw"
+
+    # Deprecated: kept for backward compatibility.
+    # Setting configure_openclaw=False is equivalent to claw_type="none".
+    configure_openclaw: bool = True
 
     # ------------------------------------------------------------------ #
     # Scheduler (meta-learning: gate slow RL updates to idle windows)     #
@@ -116,11 +124,21 @@ class MetaClawConfig:
     scheduler_calendar_token_path: str = ""  # default set in config_store
 
     # ------------------------------------------------------------------ #
-    # LLM for skills_only forwarding (OpenAI-compatible)                 #
+    # LLM for skills_only forwarding                                     #
     # ------------------------------------------------------------------ #
-    llm_api_base: str = ""      # e.g. https://api.moonshot.cn/v1
-    llm_api_key: str = ""       # bearer token for upstream LLM
-    llm_model_id: str = ""      # model name to forward to
+    llm_provider: str = "openai"  # "openai" | "bedrock" | "openrouter" (any OpenAI-compat URL)
+    llm_api_base: str = ""      # e.g. https://api.moonshot.cn/v1 (ignored for bedrock)
+    llm_api_key: str = ""       # bearer token for upstream LLM (ignored for bedrock)
+    llm_model_id: str = ""      # model name to forward to (bedrock: inference profile ID)
+
+    # ------------------------------------------------------------------ #
+    # OpenRouter-specific (ignored for other providers)                    #
+    # ------------------------------------------------------------------ #
+    openrouter_app_name: str = "MetaClaw"     # X-Title header for attribution
+    openrouter_app_url: str = ""              # HTTP-Referer header
+    openrouter_route: str = "fallback"        # "fallback" | "price" | "throughput" | "latency"
+    openrouter_fallback_models: str = ""      # comma-separated backup model IDs
+    openrouter_data_policy: str = ""          # "deny" to avoid data-collecting providers
 
     # ------------------------------------------------------------------ #
     # LLM for skill evolution                                             #

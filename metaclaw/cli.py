@@ -12,7 +12,9 @@ Usage:
 
 from __future__ import annotations
 
+import json
 import sys
+from pathlib import Path
 
 try:
     import click
@@ -21,6 +23,187 @@ except ImportError:
     sys.exit(1)
 
 from .config_store import CONFIG_FILE, ConfigStore
+from . import runtime_state
+
+
+def _default_daemon_log_path() -> Path:
+    return Path.home() / ".metaclaw" / "metaclaw.log"
+
+
+def _effective_proxy_port(config_store: ConfigStore, override_port: int | None) -> int:
+    if override_port:
+        return override_port
+    return int(config_store.get("proxy.port") or 30000)
+
+
+def _is_process_alive(pid: int) -> bool:
+    return runtime_state.process_alive(pid)
+
+
+def _read_pid() -> int | None:
+    return runtime_state.read_pid()
+
+
+def _clear_pid():
+    runtime_state.clear_pid()
+
+
+def _clear_pid_if_matches(pid: int):
+    runtime_state.clear_pid_if_matches(pid)
+
+
+def _healthz_ready(port: int, timeout: float = 0.5) -> bool:
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=timeout) as resp:
+            if resp.status != 200:
+                return False
+            payload = json.loads(resp.read().decode("utf-8"))
+            return payload.get("ok") is True
+    except Exception:
+        return False
+
+
+def _ensure_daemon_not_running():
+    pid = _read_pid()
+    if pid is None:
+        return
+
+    if not _is_process_alive(pid):
+        _clear_pid()
+        return
+
+    raise click.ClickException(
+        f"MetaClaw is already running (PID={pid}). "
+        "Use 'metaclaw status' to inspect it or 'metaclaw stop' before starting a new daemon."
+    )
+
+
+def _wait_for_daemon_ready(proc, port: int, log_path: Path, timeout_s: float = 15.0):
+    import time
+
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        returncode = proc.poll()
+        if returncode is not None:
+            raise click.ClickException(
+                f"MetaClaw daemon exited with code {returncode}. Check logs: {log_path}"
+            )
+        if _healthz_ready(port):
+            return
+        time.sleep(0.2)
+
+    raise click.ClickException(
+        "MetaClaw daemon did not become healthy in time. "
+        f"Check logs: {log_path}"
+    )
+
+
+def _build_session_override_store(
+    config_store: ConfigStore,
+    mode: str | None,
+    port: int | None,
+) -> tuple[ConfigStore, Path | None]:
+    if not mode and not port:
+        return config_store, None
+
+    from .config_store import ConfigStore as _CS
+    import tempfile
+    import yaml
+
+    data = config_store.load()
+    if mode:
+        data["mode"] = mode
+    if port:
+        data.setdefault("proxy", {})["port"] = port
+
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+    )
+    try:
+        yaml.dump(data, tmp)
+    finally:
+        tmp.close()
+    tmp_path = Path(tmp.name)
+    return _CS(config_file=tmp_path), tmp_path
+
+
+def _spawn_daemon_process(
+    mode: str | None,
+    port: int | None,
+    log_file: str | None,
+    effective_port: int,
+) -> tuple[int, Path]:
+    import os
+    import signal
+    import subprocess
+
+    log_path = Path(log_file).expanduser() if log_file else _default_daemon_log_path()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with runtime_state.daemon_start_lock():
+            _ensure_daemon_not_running()
+
+            cmd = [sys.executable, "-m", "metaclaw", "start"]
+            if mode:
+                cmd.extend(["--mode", mode])
+            if port:
+                cmd.extend(["--port", str(port)])
+
+            with log_path.open("ab") as log_handle:
+                child_env = os.environ.copy()
+                child_env["METACLAW_RUNTIME_KIND"] = "daemon"
+                child_env["METACLAW_RUNTIME_LOG_PATH"] = str(log_path)
+                popen_kwargs = {
+                    "stdin": subprocess.DEVNULL,
+                    "stdout": log_handle,
+                    "stderr": subprocess.STDOUT,
+                    "close_fds": True,
+                    "env": child_env,
+                }
+                if os.name == "nt":
+                    creationflags = (
+                        getattr(subprocess, "DETACHED_PROCESS", 0)
+                        | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                    )
+                    if creationflags:
+                        popen_kwargs["creationflags"] = creationflags
+                else:
+                    popen_kwargs["start_new_session"] = True
+                proc = subprocess.Popen(cmd, **popen_kwargs)
+
+            try:
+                _wait_for_daemon_ready(proc, effective_port, log_path)
+            except Exception:
+                try:
+                    if proc.poll() is None:
+                        if os.name == "nt":
+                            proc.terminate()
+                        else:
+                            os.killpg(proc.pid, signal.SIGTERM)
+                        try:
+                            proc.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            if os.name == "nt":
+                                proc.kill()
+                            else:
+                                os.killpg(proc.pid, signal.SIGKILL)
+                            proc.wait(timeout=5)
+                except Exception:
+                    pass
+
+                _clear_pid_if_matches(proc.pid)
+                raise
+
+            return proc.pid, log_path
+    except RuntimeError as exc:
+        owner_pid = exc.args[0] if exc.args else "?"
+        raise click.ClickException(
+            f"Another 'metaclaw start --daemon' is already in progress (PID={owner_pid}). "
+            "Wait for it to finish or stop that process before retrying."
+        ) from None
 
 
 @click.group()
@@ -48,7 +231,20 @@ def setup():
     default=None,
     help="Override proxy port for this session.",
 )
-def start(mode: str | None, port: int | None):
+@click.option(
+    "--daemon",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Run MetaClaw in the background.",
+)
+@click.option(
+    "--log-file",
+    type=click.Path(dir_okay=False, path_type=str),
+    default=None,
+    help="Log file used with --daemon (default: ~/.metaclaw/metaclaw.log).",
+)
+def start(mode: str | None, port: int | None, daemon: bool, log_file: str | None):
     """Start MetaClaw (proxy + optional RL training)."""
     import asyncio
     from .log_color import setup_logging
@@ -63,22 +259,20 @@ def start(mode: str | None, port: int | None):
         )
         sys.exit(1)
 
-    # Session-level overrides (don't persist)
-    if mode or port:
-        data = cs.load()
-        if mode:
-            data["mode"] = mode
-        if port:
-            data.setdefault("proxy", {})["port"] = port
-        # Use an in-memory store for this session
-        from .config_store import ConfigStore as _CS
-        import tempfile, os, yaml
-        tmp = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+    if daemon:
+        pid, log_path = _spawn_daemon_process(
+            mode,
+            port,
+            log_file,
+            effective_port=_effective_proxy_port(cs, port),
         )
-        yaml.dump(data, tmp)
-        tmp.close()
-        cs = _CS(config_file=__import__("pathlib").Path(tmp.name))
+        click.echo(
+            f"MetaClaw started in background (PID={pid}). Logs: {log_path}. "
+            "Use 'metaclaw status' to check health and 'metaclaw stop' to stop it."
+        )
+        return
+
+    cs, temp_config_path = _build_session_override_store(cs, mode, port)
 
     from .launcher import MetaClawLauncher
     launcher = MetaClawLauncher(cs)
@@ -87,6 +281,9 @@ def start(mode: str | None, port: int | None):
     except KeyboardInterrupt:
         click.echo("\nInterrupted — stopping MetaClaw.")
         launcher.stop()
+    finally:
+        if temp_config_path is not None:
+            temp_config_path.unlink(missing_ok=True)
 
 
 @metaclaw.command()
@@ -125,25 +322,17 @@ def status():
 
     try:
         pid = int(pid_file.read_text().strip())
-        os.kill(pid, 0)  # check if process exists
+        os.kill(pid, 0)
     except (ProcessLookupError, ValueError):
         click.echo("MetaClaw: not running (stale PID file)")
         pid_file.unlink(missing_ok=True)
         return
 
-    # Try health check
     cs = ConfigStore()
-    port = cs.get("proxy.port") or 30000
-    try:
-        import urllib.request
-        with urllib.request.urlopen(
-            f"http://localhost:{port}/healthz", timeout=2
-        ) as resp:
-            healthy = resp.status == 200
-    except Exception:
-        healthy = False
+    port = int(cs.get("proxy.port") or 30000)
+    mode = str(cs.get("mode") or "?")
 
-    mode = cs.get("mode") or "?"
+    healthy = _healthz_ready(port, timeout=2.0)
     if healthy:
         click.echo(f"MetaClaw: running  (PID={pid}, mode={mode}, proxy=:{port})")
     else:
@@ -155,9 +344,9 @@ def status():
         try:
             import json
             sched = json.loads(state_file.read_text())
-            state_val  = sched.get("state", "?")
-            sleep_win  = sched.get("sleep_window", "?")
-            idle_min   = sched.get("idle_threshold_minutes", "?")
+            state_val = sched.get("state", "?")
+            sleep_win = sched.get("sleep_window", "?")
+            idle_min = sched.get("idle_threshold_minutes", "?")
             updated_at = sched.get("updated_at", "?")
             click.echo(
                 f"scheduler:  state={state_val}  "

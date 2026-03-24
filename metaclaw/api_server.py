@@ -292,6 +292,86 @@ def _rewrite_new_session_bootstrap_prompt(messages: list[dict]) -> tuple[list[di
 
 
 # ------------------------------------------------------------------ #
+# Anthropic ↔ OpenAI format helpers (for NanoClaw /v1/messages)      #
+# ------------------------------------------------------------------ #
+
+def _anthropic_to_openai_body(body: dict[str, Any]) -> dict[str, Any]:
+    """Convert an Anthropic /v1/messages request body to OpenAI chat format."""
+    messages: list[dict] = list(body.get("messages", []))
+
+    # Anthropic puts the system prompt at top level; move it into messages[0].
+    system = body.get("system")
+    if system:
+        if isinstance(system, str):
+            system_text = system
+        elif isinstance(system, list):
+            system_text = " ".join(
+                blk.get("text", "")
+                for blk in system
+                if isinstance(blk, dict) and blk.get("type") == "text"
+            )
+        else:
+            system_text = str(system)
+        messages = [{"role": "system", "content": system_text}] + messages
+
+    # Flatten Anthropic content blocks → plain strings expected by OpenAI.
+    normalized: list[dict] = []
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            text = " ".join(
+                blk.get("text", "")
+                for blk in content
+                if isinstance(blk, dict) and blk.get("type") == "text"
+            )
+            normalized.append({**msg, "content": text})
+        else:
+            normalized.append(msg)
+
+    openai_body: dict[str, Any] = {
+        "model": body.get("model", ""),
+        "messages": normalized,
+        "max_tokens": body.get("max_tokens", 2048),
+    }
+    for opt in ("temperature", "top_p", "stop_sequences", "stream"):
+        if opt in body:
+            key = "stop" if opt == "stop_sequences" else opt
+            openai_body[key] = body[opt]
+    return openai_body
+
+
+def _openai_to_anthropic_response(openai_resp: dict[str, Any], model: str) -> dict[str, Any]:
+    """Convert an OpenAI chat completion response to Anthropic /v1/messages format."""
+    choice = openai_resp.get("choices", [{}])[0]
+    message = choice.get("message", {})
+    content_text = message.get("content") or ""
+    finish_reason = choice.get("finish_reason", "stop")
+
+    stop_reason_map = {
+        "stop": "end_turn",
+        "length": "max_tokens",
+        "tool_calls": "tool_use",
+        "content_filter": "stop_sequence",
+    }
+    stop_reason = stop_reason_map.get(finish_reason, "end_turn")
+
+    usage = openai_resp.get("usage", {})
+    return {
+        "id": openai_resp.get("id", "msg_metaclaw"),
+        "type": "message",
+        "role": "assistant",
+        "model": model,
+        "content": [{"type": "text", "text": content_text}],
+        "stop_reason": stop_reason,
+        "stop_sequence": None,
+        "usage": {
+            "input_tokens": usage.get("prompt_tokens", 0),
+            "output_tokens": usage.get("completion_tokens", 0),
+        },
+    }
+
+
+# ------------------------------------------------------------------ #
 # MetaClawAPIServer                                                    #
 # ------------------------------------------------------------------ #
 
@@ -349,8 +429,14 @@ class MetaClawAPIServer:
         self._served_model = config.served_model_name
         self._expected_api_key = config.proxy_api_key
         os.makedirs(config.record_dir, exist_ok=True)
+        # System prompt compression is only used for OpenClaw (whose verbose
+        # system prompt benefits from compression).  Non-OpenClaw agents send
+        # short/no system prompts, and the compressed OpenClaw text can trigger
+        # content filters on strict providers (e.g. Azure).
+        self._compress_system_prompt = (config.claw_type == "openclaw")
+        cache_suffix = f"{config.claw_type}_{config.llm_provider}"
         self._system_prompt_cache_file = os.path.join(
-            config.record_dir, "system_prompt_cache.json"
+            config.record_dir, f"system_prompt_cache_{cache_suffix}.json"
         )
 
         # State machines
@@ -364,6 +450,12 @@ class MetaClawAPIServer:
         self._session_effective: dict[str, int] = {}              # at-least-one guarantee
         # skills_only: buffer turns per session for skill evolution
         self._session_turns: dict[str, list] = {}
+
+        # Session boundary detection for non-OpenClaw agents (CoPaw, IronClaw, etc.)
+        # Maps pseudo-session key (e.g. "tui-model") to tracking metadata.
+        self._tui_session_meta: dict[str, dict] = {}
+        _INACTIVITY_TIMEOUT = 300  # seconds — treat as new session after 5 min idle
+        self._tui_inactivity_timeout = _INACTIVITY_TIMEOUT
 
         # OPD teacher model client
         self._teacher_client: Optional[Any] = None
@@ -431,6 +523,26 @@ class MetaClawAPIServer:
         async def healthz():
             return {"ok": True}
 
+        @app.get("/v1/models")
+        async def list_models(
+            request: Request,
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            model_id = owner._served_model
+            return JSONResponse(content={
+                "object": "list",
+                "data": [
+                    {
+                        "id": model_id,
+                        "object": "model",
+                        "created": 0,
+                        "owned_by": "metaclaw",
+                    }
+                ],
+            })
+
         @app.post("/v1/chat/completions")
         async def chat_completions(
             request: Request,
@@ -464,14 +576,18 @@ class MetaClawAPIServer:
             else:
                 rewritten = 0
             _raw_sid = x_session_id or body.get("session_id") or ""
-            # TUI mode: OpenClaw does not send X-Session-Id/X-Turn-Type.
-            # Fall back to a model-derived session ID and treat as "main" so
-            # TUI conversations are collected as training data.
+            # OpenClaw sends X-Session-Id/X-Turn-Type on every request.
+            # Non-OpenClaw agents (CoPaw, IronClaw, etc.) don't — detect
+            # session boundaries heuristically so skill evolution and state
+            # cleanup still work correctly.
             if _raw_sid:
                 session_id = _raw_sid
                 turn_type = (x_turn_type or body.get("turn_type") or "side").strip().lower()
             else:
-                session_id = f"tui-{body.get('model', 'default')}"
+                msg_count = len(body.get("messages") or [])
+                session_id = await owner._resolve_tui_session(
+                    body.get("model", "default"), msg_count,
+                )
                 turn_type = (x_turn_type or body.get("turn_type") or "main").strip().lower()
             session_done = (
                 (x_session_done and x_session_done.strip().lower() in {"1", "true", "yes", "on"})
@@ -492,6 +608,70 @@ class MetaClawAPIServer:
                 )
             return JSONResponse(content=result["response"])
 
+        # ---------------------------------------------------------------- #
+        # Anthropic-compatible endpoint — used by NanoClaw (credential proxy
+        # forwards container Anthropic SDK calls to ANTHROPIC_BASE_URL).
+        # ---------------------------------------------------------------- #
+
+        @app.post("/v1/messages")
+        async def anthropic_messages(
+            request: Request,
+            authorization: Optional[str] = Header(default=None),
+            x_api_key: Optional[str] = Header(default=None, alias="x-api-key"),
+            x_session_id: Optional[str] = Header(default=None),
+            x_turn_type: Optional[str] = Header(default=None),
+            x_session_done: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            if owner._last_request_tracker is not None:
+                owner._last_request_tracker.touch()
+            # Accept Anthropic-style x-api-key as well as Bearer token.
+            auth_header = authorization or (f"Bearer {x_api_key}" if x_api_key else None)
+            await owner._check_auth(auth_header)
+
+            if not owner.submission_enabled.is_set():
+                resumed = await asyncio.to_thread(owner.submission_enabled.wait, 300.0)
+                if not resumed:
+                    raise HTTPException(
+                        status_code=503,
+                        detail="submission paused for weight update (wait timeout)",
+                    )
+
+            raw_body = await request.json()
+            stream = bool(raw_body.get("stream", False))
+            openai_body = _anthropic_to_openai_body(raw_body)
+            model = raw_body.get("model") or owner._served_model
+
+            incoming_messages = openai_body.get("messages", [])
+            if isinstance(incoming_messages, list):
+                rewritten_messages, _ = _rewrite_new_session_bootstrap_prompt(incoming_messages)
+                openai_body["messages"] = rewritten_messages
+
+            _raw_sid = x_session_id or ""
+            if _raw_sid:
+                session_id = _raw_sid
+                turn_type = (x_turn_type or "side").strip().lower()
+            else:
+                msg_count = len(openai_body.get("messages") or [])
+                session_id = await owner._resolve_tui_session(model, msg_count)
+                turn_type = (x_turn_type or "main").strip().lower()
+            session_done = bool(
+                x_session_done and x_session_done.strip().lower() in {"1", "true", "yes", "on"}
+            )
+
+            result = await owner._handle_request(
+                openai_body,
+                session_id=session_id,
+                turn_type=turn_type,
+                session_done=session_done,
+            )
+            if stream:
+                return StreamingResponse(
+                    owner._stream_anthropic_response(result, model),
+                    media_type="text/event-stream",
+                )
+            return JSONResponse(content=_openai_to_anthropic_response(result["response"], model))
+
         return app
 
     async def _check_auth(self, authorization: Optional[str]):
@@ -502,6 +682,86 @@ class MetaClawAPIServer:
         token = authorization.split(" ", 1)[1].strip()
         if token != self._expected_api_key:
             raise HTTPException(status_code=401, detail="invalid api key")
+
+    # ------------------------------------------------------------------ #
+    # TUI session boundary detection (CoPaw / IronClaw / generic clients)  #
+    # ------------------------------------------------------------------ #
+
+    async def _resolve_tui_session(self, model: str, msg_count: int) -> str:
+        """Return a session_id for agents that don't send X-Session-Id.
+
+        Detects new-conversation boundaries by two heuristics:
+          1. Message count dropped — the client started a fresh conversation.
+          2. Inactivity timeout — the user was idle for >N seconds.
+
+        When a boundary is detected the old session is flushed (skill evolution
+        triggered, state dicts cleaned up) and a new unique id is assigned.
+        """
+        import uuid
+
+        tui_key = f"tui-{model}"
+        now = time.time()
+        meta = self._tui_session_meta.get(tui_key)
+
+        if meta is None:
+            # First request for this model — start a fresh session.
+            sid = f"tui-{model}-{uuid.uuid4().hex[:8]}"
+            self._tui_session_meta[tui_key] = {
+                "session_id": sid,
+                "last_msg_count": msg_count,
+                "last_request_time": now,
+            }
+            logger.info("[SessionDetect] new TUI session %s (first request)", sid)
+            return sid
+
+        new_session = False
+        if msg_count < meta["last_msg_count"]:
+            # Message count dropped → client started a new conversation.
+            new_session = True
+            logger.info(
+                "[SessionDetect] msg count dropped %d → %d — new session",
+                meta["last_msg_count"], msg_count,
+            )
+        elif (now - meta["last_request_time"]) > self._tui_inactivity_timeout:
+            new_session = True
+            idle_sec = int(now - meta["last_request_time"])
+            logger.info(
+                "[SessionDetect] inactivity %ds > %ds — new session",
+                idle_sec, self._tui_inactivity_timeout,
+            )
+
+        if new_session:
+            old_sid = meta["session_id"]
+            await self._close_session(old_sid)
+            sid = f"tui-{model}-{uuid.uuid4().hex[:8]}"
+            self._tui_session_meta[tui_key] = {
+                "session_id": sid,
+                "last_msg_count": msg_count,
+                "last_request_time": now,
+            }
+            logger.info("[SessionDetect] new TUI session %s (replacing %s)", sid, old_sid)
+            return sid
+
+        # Same session — update tracking.
+        meta["last_msg_count"] = msg_count
+        meta["last_request_time"] = now
+        return meta["session_id"]
+
+    async def _close_session(self, session_id: str) -> None:
+        """Flush a session: submit remaining samples, trigger skill evolution, clean up state."""
+        self._flush_pending_record(session_id, None)
+        self._maybe_submit_ready_samples(session_id, force_no_prm=True)
+        eff = self._session_effective.pop(session_id, 0)
+        self._turn_counts.pop(session_id, None)
+        self._teacher_tasks.pop(session_id, None)
+        self._pending_turn_data.pop(session_id, None)
+        self._prm_tasks.pop(session_id, None)
+        logger.info(
+            "[SessionDetect] closed session=%s (effective_samples=%d)", session_id, eff,
+        )
+        turns = self._session_turns.pop(session_id, [])
+        if turns and self.skill_evolver and self.config.enable_skill_evolution:
+            self._safe_create_task(self._evolve_skills_for_session(turns))
 
     # ------------------------------------------------------------------ #
     # Record helpers                                                       #
@@ -714,46 +974,49 @@ class MetaClawAPIServer:
             except Exception:
                 return 0
 
-        cached_system = self._read_cached_system_prompt()
-        if not cached_system:
-            raw_system = ""
-            for m in messages:
-                if isinstance(m, dict) and m.get("role") == "system":
-                    raw_system = _flatten_message_content(m.get("content"))
-                    break
-            if raw_system:
-                # System prompt compression requires an external LLM API.
-                # When running with a local-only backend (e.g. MLX) and no
-                # llm_api_key configured, skip compression and use raw prompt.
-                if self.config.llm_api_key:
+        # Compress verbose system prompts (OpenClaw only).  Non-OpenClaw
+        # agents send short or no system prompts; compressing them wastes an
+        # LLM call and the cached OpenClaw prompt can trigger content filters.
+        cached_system = ""
+        if self._compress_system_prompt:
+            cached_system = self._read_cached_system_prompt()
+            if not cached_system:
+                raw_system = ""
+                for m in messages:
+                    if isinstance(m, dict) and m.get("role") == "system":
+                        raw_system = _flatten_message_content(m.get("content"))
+                        break
+                if raw_system:
                     try:
                         cached_system = await asyncio.to_thread(
                             run_llm,
                             [{"role": "user", "content": raw_system}],
+                            self.config,
                         )
-                    except Exception as exc:
+                        cached_system = (cached_system or raw_system).strip()
+                    except Exception as e:
                         logger.warning(
-                            "[OpenClaw] system prompt compression failed, "
-                            "using raw prompt: %s", exc,
+                            "[OpenClaw] system prompt compression failed: %s — using raw system prompt",
+                            e,
                         )
-                        cached_system = None
-                cached_system = (cached_system or raw_system).strip()
-                self._write_cached_system_prompt(cached_system)
+                        cached_system = raw_system.strip()
+                    self._write_cached_system_prompt(cached_system)
 
-        if cached_system:
-            for m in messages:
-                if isinstance(m, dict) and m.get("role") == "system":
-                    m["content"] = cached_system
+            if cached_system:
+                for m in messages:
+                    if isinstance(m, dict) and m.get("role") == "system":
+                        m["content"] = cached_system
 
         tools = body.get("tools")
 
         # Inject skills into system message for main turns
         if self.skill_manager and turn_type == "main":
             messages = self._inject_skills(messages)
-        logger.info(
-            "[OpenClaw] system prompt cached len=%d",
-            _prompt_len([{"role": "system", "content": cached_system}]),
-        )
+        if self._compress_system_prompt:
+            logger.info(
+                "[OpenClaw] system prompt cached len=%d",
+                _prompt_len([{"role": "system", "content": cached_system}]),
+            )
 
         # Truncate to fit within max_context_tokens (keep system + most-recent messages)
         max_prompt = self.config.max_context_tokens - int(body.get("max_tokens") or 2048)
@@ -891,16 +1154,7 @@ class MetaClawAPIServer:
             logger.info("[OpenClaw] SIDE session=%s → skipped (no training data)", session_id)
 
         if session_done:
-            self._flush_pending_record(session_id, None)
-            self._maybe_submit_ready_samples(session_id, force_no_prm=True)
-            eff = self._session_effective.pop(session_id, 0)
-            self._turn_counts.pop(session_id, None)
-            self._teacher_tasks.pop(session_id, None)
-            logger.info("[OpenClaw] session=%s done → cleaned up (effective_samples=%d)", session_id, eff)
-            # skills_only: trigger async skill evolution from this session's turns
-            turns = self._session_turns.pop(session_id, [])
-            if turns and self.skill_evolver and self.config.enable_skill_evolution:
-                self._safe_create_task(self._evolve_skills_for_session(turns))
+            await self._close_session(session_id)
 
         output["session_id"] = session_id
         return {"response": output}
@@ -1029,7 +1283,19 @@ class MetaClawAPIServer:
     # ------------------------------------------------------------------ #
 
     async def _forward_to_llm(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Forward to a real OpenAI-compatible API (skills_only mode)."""
+        """Forward to a real LLM API (skills_only mode).
+
+        Supports providers:
+          - ``"openai"`` (default) — any OpenAI-compatible ``/v1/chat/completions`` endpoint.
+          - ``"openrouter"`` — OpenRouter gateway (OpenAI-compatible + routing extensions).
+          - ``"bedrock"`` — AWS Bedrock Converse API via :class:`BedrockChatClient`.
+        """
+        if self.config.llm_provider == "bedrock":
+            return await self._forward_to_llm_bedrock(body)
+        return await self._forward_to_llm_openai(body)
+
+    async def _forward_to_llm_openai(self, body: dict[str, Any]) -> dict[str, Any]:
+        """Forward to an OpenAI-compatible API."""
         import httpx
 
         api_base = self.config.llm_api_base.rstrip("/")
@@ -1051,6 +1317,27 @@ class MetaClawAPIServer:
         if self.config.llm_api_key:
             headers["Authorization"] = f"Bearer {self.config.llm_api_key}"
 
+        # OpenRouter-specific headers and body extensions
+        if self.config.llm_provider == "openrouter":
+            if self.config.openrouter_app_name:
+                headers["X-Title"] = self.config.openrouter_app_name
+            if self.config.openrouter_app_url:
+                headers["HTTP-Referer"] = self.config.openrouter_app_url
+            # Routing strategy
+            route = self.config.openrouter_route
+            if route and route != "fallback":
+                send_body["provider"] = {"sort": route}
+            # Fallback model list
+            fallback = self.config.openrouter_fallback_models
+            if fallback:
+                models = [m.strip() for m in fallback.split(",") if m.strip()]
+                if models:
+                    send_body["models"] = [send_body.get("model", "")] + models
+            # Data collection policy
+            if self.config.openrouter_data_policy == "deny":
+                send_body.setdefault("provider", {})
+                send_body["provider"]["data_collection"] = "deny"
+
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 resp = await client.post(
@@ -1066,6 +1353,61 @@ class MetaClawAPIServer:
         except Exception as e:
             logger.error("[OpenClaw] LLM forward failed: %s", e, exc_info=True)
             raise HTTPException(status_code=502, detail=f"LLM forward error: {e}") from e
+
+    async def _forward_to_llm_bedrock(self, body: dict[str, Any]) -> dict[str, Any]:
+        """Forward to AWS Bedrock via BedrockChatClient."""
+        from .bedrock_client import BedrockChatClient
+
+        model_id = self.config.llm_model_id
+        if not model_id:
+            raise HTTPException(
+                status_code=503,
+                detail="llm.model_id (Bedrock inference profile) is not configured.",
+            )
+
+        messages = body.get("messages", [])
+        temperature = body.get("temperature", 0.6)
+        max_tokens = (
+            body.get("max_completion_tokens")
+            or body.get("max_tokens")
+            or 8192
+        )
+
+        try:
+            client = BedrockChatClient(
+                model_id=model_id,
+                region=self.config.bedrock_region,
+            )
+            resp = await asyncio.to_thread(
+                client.chat.completions.create,
+                model=model_id,
+                messages=messages,
+                temperature=temperature,
+                max_completion_tokens=max_tokens,
+            )
+            # Convert BedrockChatClient dataclass response to OpenAI-compatible dict
+            choice = resp.choices[0] if resp.choices else None
+            return {
+                "id": f"chatcmpl-bedrock-{int(time.time())}",
+                "object": "chat.completion",
+                "model": model_id,
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": choice.message.role if choice else "assistant",
+                        "content": choice.message.content if choice else "",
+                    },
+                    "finish_reason": choice.finish_reason if choice else "stop",
+                }],
+                "usage": {
+                    "prompt_tokens": resp.usage.prompt_tokens,
+                    "completion_tokens": resp.usage.completion_tokens,
+                    "total_tokens": resp.usage.total_tokens,
+                },
+            }
+        except Exception as e:
+            logger.error("[OpenClaw] Bedrock forward failed: %s", e, exc_info=True)
+            raise HTTPException(status_code=502, detail=f"Bedrock forward error: {e}") from e
 
     # ------------------------------------------------------------------ #
     # Skill evolution (skills_only mode)                                  #
@@ -1333,6 +1675,50 @@ class MetaClawAPIServer:
         yield f"data: {json.dumps(first, ensure_ascii=False)}\n\n"
         yield f"data: {json.dumps(final, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
+
+    async def _stream_anthropic_response(self, result: dict[str, Any], model: str):
+        """Yield Anthropic-format SSE events from an internal result dict."""
+        payload = result["response"]
+        choice = payload.get("choices", [{}])[0]
+        message = choice.get("message", {})
+        content_text = message.get("content", "") or ""
+        finish_reason = choice.get("finish_reason", "stop")
+        stop_reason_map = {
+            "stop": "end_turn", "length": "max_tokens",
+            "tool_calls": "tool_use", "content_filter": "stop_sequence",
+        }
+        stop_reason = stop_reason_map.get(finish_reason, "end_turn")
+        usage = payload.get("usage", {})
+        msg_id = payload.get("id", "msg_metaclaw")
+
+        def _sse(event: str, data: dict) -> str:
+            return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+        yield _sse("message_start", {
+            "type": "message_start",
+            "message": {
+                "id": msg_id, "type": "message", "role": "assistant",
+                "content": [], "model": model, "stop_reason": None,
+                "stop_sequence": None,
+                "usage": {"input_tokens": usage.get("prompt_tokens", 0), "output_tokens": 0},
+            },
+        })
+        yield _sse("content_block_start", {
+            "type": "content_block_start", "index": 0,
+            "content_block": {"type": "text", "text": ""},
+        })
+        yield _sse("ping", {"type": "ping"})
+        yield _sse("content_block_delta", {
+            "type": "content_block_delta", "index": 0,
+            "delta": {"type": "text_delta", "text": content_text},
+        })
+        yield _sse("content_block_stop", {"type": "content_block_stop", "index": 0})
+        yield _sse("message_delta", {
+            "type": "message_delta",
+            "delta": {"stop_reason": stop_reason, "stop_sequence": None},
+            "usage": {"output_tokens": usage.get("completion_tokens", 0)},
+        })
+        yield _sse("message_stop", {"type": "message_stop"})
 
     # ------------------------------------------------------------------ #
     # Lifecycle                                                            #

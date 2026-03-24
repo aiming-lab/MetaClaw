@@ -23,7 +23,8 @@ _DEFAULTS: dict = {
         "api_key": "",
     },
     "proxy": {"port": 30000, "host": "0.0.0.0", "api_key": ""},
-    "configure_openclaw": True,
+    "claw_type": "openclaw",
+    "configure_openclaw": True,  # deprecated; use claw_type="none" instead
     "skills": {
         "enabled": True,
         "dir": str(Path.home() / ".metaclaw" / "skills"),
@@ -31,6 +32,13 @@ _DEFAULTS: dict = {
         "top_k": 6,
         "task_specific_top_k": 10,
         "auto_evolve": True,
+    },
+    "openrouter": {
+        "app_name": "MetaClaw",
+        "app_url": "",
+        "route": "fallback",
+        "fallback_models": "",
+        "data_policy": "",
     },
     "rl": {
         "enabled": False,
@@ -40,15 +48,17 @@ _DEFAULTS: dict = {
         "base_url": "",
         "tinker_api_key": "",
         "tinker_base_url": "",
+        "prm_provider": "openai",
         "prm_url": "https://api.openai.com/v1",
         "prm_model": "gpt-5.2",
         "prm_api_key": "",
-        "lora_rank": 32,
-        "batch_size": 4,
-        "resume_from_ckpt": "",
+        "evolver_provider": "openai",
         "evolver_api_base": "",
         "evolver_api_key": "",
         "evolver_model": "gpt-5.2",
+        "lora_rank": 32,
+        "batch_size": 4,
+        "resume_from_ckpt": "",
     },
     "scheduler": {
         "enabled": False,
@@ -147,10 +157,15 @@ class ConfigStore:
         proxy = data.get("proxy", {})
         skills = data.get("skills", {})
         rl = data.get("rl", {})
+        orouter = data.get("openrouter", {})
         sched = data.get("scheduler", {})
         sched_cal = sched.get("calendar", {})
         mode = data.get("mode", "madmax")
         configure_openclaw = bool(data.get("configure_openclaw", True))
+        # Resolve effective claw_type: legacy configure_openclaw=False → "none"
+        raw_claw_type = str(data.get("claw_type", "openclaw") or "openclaw")
+        if not configure_openclaw:
+            raw_claw_type = "none"
         rl_enabled = mode in ("rl", "madmax") or bool(rl.get("enabled", False))
 
         # Evolver: prefer rl.evolver_*, fallback to llm.*
@@ -169,9 +184,18 @@ class ConfigStore:
             # Mode
             mode=mode,
             # LLM for skills_only forwarding
+            llm_provider=llm.get("provider", "openai"),
             llm_api_base=llm.get("api_base", ""),
             llm_api_key=llm.get("api_key", ""),
             llm_model_id=llm.get("model_id", ""),
+            # Bedrock region (shared by LLM, PRM, and evolver)
+            bedrock_region=llm.get("bedrock_region") or data.get("bedrock_region", "us-east-1"),
+            # OpenRouter
+            openrouter_app_name=orouter.get("app_name", "MetaClaw"),
+            openrouter_app_url=orouter.get("app_url", ""),
+            openrouter_route=orouter.get("route", "fallback"),
+            openrouter_fallback_models=orouter.get("fallback_models", ""),
+            openrouter_data_policy=orouter.get("data_policy", ""),
             # Proxy
             proxy_port=proxy.get("port", 30000),
             proxy_host=proxy.get("host", "0.0.0.0"),
@@ -197,10 +221,12 @@ class ConfigStore:
             tinker_base_url=str(rl.get("tinker_base_url", "") or ""),
             # PRM (only meaningful in rl mode)
             use_prm=bool(rl.get("prm_url")) and rl_enabled,
+            prm_provider=rl.get("prm_provider", "openai"),
             prm_url=rl.get("prm_url", "https://api.openai.com/v1"),
             prm_model=rl.get("prm_model", "gpt-5.2"),
             prm_api_key=rl.get("prm_api_key", ""),
             # Evolver
+            evolver_provider=rl.get("evolver_provider", "openai"),
             evolver_api_base=evolver_api_base,
             evolver_api_key=evolver_api_key,
             evolver_model_id=evolver_model,
@@ -216,6 +242,7 @@ class ConfigStore:
                 sched_cal.get("token_path", "")
                 or str(Path.home() / ".metaclaw" / "calendar_token.json")
             ),
+            claw_type=raw_claw_type,
             configure_openclaw=configure_openclaw,
         )
 
@@ -228,9 +255,16 @@ class ConfigStore:
         mode = data.get("mode", "madmax")
         lines = [
             f"mode:            {mode}",
+            f"claw_type:       {data.get('claw_type', 'openclaw')}",
             f"llm.provider:    {llm.get('provider', '?')}",
             f"llm.model_id:    {llm.get('model_id', '?')}",
-            f"llm.api_base:    {llm.get('api_base', '?')}",
+            f"llm.api_base:    {llm.get('api_base', '—') if llm.get('provider') != 'bedrock' else '(n/a)'}",
+            *([ f"llm.bedrock_region: {llm.get('bedrock_region', 'us-east-1')}" ] if llm.get('provider') == 'bedrock' else []),
+            *([
+                f"openrouter.route:    {data.get('openrouter', {}).get('route', 'fallback')}",
+                f"openrouter.fallback: {data.get('openrouter', {}).get('fallback_models', '') or '(none)'}",
+                f"openrouter.data:     {data.get('openrouter', {}).get('data_policy', '') or 'allow'}",
+            ] if llm.get('provider') == 'openrouter' else []),
             f"proxy.port:      {data.get('proxy', {}).get('port', 30000)}",
             f"skills.enabled:  {skills.get('enabled', True)}",
             f"skills.dir:      {skills.get('dir', '?')}",

@@ -2,9 +2,10 @@
 Runtime backend selection for RL SDK clients.
 
 MetaClaw can talk to:
-  - ``tinker`` directly
-  - ``mint`` via the MindLab compatibility package
-  - ``weaver`` via the metaclaw.weaver_compat adapter
+- ``tinker`` directly
+- ``mint`` via the MindLab compatibility package
+- ``mlx`` for local Apple Silicon training (no cloud required)
+- ``weaver`` via the metaclaw.weaver_compat adapter
 """
 
 from __future__ import annotations
@@ -19,9 +20,9 @@ from urllib.parse import urlparse
 if TYPE_CHECKING:
     from .config import MetaClawConfig
 
-_VALID_BACKENDS = {"auto", "tinker", "mint", "weaver"}
-_BACKEND_LABELS = {"tinker": "Tinker", "mint": "MinT", "weaver": "Weaver"}
 
+_VALID_BACKENDS = {"auto", "tinker", "mint", "weaver", "mlx"}
+_BACKEND_LABELS = {"tinker": "Tinker", "mint": "MinT", "weaver": "Weaver", "mlx": "MLX (local)""}
 
 @dataclass(frozen=True)
 class SDKBackend:
@@ -34,6 +35,8 @@ class SDKBackend:
 
     @property
     def banner(self) -> str:
+        if self.key == "mlx":
+            return f"{self.label} local RL"
         return f"{self.label} cloud RL"
 
 
@@ -138,12 +141,26 @@ def _has_mint_signal(config: "MetaClawConfig") -> bool:
 
 def infer_backend_key(config: "MetaClawConfig") -> str:
     configured = configured_backend_name(config)
-    if configured in {"tinker", "mint", "weaver"}:
+
+    if configured in {"tinker", "mint", "weaver", "mlx"}:
         return configured
     if _has_weaver_signal(config) and _module_available("weaver"):
         return "weaver"
     if _has_mint_signal(config) and _module_available("mint"):
         return "mint"
+
+    # Then check for cloud credentials (Tinker or MinT env vars)
+    api_key = configured_api_key(config)
+    base_url = configured_base_url(config)
+    cloud_env = _first_env("TINKER_API_KEY", "MINT_API_KEY")
+
+    if api_key or base_url or cloud_env:
+        return "tinker"
+
+    # No cloud credentials at all — fall back to MLX if available
+    if _module_available("mlx") and _module_available("mlx_lm"):
+        return "mlx"
+
     return "tinker"
 
 
@@ -164,6 +181,14 @@ def resolve_base_url(config: "MetaClawConfig", backend_key: str | None = None) -
 
 
 def _import_backend_module(backend_key: str, configured_backend: str):
+    if backend_key == "mlx":
+        if not _module_available("mlx") or not _module_available("mlx_lm"):
+            raise RuntimeError(
+                "rl.backend='mlx' requires mlx and mlx-lm. "
+                "Install with: pip install mlx mlx-lm"
+            )
+        return importlib.import_module("metaclaw.mlx_backend")
+
     if backend_key == "weaver":
         if configured_backend == "weaver" and not _module_available("weaver"):
             raise RuntimeError(

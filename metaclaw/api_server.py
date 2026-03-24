@@ -1353,13 +1353,17 @@ class MetaClawAPIServer:
             sampling_params = self._sdk.SamplingParams(**sp_kwargs)
 
             # Call active backend
-            response = await self._sampling_client.sample_async(
+            # include_prompt_logprobs / topk_prompt_logprobs are Tinker-specific;
+            # MLX (and potentially other local backends) don't support them.
+            sample_kwargs: dict[str, Any] = dict(
                 prompt=model_input,
                 num_samples=1,
                 sampling_params=sampling_params,
-                include_prompt_logprobs=False,
-                topk_prompt_logprobs=0,
             )
+            if backend_key != "mlx":
+                sample_kwargs["include_prompt_logprobs"] = False
+                sample_kwargs["topk_prompt_logprobs"] = 0
+            response = await self._sampling_client.sample_async(**sample_kwargs)
 
             # Decode response tokens → text
             seq = response.sequences[0]

@@ -92,6 +92,15 @@ def _prompt_choice(msg: str, choices: list[str], default: str = "") -> str:
         print(f"  Invalid choice. Pick one of: {choices}")
 
 
+def _check_mlx_available() -> bool:
+    """Return True if mlx and mlx_lm are importable."""
+    import importlib.util
+    return (
+        importlib.util.find_spec("mlx") is not None
+        and importlib.util.find_spec("mlx_lm") is not None
+    )
+
+
 class SetupWizard:
     """Interactive configuration wizard."""
 
@@ -135,6 +144,7 @@ class SetupWizard:
             ["kimi", "qwen", "openai", "minimax", "novita", "openrouter", "bedrock", "custom"],
             default=current_provider,
         )
+
         preset = _PROVIDER_PRESETS[provider]
         openrouter_config: dict = existing.get("openrouter", {})
         if provider == "bedrock":
@@ -217,33 +227,63 @@ class SetupWizard:
 
         if rl_enabled:
             print("\n--- RL Training Configuration ---")
+            print(
+                "  auto   — detect from credentials (default)\n"
+                "  tinker — Tinker cloud RL\n"
+                "  mint   — MinT / MindLab cloud RL\n"
+                "  mlx    — local Apple Silicon (no API key needed)"
+            )
             backend = _prompt_choice(
                 "RL backend",
-                ["auto", "tinker", "mint", "weaver"],
+                ["auto", "tinker", "mint", "weaver", "mlx"],
                 default=str(rl_config.get("backend", "auto") or "auto"),
             )
-            rl_model = _prompt(
-                "Base model for RL training",
-                default=rl_config.get("model") or model_id,
-            )
-            backend_api_key = _prompt(
-                "RL backend API key",
-                default=(
-                    rl_config.get("api_key")
-                    or rl_config.get("tinker_api_key", "")
-                ),
-                hide=True,
-            )
-            backend_base_url = _prompt(
-                "RL backend base URL (optional)",
-                default=(
-                    rl_config.get("base_url")
-                    or rl_config.get("tinker_base_url")
-                    or os.environ.get("TINKER_BASE_URL", "")
-                    or os.environ.get("MINT_BASE_URL", "")
-                    or os.environ.get("WEAVER_BASE_URL", "")
-                ),
-            )
+
+            # -- MLX: validate deps, skip cloud credentials --------
+            if backend == "mlx":
+                if _check_mlx_available():
+                    print("  \u2713 mlx and mlx-lm are installed")
+                else:
+                    print(
+                        "  \u2717 MLX backend requires mlx and mlx-lm.\n"
+                        "    Install with: pip install mlx mlx-lm\n"
+                        "    You can finish setup now and install them before 'metaclaw start'."
+                    )
+
+                rl_model = _prompt(
+                    "Base model for RL training (HuggingFace MLX model ID)",
+                    default=(
+                        rl_config.get("model")
+                        or "mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+                    ),
+                )
+                backend_api_key = ""
+                backend_base_url = ""
+
+            # -- Cloud backends: prompt for credentials -------------
+            else:
+                rl_model = _prompt(
+                    "Base model for RL training",
+                    default=rl_config.get("model") or model_id,
+                )
+                backend_api_key = _prompt(
+                    "RL backend API key",
+                    default=(
+                        rl_config.get("api_key")
+                        or rl_config.get("tinker_api_key", "")
+                    ),
+                    hide=True,
+                )
+                backend_base_url = _prompt(
+                    "RL backend base URL (optional)",
+                    default=(
+                        rl_config.get("base_url")
+                        or rl_config.get("tinker_base_url")
+                        or os.environ.get("TINKER_BASE_URL", "")
+                        or os.environ.get("MINT_BASE_URL", "")
+                        or os.environ.get("WEAVER_BASE_URL", "")
+                    ),
+                )
             prm_url = _prompt(
                 "PRM (reward model) URL",
                 default=rl_config.get("prm_url", "https://api.openai.com/v1"),
@@ -257,6 +297,7 @@ class SetupWizard:
                 default=rl_config.get("prm_api_key", ""),
                 hide=True,
             )
+
             lora_rank = _prompt_int("LoRA rank", default=rl_config.get("lora_rank", 32))
             resume_from_ckpt = _prompt(
                 "Resume from checkpoint path (optional)",
@@ -324,14 +365,13 @@ class SetupWizard:
                 "Enable smart update scheduler",
                 default=bool(current_sched.get("enabled", False)),
             )
-
             if sched_enabled:
                 sleep_start = _prompt(
                     "Sleep start time (HH:MM, 24h)",
                     default=current_sched.get("sleep_start", "23:00"),
                 )
                 sleep_end = _prompt(
-                    "Sleep end time   (HH:MM, 24h)",
+                    "Sleep end time (HH:MM, 24h)",
                     default=current_sched.get("sleep_end", "07:00"),
                 )
                 idle_mins = _prompt_int(
@@ -342,7 +382,6 @@ class SetupWizard:
                     "Minimum window required for one RL step (minutes)",
                     default=current_sched.get("min_window_minutes", 15),
                 )
-
                 use_calendar = _prompt_bool(
                     "Use Google Calendar to detect meeting times (optional)",
                     default=bool(current_sched_cal.get("enabled", False)),
@@ -416,7 +455,6 @@ class SetupWizard:
             "rl": rl_config,
             "scheduler": scheduler_config,
         }
-
         cs.save(data)
         Path(skills_dir).expanduser().mkdir(parents=True, exist_ok=True)
 

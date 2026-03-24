@@ -441,6 +441,79 @@ Each `ConversationSample` is tagged with a `skill_generation` version. When skil
 
 ---
 
+## 🍎 MLX Backend (Apple Silicon Local RL)
+
+MetaClaw supports **local RL training on Apple Silicon Macs** via the MLX backend. This enables RL training without cloud GPU instances — everything runs locally on your M-series chip.
+
+### Quick Start
+
+```bash
+# Install with MLX extras
+pip install -e ".[mlx]"
+
+# Configure
+metaclaw setup   # select backend → mlx
+
+# Or via env
+export METACLAW_RL_BACKEND=mlx
+metaclaw start
+```
+
+### Configuration
+
+Add to `config.py`:
+```python
+# MLX backend settings
+mlx_model_path: str = ""          # local path or HF repo (e.g. mlx-community/Qwen2.5-7B-4bit)
+mlx_output_dir: str = "./mlx_metaclaw_output"
+```
+
+In `setup_wizard.py`, add `"mlx"` to the backend selection list:
+```python
+# Before:
+["auto", "tinker", "mint"],
+# After:
+["auto", "tinker", "mint", "mlx"],
+```
+
+### Requirements
+
+- Apple Silicon Mac (M1/M2/M3/M4)
+- macOS 13+
+- Python 3.10+
+- `mlx>=0.22.0`, `mlx-lm>=0.21.0`, `safetensors`
+
+### Architecture
+
+The MLX backend implements the same `ServiceClient`, `SamplingClient`, and `LoraTrainingClient` interfaces as the cloud backends, ensuring full compatibility with the MetaClaw training pipeline.
+
+The MLX backend implements the same `ServiceClient`, `SamplingClient`, and `LoraTrainingClient` interfaces as the cloud backends, ensuring full compatibility with the MetaClaw training pipeline.
+
+### Usage
+
+To use the MLX backend, simply configure it during setup or via environment variables:
+
+```bash
+# Install with MLX extras
+pip install -e ".[mlx]"
+
+# Configure via setup
+metaclaw setup   # select backend → mlx
+
+# Or via environment variable
+export METACLAW_RL_BACKEND=mlx
+metaclaw start
+```
+
+The MLX backend enables local RL training on Apple Silicon Macs without requiring cloud GPU instances - everything runs locally on your M-series chip. Configuration options include:
+
+- `mlx_model_path`: Local path or Hugging Face repo (e.g., mlx-community/Qwen2.5-7B-4bit)
+- `mlx_output_dir`: Directory for MLX output (default: ./mlx_metaclaw_output)
+
+In `config.py`, the backend will be labeled as "MLX local RL" when selected, distinguishing it from "Tinker cloud RL" or "MinT cloud RL".
+
+---
+
 ## 🙏 Acknowledgements
 
 MetaClaw builds on top of the following open-source projects:

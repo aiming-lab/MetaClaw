@@ -74,7 +74,7 @@ Basta conversar com seu agente normalmente. O MetaClaw transforma cada conversa 
 
 Internamente, ele posiciona seu modelo atras de um proxy compativel com OpenAI (com endpoint compativel com Anthropic `/v1/messages` para agentes como NanoClaw) que intercepta interacoes do OpenClaw, NanoClaw, NemoClaw e outros agentes suportados, injeta skills relevantes a cada turno e meta-aprende a partir da experiencia acumulada. As skills sao resumidas automaticamente apos cada sessao; com RL habilitado, um agendador de meta-aprendizado adia atualizacoes de pesos para janelas ociosas, garantindo que o agente nunca seja interrompido durante o uso ativo.
 
-Sem necessidade de cluster GPU. O MetaClaw funciona com qualquer API LLM compativel com OpenAI, e utiliza um backend compativel com Tinker para treinamento LoRA na nuvem. O [Tinker](https://www.thinkingmachines.ai/tinker/) e o caminho de referencia padrao, e o MinT pode ser habilitado por meio de um pacote de compatibilidade separado quando necessario.
+Sem necessidade de cluster GPU. O MetaClaw funciona com qualquer API LLM compativel com OpenAI, e utiliza um backend compativel com Tinker para treinamento LoRA na nuvem. O [Tinker](https://www.thinkingmachines.ai/tinker/) e o caminho de referencia padrao, e o MinT ou Weaver podem ser habilitados por meio de pacotes de compatibilidade separados quando necessario.
 
 ## 🤖 Funcionalidades Principais
 
@@ -106,7 +106,7 @@ pip install -e ".[scheduler]"           # + integracao com Google Calendar para 
 pip install -e ".[rl,evolve,scheduler]" # recomendado para configuracao completa RL + agendador
 ```
 
-Se voce deseja usar `rl.backend=mint`, instale o pacote de compatibilidade MinT separadamente no mesmo ambiente, por exemplo [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit). O MetaClaw mantem essa dependencia fora do pacote padrao para que usuarios de RL possam escolher explicitamente entre Tinker ou MinT.
+Se voce deseja usar `rl.backend=mint`, instale o pacote de compatibilidade MinT separadamente no mesmo ambiente, por exemplo [`mindlab-toolkit`](https://github.com/MindLab-Research/mindlab-toolkit). Para `rl.backend=weaver`, instale separadamente [`nex-weaver`](https://github.com/nex-agi/weaver). O MetaClaw mantem essas dependencias fora do pacote padrao para que usuarios de RL possam escolher explicitamente entre Tinker, MinT ou Weaver.
 
 ### 2. Configuracao
 
@@ -116,7 +116,7 @@ metaclaw setup
 
 O assistente interativo ira solicitar a escolha do provedor LLM (Kimi, Qwen, MiniMax ou personalizado), sua chave de API e, opcionalmente, a habilitacao do treinamento RL.
 
-O caminho de RL do MetaClaw pode alternar explicitamente entre `tinker` e `mint`. O valor padrao recomendado e `auto`, que ainda consegue inferir o MinT a partir de credenciais ou base URLs no estilo Mint quando o pacote MinT esta instalado.
+O caminho de RL do MetaClaw pode alternar explicitamente entre `tinker`, `mint` e `weaver`. O valor padrao recomendado e `auto`, que ainda consegue inferir o MinT ou Weaver a partir de credenciais ou base URLs correspondentes quando os pacotes estao instalados.
 
 **Tinker** (padrão):
 
@@ -133,6 +133,15 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 ```
 
 Os aliases legados `rl.tinker_api_key` e `rl.tinker_base_url` continuam sendo aceitos para compatibilidade retroativa.
@@ -194,10 +203,10 @@ skills:
 
 rl:
   enabled: false            # defina como true para habilitar treinamento RL
-  backend: auto             # "auto" | "tinker" | "mint"
+  backend: auto             # "auto" | "tinker" | "mint" | "weaver"
   model: moonshotai/Kimi-K2.5
   api_key: ""
-  base_url: ""              # endpoint opcional do backend, ex.: https://mint.macaron.xin/ para MinT
+  base_url: ""              # endpoint opcional do backend, ex.: https://mint.macaron.xin/ para MinT ou https://weaver-console.nex-agi.cn para Weaver
   tinker_api_key: ""        # alias legado para api_key
   tinker_base_url: ""       # alias legado para base_url
   prm_url: https://api.openai.com/v1
@@ -255,7 +264,7 @@ cp -r memory_data/skills/* ~/.metaclaw/skills/
 
 **`metaclaw start --mode rl`**
 
-Tudo do Modo Skills, mais fine-tuning RL continuo a partir de conversas ao vivo. Cada turno de conversa e tokenizado e submetido como amostra de treinamento. Um LLM juiz (PRM) pontua respostas de forma assincrona, e um backend compativel com Tinker (Tinker cloud ou MinT) executa fine-tuning LoRA com troca a quente de pesos.
+Tudo do Modo Skills, mais fine-tuning RL continuo a partir de conversas ao vivo. Cada turno de conversa e tokenizado e submetido como amostra de treinamento. Um LLM juiz (PRM) pontua respostas de forma assincrona, e um backend compativel com Tinker (Tinker cloud, MinT ou Weaver) executa fine-tuning LoRA com troca a quente de pesos.
 
 **Tinker** (padrão):
 
@@ -275,6 +284,18 @@ metaclaw config rl.backend mint
 metaclaw config rl.api_key sk-mint-...
 metaclaw config rl.base_url https://mint.macaron.xin/
 metaclaw config rl.model Qwen/Qwen3-4B-Instruct-2507
+metaclaw config rl.prm_url https://api.openai.com/v1
+metaclaw config rl.prm_api_key sk-...
+metaclaw start --mode rl
+```
+
+**Weaver**:
+
+```bash
+metaclaw config rl.backend weaver
+metaclaw config rl.api_key sk-...
+metaclaw config rl.base_url https://weaver-console.nex-agi.cn
+metaclaw config rl.model Qwen/Qwen3-8B
 metaclaw config rl.prm_url https://api.openai.com/v1
 metaclaw config rl.prm_api_key sk-...
 metaclaw start --mode rl
@@ -356,6 +377,7 @@ O MetaClaw e construido sobre os seguintes projetos de codigo aberto:
 - [SkillRL](https://github.com/aiming-lab/SkillRL), nosso framework de RL aprimorado com skills.
 - [Tinker](https://www.thinkingmachines.ai/tinker/), usado para treinamento RL online.
 - [MinT](https://github.com/MindLab-Research/mindlab-toolkit), backend alternativo para treinamento RL online.
+- [Weaver](https://github.com/nex-agi/weaver), backend alternativo para treinamento RL online.
 - [OpenClaw-RL](https://github.com/Gen-Verse/OpenClaw-RL), inspiracao para nosso design de RL.
 - [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills), fornece a base para nosso banco de skills.
 - [NanoClaw](https://github.com/qwibitai/nanoclaw), agente Claude pessoal da qwibitai, conectado via endpoint compativel com Anthropic `/v1/messages`.

@@ -24,7 +24,7 @@ class MetaClawConfig:
     max_steps: int = 1000
     loss_fn: str = "importance_sampling"  # "ppo" | "importance_sampling" | "cispo"
     save_weights_timeout_s: float = 200.0  # timeout for sampling-client refresh
-    backend: str = "auto"         # "auto" | "tinker" | "mint"
+    backend: str = "auto"         # "auto" | "tinker" | "mint" | "weaver"
     api_key: str = ""             # neutral RL backend API key
     base_url: str = ""            # neutral RL backend base URL
     resume_from_ckpt: str = ""    # optional Tinker resume path, e.g. tinker://.../weights/step_0003
@@ -66,8 +66,23 @@ class MetaClawConfig:
     # ------------------------------------------------------------------ #
     # Context window                                                       #
     # ------------------------------------------------------------------ #
-    max_context_tokens: int = 20000            # hard cap on prompt token count; must match
-                                              # Tinker's max_seq_len minus headroom for response
+    max_context_tokens: int = 20000
+    # Hard cap on prompt token count sent to the upstream LLM.
+    # In rl/madmax mode this must be ≤ (Tinker/MinT max_seq_len − max output
+    # tokens) because the full prompt+response must fit the RL backend's
+    # training sequence length.
+    # Set to 0 to disable truncation entirely.  This is the recommended
+    # setting for skills_only mode with large-context cloud models (MiniMax
+    # M2.7, Kimi K2, etc.) — there is no RL backend, so there is no
+    # sequence-length constraint and truncating arbitrarily loses context.
+
+    context_window: int = 0
+    # Context window advertised to the connected agent (e.g. the value
+    # OpenClaw uses to decide when to compact the session).
+    # 0 = auto: 200 000 for skills_only mode; 32 768 for rl/madmax mode
+    # (where the RL backend's sequence-length budget limits usable context).
+    # Set this explicitly to match your upstream model's actual context window
+    # so OpenClaw compacts only when truly necessary.
 
     # ------------------------------------------------------------------ #
     # API Server                                                          #
@@ -103,7 +118,8 @@ class MetaClawConfig:
     mode: str = "madmax"
 
     # Which CLI agent to auto-configure on startup.
-    # "openclaw" | "copaw" | "ironclaw" | "none"
+    # "openclaw" | "copaw" | "ironclaw" | "picoclaw" | "zeroclaw" |
+    # "nanoclaw" | "nemoclaw" | "hermes" | "none"
     # "none" skips auto-configuration (standalone / custom setup).
     claw_type: str = "openclaw"
 
@@ -184,7 +200,9 @@ class MetaClawConfig:
         return infer_backend_key(self)
 
     def training_backend_label(self) -> str:
-        return "MinT" if self.resolved_backend_key() == "mint" else "Tinker"
+        from .sdk_backend import _BACKEND_LABELS
+
+        return _BACKEND_LABELS.get(self.resolved_backend_key(), "Tinker")
 
     def training_backend_banner(self) -> str:
         return f"{self.training_backend_label()} cloud RL"

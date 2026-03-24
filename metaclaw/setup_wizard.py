@@ -27,6 +27,10 @@ _PROVIDER_PRESETS = {
         "api_base": "https://api.minimax.io/v1",
         "model_id": "MiniMax-M2.7",
     },
+    "novita": {
+        "api_base": "https://api.novita.ai/openai",
+        "model_id": "moonshotai/kimi-k2.5",
+    },
     "openrouter": {
         "api_base": "https://openrouter.ai/api/v1",
         "model_id": "google/gemini-2.5-pro",
@@ -137,7 +141,7 @@ class SetupWizard:
         current_provider = current_llm.get("provider", "custom")
         provider = _prompt_choice(
             "LLM provider",
-            ["kimi", "qwen", "openai", "minimax", "openrouter", "bedrock", "custom"],
+            ["kimi", "qwen", "openai", "minimax", "novita", "openrouter", "bedrock", "custom"],
             default=current_provider,
         )
 
@@ -231,7 +235,7 @@ class SetupWizard:
             )
             backend = _prompt_choice(
                 "RL backend",
-                ["auto", "tinker", "mint", "mlx"],
+                ["auto", "tinker", "mint", "weaver", "mlx"],
                 default=str(rl_config.get("backend", "auto") or "auto"),
             )
 
@@ -277,9 +281,9 @@ class SetupWizard:
                         or rl_config.get("tinker_base_url")
                         or os.environ.get("TINKER_BASE_URL", "")
                         or os.environ.get("MINT_BASE_URL", "")
+                        or os.environ.get("WEAVER_BASE_URL", "")
                     ),
                 )
-
             prm_url = _prompt(
                 "PRM (reward model) URL",
                 default=rl_config.get("prm_url", "https://api.openai.com/v1"),

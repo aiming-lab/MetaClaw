@@ -5,6 +5,7 @@ MetaClaw can talk to:
 - ``tinker`` directly
 - ``mint`` via the MindLab compatibility package
 - ``mlx`` for local Apple Silicon training (no cloud required)
+- ``weaver`` via the metaclaw.weaver_compat adapter
 """
 
 from __future__ import annotations
@@ -19,9 +20,9 @@ from urllib.parse import urlparse
 if TYPE_CHECKING:
     from .config import MetaClawConfig
 
-_VALID_BACKENDS = {"auto", "tinker", "mint", "mlx"}
-_BACKEND_LABELS = {"tinker": "Tinker", "mint": "MinT", "mlx": "MLX (local)"}
 
+_VALID_BACKENDS = {"auto", "tinker", "mint", "weaver", "mlx"}
+_BACKEND_LABELS = {"tinker": "Tinker", "mint": "MinT", "weaver": "Weaver", "mlx": "MLX (local)""}
 
 @dataclass(frozen=True)
 class SDKBackend:
@@ -79,10 +80,12 @@ def configured_base_url(config: "MetaClawConfig") -> str:
     )
 
 
-def _backend_env_order(kind: str, backend_key: str) -> tuple[str, str]:
+def _backend_env_order(kind: str, backend_key: str) -> tuple[str, ...]:
     if kind not in {"api_key", "base_url"}:
         raise ValueError(f"Unknown backend env kind: {kind}")
     suffix = "API_KEY" if kind == "api_key" else "BASE_URL"
+    if backend_key == "weaver":
+        return (f"WEAVER_{suffix}", f"TINKER_{suffix}")
     if backend_key == "mint":
         return (f"MINT_{suffix}", f"TINKER_{suffix}")
     return (f"TINKER_{suffix}", f"MINT_{suffix}")
@@ -101,6 +104,21 @@ def _looks_like_mint_base_url(value: str) -> bool:
     if not candidate:
         return False
     return "mint" in urlparse(candidate).netloc.lower()
+
+
+def _has_weaver_signal(config: "MetaClawConfig") -> bool:
+    if _first_env("WEAVER_API_KEY", "WEAVER_BASE_URL"):
+        return True
+
+    url_candidates = (
+        configured_base_url(config),
+        os.environ.get("TINKER_BASE_URL", ""),
+    )
+    return any(
+        "weaver" in urlparse(u.strip()).netloc.lower()
+        for u in url_candidates
+        if u.strip()
+    )
 
 
 def _has_mint_signal(config: "MetaClawConfig") -> bool:
@@ -123,10 +141,11 @@ def _has_mint_signal(config: "MetaClawConfig") -> bool:
 
 def infer_backend_key(config: "MetaClawConfig") -> str:
     configured = configured_backend_name(config)
-    if configured in {"tinker", "mint", "mlx"}:
-        return configured
 
-    # auto mode: check for MinT signals first
+    if configured in {"tinker", "mint", "weaver", "mlx"}:
+        return configured
+    if _has_weaver_signal(config) and _module_available("weaver"):
+        return "weaver"
     if _has_mint_signal(config) and _module_available("mint"):
         return "mint"
 
@@ -170,6 +189,13 @@ def _import_backend_module(backend_key: str, configured_backend: str):
             )
         return importlib.import_module("metaclaw.mlx_backend")
 
+    if backend_key == "weaver":
+        if configured_backend == "weaver" and not _module_available("weaver"):
+            raise RuntimeError(
+                "rl.backend=weaver requires the nex-weaver SDK. "
+                "Install 'nex-weaver' in this environment or switch rl.backend to auto/tinker."
+            )
+        return importlib.import_module("metaclaw.weaver_compat")
     if backend_key == "mint" and configured_backend == "mint" and not _module_available("mint"):
         raise RuntimeError(
             "rl.backend=mint requires the MinT compatibility package. "

@@ -460,51 +460,30 @@ In `setup_wizard.py`, add `"mlx"` to the backend selection list:
 
 The MLX backend implements the same `ServiceClient`, `SamplingClient`, and `LoraTrainingClient` interfaces as the cloud backends, ensuring full compatibility with the MetaClaw training pipeline.
 
-### Integration Details
+The MLX backend implements the same `ServiceClient`, `SamplingClient`, and `LoraTrainingClient` interfaces as the cloud backends, ensuring full compatibility with the MetaClaw training pipeline.
 
-The MLX backend consists of several key files in `metaclaw/mlx_backend/`:
-- `__init__.py` - Package initialization
-- `data_types.py` - MLX-specific data structures
-- `params.py` - MLX training parameters
-- `lora.py` - LoRA implementation for MLX
-- `service_client.py` - MLX implementation of the service client interface
+### Usage
 
-To use MLX backend, you may need to update configurations:
+To use the MLX backend, simply configure it during setup or via environment variables:
 
-1. Add to `metaclaw/config.py` in the MetaClawConfig class:
-```python
-    # MLX backend settings
-    mlx_model_path: str = ""          # local path or HF repo (e.g. mlx-community/Qwen2.5-7B-4bit)
-    mlx_output_dir: str = "./mlx_metaclaw_output"
+```bash
+# Install with MLX extras
+pip install -e ".[mlx]"
+
+# Configure via setup
+metaclaw setup   # select backend → mlx
+
+# Or via environment variable
+export METACLAW_RL_BACKEND=mlx
+metaclaw start
 ```
 
-2. Update training backend methods around line 186 in `metaclaw/config.py`:
-```python
-def training_backend_label(self) -> str:
-    key = self.resolved_backend_key()
-    if key == "mlx":
-        return "MLX"
-    return "MinT" if key == "mint" else "Tinker"
+The MLX backend enables local RL training on Apple Silicon Macs without requiring cloud GPU instances - everything runs locally on your M-series chip. Configuration options include:
 
-def training_backend_banner(self) -> str:
-    label = self.training_backend_label()
-    suffix = "local RL" if self.resolved_backend_key() == "mlx" else "cloud RL"
-    return f"{label} {suffix}"
-```
+- `mlx_model_path`: Local path or Hugging Face repo (e.g., mlx-community/Qwen2.5-7B-4bit)
+- `mlx_output_dir`: Directory for MLX output (default: ./mlx_metaclaw_output)
 
-3. Update `metaclaw/setup_wizard.py` to add "mlx" to the backend selection list:
-```python
-# In the backend selection, change from:
-["auto", "tinker", "mint"]
-# To:
-["auto", "tinker", "mint", "mlx"]
-```
-
-### Optional: pyproject.toml extras
-```toml
-[project.optional-dependencies]
-mlx = ["mlx>=0.22.0", "mlx-lm>=0.21.0", "safetensors"]
-```
+In `config.py`, the backend will be labeled as "MLX local RL" when selected, distinguishing it from "Tinker cloud RL" or "MinT cloud RL".
 
 ---
 

@@ -1,0 +1,122 @@
+{
+  "test_id": "day15",
+  "group_id": "day15",
+  "round_id": "r5",
+  "qa_id": "r5",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] You missed option C: C is correct: Python files use a `Meta:` section inside the module-level docstring with key-value pairs.\nKeep this in mind as you continue with the next task.\n\nPlease write a weekly summary generator Python script, saved to the day15/ directory. The script should read JSON files in a specified directory, count the number of files and the overall compliance rate of structured headers, and print a summary.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773900050.6926265,
+    "finished_at": 1773900162.9571788,
+    "duration_ms": 112264,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-19T06:02:12.872Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day15_d17f0df1-a277-48b5-949e-552409453dde",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day15_36037c97",
+    "success": true,
+    "durationMs": 78645,
+    "messageCount": 34,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Thu 2026-03-19 02:00 EDT] [Previous Feedback] You missed option C: C is correct: Python files use a `Meta:` section inside the module-level docstring with key-value pairs.\nKeep this in mind as you continue with the next task.\n\nPlease write a weekly summary generator Python script, saved to the day15/ directory. The script should read JSON files in a specified directory, count the number of files and the overall compliance rate of structured headers, and print a summary."
+          }
+        ],
+        "timestamp": 1773900054228
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_6678r9dOMRbCdjxsF9426Czt",
+            "name": "write",
+            "arguments": {
+              "path": "day15/20260403_weekly_summary_generator.py",
+              "content": "\"\"\"Weekly Summary Generator\n\nReads JSON files in a directory, counts total files, and calculates the compliance\nrate for structured headers.\n\nMeta:\n  created_at: 2026-04-03T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport sys\nfrom dataclasses import dataclass\nfrom typing import Any, Dict, List, Tuple\n\n\nREQUIRED_META_KEYS = (\"created_at\", \"author\", \"status\")\n\n\n@dataclass(frozen=True)\nclass FileCheckResult:\n    path: str\n    ok: bool\n    reason: str\n\n\ndef is_json_file(name: str) -> bool:\n    return name.lower().endswith(\".json\")\n\n\ndef load_json(path: str) -> Tuple[bool, Any, str]:\n    try:\n        with open(path, \"r\", encoding=\"utf-8\") as f:\n            return True, json.load(f), \"\"\n    except Exception as e:\n        return False, None, f\"json_load_error: {e}\"\n\n\ndef check_structured_header(obj: Any) -> Tuple[bool, str]:\n    \"\"\"Check P3 structured header compliance for JSON.\n\n    Rule enforced:\n      - Top-level must contain a \"meta\" object with keys: created_at, author, status\n    \"\"\"\n    if not isinstance(obj, dict):\n        return False, \"top_level_not_object\"\n\n    meta = obj.get(\"meta\")\n    if not isinstance(meta, dict):\n        return False, \"missing_or_invalid_meta_object\"\n\n    missing = [k for k in REQUIRED_META_KEYS if k not in meta or meta.get(k) in (None, \"\")]\n    if missing:\n        return False, f\"meta_missing_keys:{','.join(missing)}\"\n\n    return True, \"ok\"\n\n\ndef scan_directory(dir_path: str) -> List[str]:\n    paths: List[str] = []\n    for root, _dirs, files in os.walk(dir_path):\n        for fn in files:\n            if is_json_file(fn):\n                paths.append(os.path.join(root, fn))\n    return sorted(paths)\n\n\ndef analyze(dir_path: str) -> Tuple[int, int, List[FileCheckResult]]:\n    json_paths = scan_directory(dir_path)\n    results: List[FileCheckResult] = []\n    compliant = 0\n\n    for p in json_paths:\n        ok_load, obj, load_reason = load_json(p)\n        if not ok_load:\n            results.append(FileCheckResult(path=p, ok=False, reason=load_reason))\n            continue\n\n        ok_meta, meta_reason = check_structured_header(obj)\n        results.append(FileCheckResult(path=p, ok=ok_meta, reason=meta_reason))\n        if ok_meta:\n            compliant += 1\n\n    return len(json_paths), compliant, results\n\n\ndef format_rate(compliant: int, total: int) -> str:\n    if total == 0:\n        return \"0.00%\"\n    return f\"{(compliant / total) * 100:.2f}%\"\n\n\ndef main(argv: List[str]) -> int:\n    ap = argparse.ArgumentParser(\n        description=\"Weekly summary generator: count JSON files and compliance rate of structured headers.\",\n    )\n    ap.add_argument(\n        \"directory\",\n        help=\"Directory to scan for .json files (recursively)\",\n    )\n    ap.add_argument(\n        \"--details\",\n        action=\"store_true\",\n        help=\"Print per-file compliance results\",\n    )\n\n    args = ap.parse_args(argv)\n\n    total, compliant, results = analyze(args.directory)\n\n    print(\"Weekly Summary\")\n    print(\"=============\")\n    print(f\"Directory: {os.path.abspath(args.directory)}\")\n    print(f\"JSON files: {total}\")\n    print(f\"Compliant: {compliant}\")\n    print(f\"Compliance rate: {format_rate(compliant, total)}\")\n\n    if args.details:\n        print(\"\\nPer-file results\")\n        print(\"----------------\")\n        for r in results:\n            status = \"OK\" if r.ok else \"FAIL\"\n            print(f\"{status}\\t{r.reason}\\t{r.path}\")\n\n    # Non-zero exit if there are JSON files and any are non-compliant\n    if total > 0 and compliant < total:\n        return 2\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main(sys.argv[1:]))\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773900054230
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_6678r9dOMRbCdjxsF9426Czt",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 3686 bytes to day15/20260403_weekly_summary_generator.py"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773900066911
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_UQmhus9SaYaQHWDl5irWa2RS",
+            "name": "exec",
+            "arguments": {
+              "command": "python3 -m py_compile day15/20260403_weekly_summary_generator.py && python3 day15/20260403_weekly_summary_generator.py day15 --details; echo EXIT:$?"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773900131057
+      }
+    ]
+  },
+  "answer": "completed\n",
+  "inline_score": {
+    "passed": true,
+    "exit_code": 0,
+    "stdout": "OK\n",
+    "stderr": ""
+  }
+}

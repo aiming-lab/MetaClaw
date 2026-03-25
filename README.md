@@ -30,7 +30,7 @@
 
 <br/>
 
-[Overview](#-overview) • [Quick Start](#-quick-start) • [Multi-Claw Support](#-multi-claw-support) • [Configuration](#️-configuration) • [Skills Mode](#-skills-mode) • [RL Mode](#-rl-mode) • [MadMax Mode](#-madmax-mode-default) • [Citation](#-citation)
+[Overview](#-overview) • [Quick Start](#-quick-start) • [Multi-Claw Support](#-multi-claw-support) • [Configuration](#️-configuration) • [Skills Mode](#-skills-mode) • [RL Mode](#-rl-mode) • [MadMax Mode](#-madmax-mode-default) • [Memory](#-memory) • [Citation](#-citation)
 
 </div>
 
@@ -97,6 +97,9 @@ Configure once with `metaclaw setup`, then `metaclaw start` brings up the proxy,
 | `rl` | | Skills + RL training (GRPO). Trains immediately when a batch is full. Optional OPD for teacher distillation. |
 | `madmax` | ✅ | Skills + RL + smart scheduler. RL weight updates only run during sleep/idle/meeting windows. |
 
+### **Long-term memory**
+MetaClaw can persist facts, preferences, and project history across sessions and inject relevant context at each turn — so your agent remembers what you've told it, even weeks later.
+
 ### **Asynchronous by design**
 Serving, reward modeling, and training are fully decoupled. The agent continues responding while scoring and optimization run in parallel.
 
@@ -106,10 +109,10 @@ Serving, reward modeling, and training are fully decoupled. The agent continues 
 
 ### 1. Install
 
-**OpenClaw (one-click):** use the [v0.3.3](https://github.com/aiming-lab/MetaClaw/releases/tag/v0.3.3) release—run the snippet below, then `metaclaw setup` and `metaclaw start`. More detail (Windows, mirrors, config, troubleshooting): [`extensions/metaclaw-openclaw/README.md`](./extensions/metaclaw-openclaw/README.md).
+**OpenClaw (one-click):** use the [v0.4.0](https://github.com/aiming-lab/MetaClaw/releases/tag/v0.4.0) release—run the snippet below, then `metaclaw setup` and `metaclaw start`. More detail (Windows, mirrors, config, troubleshooting): [`extensions/metaclaw-openclaw/README.md`](./extensions/metaclaw-openclaw/README.md).
 
 ```bash
-curl -LO https://github.com/aiming-lab/MetaClaw/releases/download/v0.3.3/metaclaw-plugin.zip
+curl -LO https://github.com/aiming-lab/MetaClaw/releases/download/v0.4.0/metaclaw-plugin.zip
 unzip metaclaw-plugin.zip -d ~/.openclaw/extensions/metaclaw-openclaw
 openclaw plugins enable metaclaw-openclaw && openclaw gateway restart
 ```
@@ -437,6 +440,52 @@ metaclaw config scheduler.calendar.credentials_path ~/.metaclaw/client_secrets.j
 If the user returns mid-update, the partial batch is saved and resumed at the next window.
 
 Each `ConversationSample` is tagged with a `skill_generation` version. When skill evolution bumps the generation, the RL buffer is flushed so only post-evolution samples are used for gradient updates (MAML support/query set separation).
+
+---
+
+## 🧠 Memory
+
+MetaClaw v0.4.0 adds a long-term memory layer that runs alongside skills. Where skills capture *how* to do things, memory captures *what* has happened — user preferences, project state, recurring context, and cross-session facts.
+
+### How it works
+
+At the end of each session, MetaClaw extracts structured memory units from the conversation and stores them locally. On the next turn, relevant memories are retrieved and injected into the prompt alongside skills — so the agent knows what you've worked on before, without you having to repeat yourself.
+
+Memory runs entirely in the background. There is nothing new to configure for basic use; it activates automatically when `memory.enabled` is set to `true`.
+
+```bash
+metaclaw config memory.enabled true
+```
+
+### Memory types
+
+| Type | What it captures |
+|------|-----------------|
+| `episodic` | Specific past events and actions |
+| `semantic` | General facts about the user or project |
+| `preference` | Stated or inferred user preferences |
+| `project_state` | Current goals, open tasks, recent decisions |
+| `working_summary` | Rolling summary of recent activity |
+
+### Configuration
+
+```yaml
+memory:
+  enabled: false
+  top_k: 5                       # memories injected per turn
+  max_tokens: 800                # token budget for memory block
+  retrieval_mode: hybrid         # keyword | semantic | hybrid
+  consolidation_interval: 10     # consolidate every N sessions
+  store_path: ~/.metaclaw/memory # local storage path
+```
+
+### Memory sidecar (optional)
+
+For deployments that require process isolation, MetaClaw ships with a standalone memory sidecar service (`openclaw-metaclaw-memory`). When configured, the main proxy delegates all memory reads and writes to the sidecar over a local HTTP API.
+
+```bash
+metaclaw config memory.sidecar_url http://127.0.0.1:30001
+```
 
 ---
 

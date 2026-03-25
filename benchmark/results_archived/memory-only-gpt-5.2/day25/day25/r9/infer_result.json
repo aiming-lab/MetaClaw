@@ -1,0 +1,326 @@
+{
+  "test_id": "day25",
+  "group_id": "day25",
+  "round_id": "r9",
+  "qa_id": "r9",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Issues: (1) P2 naming (20260417_*.md); (2) YAML frontmatter with ISO 8601 created_at required; (3) done.log entry required; (4) target_dates in deliverables must use ISO 8601.\nKeep this in mind as you continue with the next task.\n\nPlease write a Python script that checks a directory for P1-P5 compliance issues, save to day25/. The script should scan files and report violations. Include proper module docstring with Meta section.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773736231.2465906,
+    "finished_at": 1773736285.7168698,
+    "duration_ms": 54470,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T08:31:25.595Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day25_5caa2175-f53c-4848-92e1-a7b817313bc8",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_8a024919",
+    "success": true,
+    "durationMs": 50352,
+    "messageCount": 122,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 04:30 EDT] [Previous Feedback] Issues: (1) P2 naming (20260417_*.md); (2) YAML frontmatter with ISO 8601 created_at required; (3) done.log entry required; (4) target_dates in deliverables must use ISO 8601.\nKeep this in mind as you continue with the next task.\n\nPlease write a Python script that checks a directory for P1-P5 compliance issues, save to day25/. The script should scan files and report violations. Include proper module docstring with Meta section."
+          }
+        ],
+        "timestamp": 1773736235244
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_zWIGb2rwVhvxTHytG6ekBGeg",
+            "name": "exec",
+            "arguments": {
+              "command": "TZ=Asia/Shanghai date -Is"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736235247
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_zWIGb2rwVhvxTHytG6ekBGeg",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "2026-03-17T16:30:43+08:00"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 10,
+          "aggregated": "2026-03-17T16:30:43+08:00",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_8a024919"
+        },
+        "isError": false,
+        "timestamp": 1773736243653
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_ufN0BZB6Wrez33G0isBa7Euw",
+            "name": "write",
+            "arguments": {
+              "path": "day25/20260317_p1_p5_compliance_checker.py",
+              "content": "\"\"\"P1–P5 Compliance Checker\n\nMeta\n----\ncreated_at: 2026-03-17T16:30:43+08:00\nauthor: metaclaw_agent\nteam: Orion Tech Backend\nscope: Scan a directory and report P1–P5 preference rule violations\nversion: 1.0.0\n\nSummary\n-------\nThis script scans a target directory (default: current working directory) and reports\nviolations of the following preference rules:\n\n- P1: All time/date fields use ISO 8601 format YYYY-MM-DDTHH:MM:SS+08:00 (or other TZ offsets).\n- P2: Agent-generated output files follow YYYYMMDD_snake_case.ext naming.\n- P3: All output files contain structured metadata (YAML frontmatter for Markdown; meta object for JSON).\n- P4: Before modifying any existing file, create a .bak backup of the original.\n- P5: After completing each independent task, append a line to done.log.\n\nNotes\n-----\n- P4 and P5 depend on external workflow context. This checker uses heuristics:\n  - P4: if a file is in a known \"modified-baseline\" allowlist, require a matching .bak_* backup.\n  - P5: if a file appears to be agent-generated (passes P2), require it to be mentioned in done.log.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport re\nimport sys\nfrom dataclasses import dataclass\nfrom pathlib import Path\nfrom typing import Any, Dict, List, Optional, Tuple\n\n\nISO_8601_RE = re.compile(r\"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:Z|[+-]\\d{2}:\\d{2})$\")\nP2_NAME_RE = re.compile(r\"^\\d{8}_[a-z0-9]+(?:_[a-z0-9]+)*\\.[a-z0-9]+$\")\n\n\n@dataclass\nclass FileReport:\n    path: str\n    p1_compliant: Optional[bool]\n    p2_compliant: bool\n    p3_compliant: Optional[bool]\n    p4_backup_created: Optional[bool]\n    p5_log_entry: Optional[bool]\n    violations: List[str]\n\n\ndef is_iso8601(value: str) -> bool:\n    return bool(ISO_8601_RE.fullmatch(value or \"\"))\n\n\ndef load_done_log(root: Path) -> str:\n    p = root / \"done.log\"\n    if not p.exists():\n        return \"\"\n    try:\n        return p.read_text(encoding=\"utf-8\", errors=\"replace\")\n    except Exception:\n        return \"\"\n\n\ndef check_markdown_frontmatter(text: str) -> Tuple[bool, Optional[str]]:\n    \"\"\"Return (has_frontmatter, created_at_value_if_found).\"\"\"\n    if not text.startswith(\"---\\n\"):\n        return False, None\n    end = text.find(\"\\n---\\n\", 4)\n    if end == -1:\n        return False, None\n    fm = text[4:end].splitlines()\n    created_at = None\n    for line in fm:\n        if line.strip().startswith(\"created_at:\"):\n            created_at = line.split(\":\", 1)[1].strip().strip('\"')\n            break\n    return True, created_at\n\n\ndef check_json_meta(obj: Any) -> Tuple[bool, Optional[str]]:\n    if not isinstance(obj, dict):\n        return False, None\n    meta = obj.get(\"meta\")\n    if not isinstance(meta, dict):\n        return False, None\n    created_at = meta.get(\"created_at\")\n    if isinstance(created_at, str):\n        return True, created_at\n    return True, None\n\n\ndef scan_file(root: Path, file_path: Path, done_log_text: str, modified_baseline: set[str]) -> FileReport:\n    rel = file_path.relative_to(root).as_posix()\n    name = file_path.name\n\n    p2 = bool(P2_NAME_RE.fullmatch(name))\n\n    p1: Optional[bool] = None\n    p3: Optional[bool] = None\n\n    violations: List[str] = []\n\n    # P3 + P1 checks (format-dependent)\n    if name.lower().endswith(\".md\"):\n        try:\n            text = file_path.read_text(encoding=\"utf-8\", errors=\"replace\")\n        except Exception as e:\n            text = \"\"\n            violations.append(f\"read_error: {e}\")\n        has_fm, created_at = check_markdown_frontmatter(text)\n        p3 = has_fm\n        if not has_fm:\n            violations.append(\"P3: missing YAML frontmatter\")\n        if created_at is None:\n            p1 = False\n            violations.append(\"P1: missing created_at in YAML frontmatter\")\n        else:\n            p1 = is_iso8601(created_at)\n            if not p1:\n                violations.append(f\"P1: created_at not ISO 8601: {created_at}\")\n\n    elif name.lower().endswith(\".json\"):\n        try:\n            obj = json.loads(file_path.read_text(encoding=\"utf-8\", errors=\"replace\"))\n        except Exception as e:\n            obj = None\n            violations.append(f\"json_parse_error: {e}\")\n        has_meta, created_at = check_json_meta(obj)\n        p3 = has_meta\n        if not has_meta:\n            violations.append(\"P3: missing meta object\")\n        if created_at is None:\n            p1 = False\n            violations.append(\"P1: missing meta.created_at\")\n        else:\n            p1 = is_iso8601(created_at)\n            if not p1:\n                violations.append(f\"P1: meta.created_at not ISO 8601: {created_at}\")\n    else:\n        # Unknown type: only do P2, P4, P5 heuristics\n        p1 = None\n        p3 = None\n\n    # P4 heuristic: if file is considered \"modified baseline\", require .bak_* backup.\n    p4: Optional[bool] = None\n    if rel in modified_baseline:\n        stem = file_path.name\n        pattern = f\"{stem}.bak_\"\n        p4 = any(p.name.startswith(pattern) for p in file_path.parent.iterdir() if p.is_file())\n        if not p4:\n            violations.append(\"P4: expected .bak_* backup not found\")\n\n    # P5 heuristic: if agent-generated (P2) OR modified baseline, require mention in done.log.\n    p5: Optional[bool] = None\n    if p2 or (rel in modified_baseline):\n        p5 = (name in done_log_text) or (rel in done_log_text)\n        if not p5:\n            violations.append(\"P5: missing done.log entry\")\n\n    if not p2 and (name.lower().endswith((\".md\", \".json\", \".py\"))):\n        violations.append(\"P2: filename does not match YYYYMMDD_snake_case.ext\")\n\n    return FileReport(\n        path=rel,\n        p1_compliant=p1,\n        p2_compliant=p2,\n        p3_compliant=p3,\n        p4_backup_created=p4,\n        p5_log_entry=p5,\n        violations=violations,\n    )\n\n\ndef main(argv: Optional[List[str]] = None) -> int:\n    ap = argparse.ArgumentParser(description=\"Check a directory for P1–P5 compliance issues\")\n    ap.add_argument(\"path\", nargs=\"?\", default=\".\", help=\"Directory to scan (default: .)\")\n    ap.add_argument(\n        \"--modified-baseline\",\n        action=\"append\",\n        default=[\"day25/sprint9_board.json\", \"day25/delivery_metrics.json\"],\n        help=\"Relative file path treated as 'existing file modified' baseline (can repeat)\",\n    )\n    ap.add_argument(\"--json\", dest=\"json_out\", action=\"store_true\", help=\"Output machine-readable JSON\")\n\n    args = ap.parse_args(argv)\n\n    root = Path(args.path).resolve()\n    modified_baseline = set(p.replace(\"\\\\\", \"/\") for p in args.modified_baseline)\n\n    done_log_text = load_done_log(root)\n\n    reports: List[FileReport] = []\n    for p in sorted(root.rglob(\"*\")):\n        if not p.is_file():\n            continue\n        # skip backups themselves and hidden openclaw state\n        if \"/.openclaw/\" in p.as_posix():\n            continue\n        if \".bak_\" in p.name:\n            continue\n        reports.append(scan_file(root, p, done_log_text, modified_baseline))\n\n    overall_pass = all(len(r.violations) == 0 for r in reports)\n\n    if args.json_out:\n        out = {\n            \"meta\": {\n                \"created_at\": \"2026-03-17T16:30:43+08:00\",\n                \"author\": \"metaclaw_agent\",\n                \"tool\": \"20260317_p1_p5_compliance_checker.py\",\n            },\n            \"scanned_path\": str(root),\n            \"overall_pass\": overall_pass,\n            \"files\": [\n                {\n                    \"path\": r.path,\n                    \"p1_compliant\": r.p1_compliant,\n                    \"p2_compliant\": r.p2_compliant,\n                    \"p3_compliant\": r.p3_compliant,\n                    \"p4_backup_created\": r.p4_backup_created,\n                    \"p5_log_entry\": r.p5_log_entry,\n                    \"violations\": r.violations,\n                }\n                for r in reports\n            ],\n        }\n        print(json.dumps(out, indent=2, ensure_ascii=False))\n    else:\n        print(f\"Scanned: {root}\")\n        print(f\"Overall pass: {overall_pass}\")\n        for r in reports:\n            if r.violations:\n                print(f\"\\n- {r.path}\")\n                for v in r.violations:\n                    print(f\"  - {v}\")\n\n    return 0 if overall_pass else 2\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736243658
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_ufN0BZB6Wrez33G0isBa7Euw",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 8187 bytes to day25/20260317_p1_p5_compliance_checker.py"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773736275519
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_HUOiHLsXmWlf0McxJBUUKkFu",
+            "name": "exec",
+            "arguments": {
+              "command": "python -m py_compile day25/20260317_p1_p5_compliance_checker.py && echo OK"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736275521
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_HUOiHLsXmWlf0McxJBUUKkFu",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "OK"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 63,
+          "aggregated": "OK",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_8a024919"
+        },
+        "isError": false,
+        "timestamp": 1773736277173
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_In4v8u90xLqCkEMaOV7uauLO",
+            "name": "exec",
+            "arguments": {
+              "command": "python day25/20260317_p1_p5_compliance_checker.py . --json | head -n 25"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736277176
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_In4v8u90xLqCkEMaOV7uauLO",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"meta\": {\n    \"created_at\": \"2026-03-17T16:30:43+08:00\",\n    \"author\": \"metaclaw_agent\",\n    \"tool\": \"20260317_p1_p5_compliance_checker.py\"\n  },\n  \"scanned_path\": \"/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_8a024919\",\n  \"overall_pass\": false,\n  \"files\": [\n    {\n      \"path\": \"AGENTS.md\",\n      \"p1_compliant\": false,\n      \"p2_compliant\": false,\n      \"p3_compliant\": false,\n      \"p4_backup_created\": null,\n      \"p5_log_entry\": null,\n      \"violations\": [\n        \"P3: missing YAML frontmatter\",\n        \"P1: missing created_at in YAML frontmatter\",\n        \"P2: filename does not match YYYYMMDD_snake_case.ext\"\n      ]\n    },\n    {\n      \"path\": \"HEARTBEAT.md\",\n      \"p1_compliant\": false,"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 88,
+          "aggregated": "{\n  \"meta\": {\n    \"created_at\": \"2026-03-17T16:30:43+08:00\",\n    \"author\": \"metaclaw_agent\",\n    \"tool\": \"20260317_p1_p5_compliance_checker.py\"\n  },\n  \"scanned_path\": \"/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_8a024919\",\n  \"overall_pass\": false,\n  \"files\": [\n    {\n      \"path\": \"AGENTS.md\",\n      \"p1_compliant\": false,\n      \"p2_compliant\": false,\n      \"p3_compliant\": false,\n      \"p4_backup_created\": null,\n      \"p5_log_entry\": null,\n      \"violations\": [\n        \"P3: missing YAML frontmatter\",\n        \"P1: missing created_at in YAML frontmatter\",\n        \"P2: filename does not match YYYYMMDD_snake_case.ext\"\n      ]\n    },\n    {\n      \"path\": \"HEARTBEAT.md\",\n      \"p1_compliant\": false,",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_8a024919"
+        },
+        "isError": false,
+        "timestamp": 1773736279839
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_OG30WSOUh2dlJmqsAtLZ81M1",
+            "name": "exec",
+            "arguments": {
+              "command": "printf '%s | task_id=compliance_checker_script | Created day25/20260317_p1_p5_compliance_checker.py (Python script to scan directory for P1-P5 violations; supports --json)\\n' \"2026-03-17T16:30:43+08:00\" >> done.log"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736279842
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_OG30WSOUh2dlJmqsAtLZ81M1",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "(no output)"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 8,
+          "aggregated": "",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_8a024919"
+        },
+        "isError": false,
+        "timestamp": 1773736282418
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Created Python script: `day25/20260317_p1_p5_compliance_checker.py`\n\n- Includes a module docstring with a **Meta** section (`created_at: 2026-03-17T16:30:43+08:00`, ISO 8601).\n- Scans a target directory and reports P1–P5 violations (with heuristics for P4/P5).\n- Appended `done.log` entry (P5)."
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773736282424
+      }
+    ]
+  },
+  "answer": "Created Python script: `day25/20260317_p1_p5_compliance_checker.py`\n\n- Includes a module docstring with a **Meta** section (`created_at: 2026-03-17T16:30:43+08:00`, ISO 8601).\n- Scans a target directory and reports P1–P5 violations (with heuristics for P4/P5).\n- Appended `done.log` entry (P5).\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  }
+}

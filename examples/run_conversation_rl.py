@@ -1,29 +1,33 @@
 """
-End-to-end RL smoke test for a Tinker-compatible backend such as MinT.
+End-to-end example: conversation RL with Tinker + OpenClaw + Skills.
 
 Run:
-    python examples/run_conversation_rl.py
+    python examples/metaclaw/run_conversation_rl.py
 
-Required env:
-  - METACLAW_RL_API_KEY or TINKER_API_KEY or MINT_API_KEY
-  - Optional METACLAW_RL_BASE_URL or TINKER_BASE_URL or MINT_BASE_URL
+Prerequisites:
+  - Tinker API key set (TINKER_API_KEY env var)
+  - PRM inference service (if use_prm=True; set use_prm=False to skip)
+  - For skill evolution: AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT set
 
-Useful overrides:
-  - METACLAW_RL_BACKEND=mint
-  - METACLAW_RL_MODEL=Qwen/Qwen3-4B-Instruct-2507
-  - METACLAW_MAX_STEPS=1
-  - METACLAW_ENV_CONCURRENCY=1
+Data collection (two modes):
+
+  1. Passive mode (openclaw_env_data_dir="", consistent with OpenClaw-RL):
+     Configure OpenClaw to use the proxy (run openclaw_model_qwen.sh),
+     then use OpenClaw normally.  The proxy collects training data automatically.
+
+  2. Programmatic mode (openclaw_env_data_dir set):
+     Provide a JSONL file at <openclaw_env_data_dir>/<split>.jsonl.
+     Each line: {"task_id": "...", "instruction": "..."}
+     A Qwen3-native agent loop drives tasks automatically via subprocess.
 """
 
 import asyncio
 import logging
-import os
 import sys
-from pathlib import Path
+import os
 
-# Make sure the repo root is importable when running from outside the repo.
-REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT))
+# Make sure SkillRL root is importable when running from repo root
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from metaclaw.config import MetaClawConfig
 from metaclaw.trainer import MetaClawTrainer
@@ -35,79 +39,55 @@ logging.basicConfig(
 )
 
 
-def _first_env(*names: str, default: str = "") -> str:
-    for name in names:
-        value = os.environ.get(name, "").strip()
-        if value:
-            return value
-    return default
-
-
 async def main():
-    example_dir = REPO_ROOT / "examples"
-    skills_dir = REPO_ROOT / "memory_data" / "skills"
-    model_name = _first_env(
-        "METACLAW_RL_MODEL",
-        "TINKER_MODEL",
-        "MINT_MODEL",
-        default="Qwen/Qwen3-4B-Instruct-2507",
-    )
-    served_model_name = os.environ.get("METACLAW_SERVED_MODEL", model_name).strip() or model_name
-    backend_api_key = _first_env("METACLAW_RL_API_KEY", "TINKER_API_KEY", "MINT_API_KEY")
-    backend_base_url = _first_env("METACLAW_RL_BASE_URL", "TINKER_BASE_URL", "MINT_BASE_URL")
-    backend = _first_env(
-        "METACLAW_RL_BACKEND",
-        default=("mint" if "mint" in backend_base_url.lower() else "auto"),
-    ).lower()
-
-    if not backend_api_key:
-        raise RuntimeError(
-            "Set METACLAW_RL_API_KEY, TINKER_API_KEY, or MINT_API_KEY before running this example."
-        )
-
-    logging.getLogger(__name__).info(
-        "[ExampleRL] backend=%s model=%s served_model=%s data_dir=%s split=%s",
-        backend,
-        model_name,
-        served_model_name,
-        example_dir.name,
-        "train",
-    )
-
     config = MetaClawConfig(
         # Model
-        model_name=model_name,
-        served_model_name=served_model_name,
-        lora_rank=int(os.environ.get("METACLAW_LORA_RANK", "16")),
-        renderer_name=os.environ.get("METACLAW_RENDERER", "qwen3"),
+        model_name="moonshotai/Kimi-K2.5",
+        served_model_name="Kimi-K2.5",
+        lora_rank=32,
+        renderer_name="kimi",
+
         # Training
-        learning_rate=float(os.environ.get("METACLAW_LR", "1e-4")),
-        batch_size=int(os.environ.get("METACLAW_BATCH_SIZE", "1")),
-        max_steps=int(os.environ.get("METACLAW_MAX_STEPS", "1")),
-        loss_fn=os.environ.get("METACLAW_LOSS_FN", "importance_sampling"),
-        backend=backend,
-        api_key=backend_api_key,
-        base_url=backend_base_url,
-        proxy_api_key=os.environ.get("METACLAW_PROXY_API_KEY", "").strip(),
-        # PRM reward is disabled by default for backend smoke tests.
-        use_prm=False,
+        learning_rate=1e-4,
+        batch_size=8,
+        max_steps=500,
+        loss_fn="importance_sampling",
+
+        # PRM reward — point at any OpenAI-compatible judge API
+        use_prm=True,
+        prm_url="https://openai-api.shenmishajing.workers.dev/v1",
+        prm_model="gpt-5.2",
+        prm_api_key=os.environ.get("OPENAI_API_KEY", "aB7cD9eF2gH5iJ8kL1mN4oP6qR3sT0uV"),
+        prm_m=3,
+
         # Skills
         use_skills=True,
-        skills_dir=str(skills_dir),
+        skills_dir="memory_data/skills",
         retrieval_mode="template",
         skill_top_k=6,
-        # Skill evolution is disabled for smoke tests.
+
+        # Skill evolution (requires Azure OpenAI env vars)
         enable_skill_evolution=False,
         skill_update_threshold=0.4,
         max_new_skills=3,
+
         # Proxy server
-        proxy_port=int(os.environ.get("METACLAW_PROXY_PORT", "30000")),
-        proxy_host=os.environ.get("METACLAW_PROXY_HOST", "0.0.0.0"),
-        # Programmatic rollout: examples/train.jsonl
-        openclaw_env_data_dir=str(example_dir),
-        openclaw_env_split=os.environ.get("METACLAW_DATA_SPLIT", "train"),
-        openclaw_env_concurrency=int(os.environ.get("METACLAW_ENV_CONCURRENCY", "1")),
-        openclaw_env_max_steps=int(os.environ.get("METACLAW_ENV_MAX_STEPS", "2")),
+        proxy_port=30000,
+        proxy_host="0.0.0.0",
+
+        # Programmatic task rollout (optional).
+        # Set to a directory containing <split>.jsonl task files, e.g.:
+        #   openclaw_env_data_dir="/path/to/tasks"
+        # where /path/to/tasks/train.jsonl has lines like:
+        #   {"task_id": "add_webhook_1", "instruction": "Register the webhook URL ..."}
+        #
+        # Leave empty ("") for passive proxy mode (like OpenClaw-RL):
+        #   run openclaw_model_qwen.sh to point OpenClaw at the proxy,
+        #   then use OpenClaw normally.
+        openclaw_env_data_dir="examples/metaclaw",  # set to task JSONL dir to enable
+        openclaw_env_split="train",
+        openclaw_env_concurrency=4,           # parallel task episodes
+        openclaw_env_max_steps=15,            # max turns per episode
     )
 
     trainer = MetaClawTrainer(config)

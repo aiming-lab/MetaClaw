@@ -1,0 +1,76 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Orion API",
+    "version": "2.3.0",
+    "description": "Orion project management API"
+  },
+  "paths": {
+    "/projects": {
+      "get": {
+        "summary": "List projects",
+        "description": "Retrieve a list of projects with optional filtering",
+        "parameters": [
+          {
+            "name": "created_after",
+            "in": "query",
+            "description": "Filter projects created after this datetime",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-03-01 00:00:00"
+          },
+          {
+            "name": "updated_before",
+            "in": "query",
+            "description": "Filter projects updated before this datetime",
+            "schema": {
+              "type": "string"
+            },
+            "example": "this week"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create project",
+        "description": "Create a new project",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "start_date": {
+                    "type": "string"
+                  },
+                  "deadline": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "name": "New Project",
+                "start_date": "Mar 19, 2026",
+                "deadline": "end of Q2"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created successfully"
+          }
+        }
+      }
+    }
+  }
+}

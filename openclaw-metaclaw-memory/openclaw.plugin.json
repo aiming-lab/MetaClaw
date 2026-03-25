@@ -1,0 +1,79 @@
+{
+  "id": "metaclaw-memory",
+  "kind": "memory",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "autoRecall": {
+        "type": "boolean",
+        "default": true,
+        "description": "Inject relevant memories into prompts automatically"
+      },
+      "autoCapture": {
+        "type": "boolean",
+        "default": true,
+        "description": "Extract memories from completed sessions automatically"
+      },
+      "sidecarPort": {
+        "type": "number",
+        "default": 19823,
+        "description": "Port for the Python sidecar HTTP server"
+      },
+      "scope": {
+        "type": "string",
+        "default": "default",
+        "description": "Memory scope identifier"
+      },
+      "retrievalMode": {
+        "type": "string",
+        "default": "hybrid",
+        "enum": ["keyword", "embedding", "hybrid"],
+        "description": "Retrieval mode for memory search"
+      },
+      "maxInjectedTokens": {
+        "type": "number",
+        "default": 800,
+        "description": "Token budget for injected memory context"
+      },
+      "maxInjectedUnits": {
+        "type": "number",
+        "default": 6,
+        "description": "Max memory units to inject per prompt"
+      },
+      "memoryDir": {
+        "type": "string",
+        "default": "~/.metaclaw/memory",
+        "description": "SQLite database location"
+      },
+      "autoUpgradeEnabled": {
+        "type": "boolean",
+        "default": false,
+        "description": "Enable background self-upgrade worker"
+      },
+      "pythonPath": {
+        "type": "string",
+        "default": "python3",
+        "description": "Python interpreter path"
+      },
+      "debug": {
+        "type": "boolean",
+        "default": false,
+        "description": "Enable verbose debug logging"
+      }
+    }
+  },
+  "uiHints": {
+    "autoRecall": { "label": "Auto-Recall" },
+    "autoCapture": { "label": "Auto-Capture" },
+    "sidecarPort": { "label": "Sidecar Port" },
+    "scope": { "label": "Memory Scope" },
+    "retrievalMode": { "label": "Retrieval Mode" },
+    "maxInjectedTokens": { "label": "Max Injected Tokens" },
+    "maxInjectedUnits": { "label": "Max Injected Units" },
+    "memoryDir": { "label": "Memory Directory" },
+    "autoUpgradeEnabled": { "label": "Auto-Upgrade" },
+    "pythonPath": { "label": "Python Path" },
+    "debug": { "label": "Debug Logging" }
+  }
+}

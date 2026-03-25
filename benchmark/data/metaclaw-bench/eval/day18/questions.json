@@ -1,0 +1,216 @@
+{
+  "id": "day18",
+  "desc": "Day 18 — Code engineering, P4 backup for all file types",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day18/prod_config.py: change API_TIMEOUT from 30 to 60, and change LOG_LEVEL from \"WARNING\" to \"INFO\".",
+      "eval": {
+        "command": "python scripts/check_backup.py day18/prod_config.py",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "prod_config.py.bak was correctly created before modification.",
+        "incorrect": "Before modifying day18/prod_config.py, you must first create day18/prod_config.py.bak. P4 applies to all file types, including Python source code files."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please refactor day18/log_handler.py: convert the existing synchronous log writes to an async queue pattern to reduce blocking on the main thread.",
+      "eval": {
+        "command": "python scripts/check_backup.py day18/log_handler.py",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "log_handler.py.bak was correctly created before refactoring.",
+        "incorrect": "Before refactoring day18/log_handler.py, you must first create day18/log_handler.py.bak. Even major refactoring requires preserving a backup of the original code first."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "In code engineering scenarios, which of the following operations require creating a .bak first?\n\nA. Modifying a parameter value in prod_config.py\nB. Creating a new utility file 20260408_new_util.py\nC. Refactoring the existing log_handler.py\nD. Updating a library version in requirements.txt\nE. Fixing the route path bug in api_routes.py\nF. Viewing (read-only) api_routes.py to locate the bug\n\nPlease answer in \\bbox{X,Y,...} format (select those requiring .bak).",
+      "eval": {
+        "options": {
+          "A": "Modify config file parameter",
+          "B": "Create new utility file",
+          "C": "Refactor existing module",
+          "D": "Update requirements.txt version",
+          "E": "Fix bug in existing file",
+          "F": "Read-only view of code"
+        },
+        "answer": ["A", "C", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Required — modifying an existing config file.",
+          "B": "Not required — creating a new file does not trigger P4.",
+          "C": "Required — refactoring an existing module (modifying existing file content).",
+          "D": "Required — updating an existing file's content.",
+          "E": "Required — fixing a bug in an existing file (modifying file content).",
+          "F": "Not required — read-only, no file modification."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please fix the route bug in day18/api_routes.py: the route path \"/project/:id\" should be changed to \"/projects/:id\" (plural form).",
+      "eval": {
+        "command": "python scripts/check_backup.py day18/api_routes.py",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "api_routes.py.bak was correctly created before the bug fix.",
+        "incorrect": "Before fixing the bug in day18/api_routes.py, you must first create day18/api_routes.py.bak. Even a single-character bug fix requires a backup first."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please update day18/requirements.txt: upgrade requests from 2.28.0 to 2.31.0, and upgrade pydantic from 1.10.0 to 2.0.0.",
+      "eval": {
+        "command": "python scripts/check_backup.py day18/requirements.txt",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "requirements.txt.bak was correctly created before updating dependencies.",
+        "incorrect": "Before updating day18/requirements.txt, you must first create day18/requirements.txt.bak. Version files are existing files that require backup before modification."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please write unit tests for the refactored log_handler.py. Create a new test file in the day18/ directory (Python format).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day18/ --ext py",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "New test file naming follows P2 convention correctly.",
+        "incorrect": "The test file must follow P2 naming convention (20260408_*.py), e.g. `20260408_test_log_handler.py`. Note: this is a new file, no .bak required."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "In which of the following scenarios does the .bak backup provide value?\n\nA. After refactoring log_handler.py, performance degrades — .bak provides the original code as a reference baseline\nB. prod_config.py changes cause service issues — can restore quickly with cp prod_config.py.bak prod_config.py\nC. Code review needs to show what changed — .bak can be used for diff\nD. .bak files increase storage usage and should be cleaned up periodically\nE. Another bug found in api_routes.py — re-backup before next fix (overwrite previous .bak)\nF. Need to know a historical config value — .bak provides the previous version for reference\n\nPlease answer in \\bbox{X,Y,...} format (select correct value descriptions).",
+      "eval": {
+        "options": {
+          "A": ".bak provides comparison baseline",
+          "B": ".bak enables quick restore",
+          "C": ".bak used for diff to show changes",
+          "D": ".bak increases storage and should be cleaned",
+          "E": "Re-backup before next modification (overwrite .bak)",
+          "F": ".bak records previous config value"
+        },
+        "answer": ["A", "B", "C", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — .bak serves as the reference baseline for understanding what changed.",
+          "B": "Correct — .bak enables quick rollback, which is the core value of backups.",
+          "C": "Correct — `diff file.py file.py.bak` quickly shows what was changed in this modification.",
+          "D": "Incorrect (under current rules) — our policy is to keep .bak files, not periodically clean them.",
+          "E": "Correct — re-backup before each subsequent modification (overwrite previous .bak) ensures .bak always contains the most recent pre-modification version.",
+          "F": "Correct — .bak records the previous state and is useful for referencing historical configuration values."
+        }
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "There is a pre-existing deploy.sh script in day18/. Please update it to change the server address from api.v2.orion.internal to api.v23.orion.internal.",
+      "eval": {
+        "command": "python scripts/check_backup.py day18/deploy.sh",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "deploy.sh.bak was correctly created before modification.",
+        "incorrect": "Before modifying day18/deploy.sh, you must first create day18/deploy.sh.bak. P4 applies to all file types, including shell scripts."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "Today we need to modify four files: prod_config.py, log_handler.py, api_routes.py, and requirements.txt. Which of the following operation strategies are correct?\n\nA. Back up all four files first (create all .bak files), then modify them all\nB. For each file: backup first, then modify, then proceed to the next\nC. Modify all files first, then back up the current state at the end (but .bak will contain post-modification content)\nD. Skip backup for obviously simple modifications (e.g., changing a version number in requirements.txt)\nE. Even if only one line is modified, backing up the entire file is necessary\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Backup all files first, then modify all",
+          "B": "Each file: backup then modify",
+          "C": "Modify all first, then backup",
+          "D": "Skip backup for simple modifications",
+          "E": "One-line change still requires full file backup"
+        },
+        "answer": ["A", "B", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — backing up all files before any modifications is a valid strategy.",
+          "B": "Correct — handling each file sequentially (backup + modify) is also the standard approach.",
+          "C": "Incorrect — post-modification backup means .bak contains the modified version, defeating the purpose.",
+          "D": "Incorrect — P4 applies regardless of modification complexity; no exemption for \"simple\" changes.",
+          "E": "Correct — .bak is a complete copy of the entire file; the amount changed doesn't affect this requirement."
+        }
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create a brief record of today's code changes in JSON format, saved to the day18/ directory. Record each modification: file_path, change_type (bug_fix/refactor/config_update), summary, and modified_at (current time).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day18/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Code change record file naming follows P2 convention correctly.",
+        "incorrect": "The code change record must follow P2 naming convention (20260408_*.json), e.g. `20260408_code_changes_log.json`."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "Which of the following statements about P4 rule scope are correct?\n\nA. Only Python file modifications require .bak; other file types do not\nB. Configuration file modifications (.json, .yaml, .env, .sh, etc.) all require .bak\nC. All existing files modified by the agent (regardless of type) require .bak\nD. If the file is under version control (git), .bak is not needed\nE. \"Appending content\" to a file also counts as modification and requires .bak\nF. A new file that is immediately modified within the same operation does not require .bak\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Only Python files need .bak",
+          "B": "All config file types need .bak",
+          "C": "All existing files modified by agent need .bak",
+          "D": "Git-managed files don't need .bak",
+          "E": "Appending is modification, requires .bak",
+          "F": "New file immediately modified in same operation: no .bak"
+        },
+        "answer": ["B", "C", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Incorrect — P4 applies to all file types, not just Python.",
+          "B": "Correct — configuration files of all types require .bak when modified.",
+          "C": "Correct — the core P4 boundary is \"modifying an existing file,\" regardless of file type.",
+          "D": "Incorrect — git version control is infrastructure-layer; P4 is agent-behavior-layer. They don't substitute for each other.",
+          "E": "Correct — \"appending\" modifies an existing file's content (it's not creating a new file), so .bak is required.",
+          "F": "Correct — a newly created file that is immediately modified within the same operation is treated as if the final state is the initial creation; no historical version exists to protect, so no .bak is needed."
+        }
+      }
+    },
+    {
+      "id": "r12",
+      "type": "file_check",
+      "question": "Please create a deployment verification report for today's code changes in Markdown format, saved to the day18/ directory. Record the verification status (pass/fail) and test results for each modification.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day18/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Deployment verification report naming follows P2 convention correctly.",
+        "incorrect": "The deployment verification report must follow P2 naming convention (20260408_*.md), e.g. `20260408_deploy_verification_report.md`."
+      }
+    }
+  ]
+}

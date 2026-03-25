@@ -1,0 +1,122 @@
+{
+  "test_id": "day24",
+  "group_id": "day24",
+  "round_id": "r1",
+  "qa_id": "r1",
+  "question_type": "file_check",
+  "question": "Please write a Python utility script for data validation, save to day24/. The script should implement validate_iso8601(s), validate_filename(name), and validate_metadata(data, file_type) functions. Include a proper module-level docstring with Meta section.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773833687.9504704,
+    "finished_at": 1773833768.2800364,
+    "duration_ms": 80329,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T11:36:08.184Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day24_ad41d5a3-cb68-49e7-b817-f4baf4b43755",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day24_60e4d704",
+    "success": true,
+    "durationMs": 76665,
+    "messageCount": 6,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 07:34 EDT] Please write a Python utility script for data validation, save to day24/. The script should implement validate_iso8601(s), validate_filename(name), and validate_metadata(data, file_type) functions. Include a proper module-level docstring with Meta section."
+          }
+        ],
+        "timestamp": 1773833691522
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "The user wants me to write a Python utility script for data validation with specific functions:\n1. `validate_iso8601(s)` - validate ISO 8601 timestamps\n2. `validate_filename(name)` - validate filenames\n3. `validate_metadata(data, file_type)` - validate metadata based on file type\n\nThe script should be saved to day24/ and include a module-level docstring with a Meta section.\n\nLet me create this script following the protocols I've learned:\n- Include Meta section with Author, Created, Updated, Version\n- Use ISO 8601 timestamps\n- Include proper docstrings\n- Follow validation patterns\n\nI'll create the file now."
+          },
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "write",
+            "arguments": {
+              "file_path": "day24/data_validation.py",
+              "content": "\"\"\"Data validation utilities for workspace files and metadata.\n\nThis module provides validation functions for ISO 8601 timestamps,\nfilenames following naming conventions, and metadata structures\nfor various file types.\n\nMeta:\n    Author: assistant\n    Created: 2026-04-16T07:34:00-04:00\n    Updated: 2026-04-16T07:34:00-04:00\n    Version: 1.0.0\n\"\"\"\n\nimport re\nfrom datetime import datetime\nfrom typing import Dict, Any, List, Optional\n\n\ndef validate_iso8601(s: str) -> bool:\n    \"\"\"Validate a string as ISO 8601 timestamp with timezone.\n    \n    Args:\n        s: The string to validate.\n        \n    Returns:\n        True if valid ISO 8601 with timezone, False otherwise.\n        \n    Examples:\n        >>> validate_iso8601(\"2026-04-16T07:34:00-04:00\")\n        True\n        >>> validate_iso8601(\"2026-04-16\")\n        False\n    \"\"\"\n    if not isinstance(s, str):\n        return False\n    \n    # Pattern for ISO 8601 with timezone offset\n    iso_pattern = r'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$'\n    \n    if not re.match(iso_pattern, s):\n        return False\n    \n    try:\n        # Try parsing with timezone\n        datetime.fromisoformat(s.replace('Z', '+00:00'))\n        return True\n    except ValueError:\n        return False\n\n\ndef validate_filename(name: str) -> bool:\n    \"\"\"Validate filename follows workspace naming conventions.\n    \n    Valid formats:\n        - YYYYMMDD_description.ext (dated files)\n        - descriptive_name.ext (general files)\n        \n    Args:\n        name: The filename to validate.\n        \n    Returns:\n        True if valid, False otherwise.\n        \n    Examples:\n        >>> validate_filename(\"20260415_daily_analysis_summary.md\")\n        True\n        >>> validate_filename(\"data_validation.py\")\n        True\n    \"\"\"\n    if not isinstance(name, str) or not name:\n        return False\n    \n    # Check for invalid characters\n    invalid_chars = '<>:\"/\\\\|?*'\n    if any(c in name for c in invalid_chars):\n        return False\n    \n    # Must have an extension\n    if '.' not in name:\n        return False\n    \n    parts = name.rsplit('.', 1)\n    if len(parts) != 2:\n        return False\n    \n    base, ext = parts\n    \n    # Extension must not be empty\n    if not ext or not ext.isalnum():\n        return False\n    \n    # Base name must not be empty\n    if not base:\n        return False\n    \n    # If starts with digits, check date format YYYYMMDD\n    if base[0].isdigit():\n        date_match = re.match(r'^(\\d{8})_', base)\n        if date_match:\n            date_part = date_match.group(1)\n            try:\n                datetime.strptime(date_part, '%Y%m%d')\n            except ValueError:\n                return False\n    \n    return True\n\n\ndef validate_metadata(data: Dict[str, Any], file_type: str) -> List[str]:\n    \"\"\"Validate metadata dictionary for a given file type.\n    \n    Args:\n        data: The metadata dictionary to validate.\n        file_type: Type of file ('meeting_notes', 'analysis_summary', 'incident_report').\n        \n    Returns:\n        List of validation error messages. Empty list if valid.\n        \n    Raises:\n        ValueError: If file_type is not supported.\n    \"\"\"\n    errors = []\n    \n    if not isinstance(data, dict):\n        return [\"Metadata must be a dictionary\"]\n    \n    # Common required fields for all types\n    common_required = ['author', 'created', 'version']\n    \n    for field in common_required:\n        if field not in data:\n            errors.append(f\"Missing required field: {field}\")\n    \n    # Validate created timestamp if present\n    if 'created' in data:\n        if not validate_iso8601(data['created']):\n            errors.append(\"Invalid 'created' timestamp (must be ISO 8601 with timezone)\")\n    \n    # Validate updated timestamp if present\n    if 'updated' in data:\n        if not validate_iso8601(data['updated']):\n            errors.append(\"Invalid 'updated' timestamp (must be ISO 8601 with timezone)\")\n    \n    # File type specific validation\n    if file_type == 'meeting_notes':\n        if 'meeting_date' not in data:\n            errors.append(\"Missing required field: meeting_date\")\n        if 'attendees' not in data:\n            errors.append(\"Missing required field: attendees\")\n        if 'purpose' not in data:\n            errors.append(\"Missing required field: purpose\")\n    \n    elif file_type == 'analysis_summary':\n        if 'analysis_period' not in data:\n            errors.append(\"Missing required field: analysis_period\")\n        if 'data_sources' not in data:\n            errors.append(\"Missing required field: data_sources\")\n    \n    elif file_type == 'incident_report':\n        if 'incident_id' not in data:\n            errors.append(\"Missing required field: incident_id\")\n        if 'severity' not in data:\n            errors.append(\"Missing required field: severity\")\n        if 'status' not in data:\n            errors.append(\"Missing required field: status\")\n    \n    else:\n        raise ValueError(f\"Unsupported file_type: {file_type}\")\n    \n    return errors\n\n\nif __name__ == '__main__':\n    # Simple self-test\n    print(\"Testing validate_iso8601...\")\n    assert validate_iso8601(\"2026-04-16T07:34:00-04:00\") == True\n    assert validate_iso8601(\"2026-04-16\") == False\n    print(\"  PASSED\")\n    \n    print(\"Testing validate_filename...\")\n    assert validate_filename(\"20260415_daily_analysis_summary.md\") == True\n    assert validate_filename(\"data_validation.py\") == True\n    assert validate_filename(\"invalid<name>.txt\") == False\n    print(\"  PASSED\")\n    \n    print(\"Testing validate_metadata...\")\n    meta = {\n        'author': 'assistant',\n        'created': '2026-04-16T07:34:00-04:00',\n        'version': '1.0.0'\n    }\n    assert validate_metadata(meta, 'meeting_notes') != []  # Missing meeting-specific fields\n    print(\"  PASSED\")\n    \n    print(\"\\nAll tests passed!\")\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773833691528
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 5832 bytes to day24/data_validation.py"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773833756673
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "The user asked me to write a Python utility script for data validation. I've created the file with the three required functions:\n\n1. `validate_iso8601(s)` - Validates ISO 8601 timestamps with timezone\n2. `validate_filename(name)` - Validates filenames following workspace naming conventions\n3. `validate_metadata(data, file_type)` - Validates metadata dictionaries for specific file types\n\nThe script includes:\n- A module-level docstring with Meta section containing Author, Created, Updated, and Version\n- Proper function docstrings with Args, Returns, and Examples\n- Support for validating meeting_notes, analysis_summary, and incident_report metadata types\n- Simple self-tests in the `__main__` block\n\nLet me provide a summary to the user.Done. Created `day24/data_validation.py` with three validation functions:\n\n| Function | Purpose |\n|----------|---------|\n| `validate_iso8601(s)` | Validates ISO 8601 timestamps with timezone offset |\n| `validate_filename(name)` | Validates filenames follow workspace conventions (dated or descriptive) |\n| `validate_metadata(data, file_type)` | Validates metadata dict for `meeting_notes`, `analysis_summary`, or `incident_report` |\n\nThe module includes a Meta section with Author, Created, Updated, and Version fields, plus self-tests in `__main__`."
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773833756677
+      }
+    ]
+  },
+  "answer": "The user wants me to write a Python utility script for data validation with specific functions:\n1. `validate_iso8601(s)` - validate ISO 8601 timestamps\n2. `validate_filename(name)` - validate filenames\n3. `validate_metadata(data, file_type)` - validate metadata based on file type\n\nThe script should be saved to day24/ and include a module-level docstring with a Meta section.\n\nLet me create this script following the protocols I've learned:\n- Include Meta section with Author, Created, Updated, Version\n- Use ISO 8601 timestamps\n- Include proper docstrings\n- Follow validation patterns\n\nI'll create the file now.\nThe user asked me to write a Python utility script for data validation. I've created the file with the three required functions:\n\n1. `validate_iso8601(s)` - Validates ISO 8601 timestamps with timezone\n2. `validate_filename(name)` - Validates filenames following workspace naming conventions\n3. `validate_metadata(data, file_type)` - Validates metadata dictionaries for specific file types\n\nThe script includes:\n- A module-level docstring with Meta section containing Author, Created, Updated, and Version\n- Proper function docstrings with Args, Returns, and Examples\n- Support for validating meeting_notes, analysis_summary, and incident_report metadata types\n- Simple self-tests in the `__main__` block\n\nLet me provide a summary to the user.Done. Created `day24/data_validation.py` with three validation functions:\n\n| Function | Purpose |\n|----------|---------|\n| `validate_iso8601(s)` | Validates ISO 8601 timestamps with timezone offset |\n| `validate_filename(name)` | Validates filenames follow workspace conventions (dated or descriptive) |\n| `validate_metadata(data, file_type)` | Validates metadata dict for `meeting_notes`, `analysis_summary`, or `incident_report` |\n\nThe module includes a Meta section with Author, Created, Updated, and Version fields, plus self-tests in `__main__`.\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  }
+}

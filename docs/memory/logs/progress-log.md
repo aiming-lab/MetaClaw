@@ -1,0 +1,463 @@
+# Memory Upgrade Progress Log
+
+Last updated: 2026-03-13
+
+## 2026-03-12
+
+- Created working branch `memory-upgrade`.
+- Cloned `MetaMem` into the repository for review.
+- Cloned `SimpleMem` into the repository for review.
+- Completed initial architectural assessment of MetaClaw, MetaMem, and SimpleMem.
+- Created the master memory upgrade plan.
+- Split the project into a multi-document planning and tracking system.
+- Reviewed additional SimpleMem cross-session internals and finalized phase 1 architecture decisions.
+- Added phase 1 memory code skeleton: config, models, store, retriever, manager, and tests.
+- Integrated the phase 1 memory skeleton into the MetaClaw request path and session-end lifecycle.
+- Added lightweight phase 1 consolidation and heuristic memory typing.
+- Verified the current memory unit tests and syntax checks pass.
+- Replaced the first-pass heuristic ingestion path with pattern-based factual extraction for preferences, project context, workflow guidance, and persistent facts.
+- Added memory store statistics, dominant-type summaries, and request-time memory logging for better observability.
+- Expanded unit coverage for structured extraction and stats reporting; the phase 1 memory test suite now has 6 passing tests.
+- Added configurable `keyword` and `hybrid` retrieval modes so phase 1 retrieval policy is no longer a dead config path.
+- Added per-request/per-session memory scope overrides and verified scope isolation behavior in tests.
+- Expanded the phase 1 memory test suite again; it now has 8 passing tests.
+- Strengthened the documentation workflow so the master plan and phase documents must be re-read and updated alongside implementation progress.
+- Added an optional embedding retrieval path backed by deterministic local embeddings, including schema support for stored vectors.
+- Expanded the phase 1 memory test suite to 9 passing tests.
+- Added identity-to-scope derivation for explicit scope, user, workspace, and session fallback paths.
+- Expanded the phase 1 memory test suite to 12 passing tests.
+- Started Phase 2 implementation with persisted `MemoryPolicyState`, a bounded `MemoryPolicyOptimizer`, and manager-side policy refresh.
+- Isolated policy-path state in tests and expanded the suite to 14 passing tests.
+- Added memory policy visibility to CLI status and a dedicated `metaclaw memory status` inspection command.
+- Added policy revision history, rollback support, and append-only memory telemetry logging.
+- Expanded the phase 2 test coverage; the memory suite now has 16 passing tests.
+- Started Phase 3 with a replay sample format, JSONL loader, offline evaluator, and baseline-versus-candidate comparator.
+- Expanded the memory suite to 18 passing tests.
+- Added a `metaclaw memory replay-report` CLI entry point for lightweight offline replay summaries.
+- Added explicit replay promotion criteria and JSON report writing support.
+- Expanded the memory suite to 19 passing tests.
+- Completed the first real policy candidate runner for replay evaluation and expanded the memory suite to 20 passing tests.
+- Started Phase 4 with a controlled self-upgrade orchestrator, replay-gated promotion path, and upgrade-history artifacts.
+- Expanded the memory suite to 21 passing tests.
+- Added a bounded policy candidate generator and expanded the memory suite to 22 passing tests.
+- Completed the first offline candidate generation workflow and expanded the memory suite to 23 passing tests.
+- Added review-queue, approve, and reject flows for human-gated self-upgrade, and expanded the memory suite to 24 passing tests.
+- Synced the master/phase document statuses with the actual repository state and surfaced upgrade-decision counts in `memory status`.
+- Added artifact-directory helpers and candidate/history inspection surfaces for the self-upgrade workflow.
+- Added an end-to-end auto-upgrade cycle and expanded the memory suite to 25 passing tests.
+- Marked phases 2-4 complete for the first working loop and cleaned generated `__pycache__` artifacts from the worktree.
+- Added a scheduler-aware `MemoryUpgradeWorker`, new memory auto-upgrade config knobs, and expanded the memory suite to 27 passing tests.
+- Strengthened replay metrics with response-overlap and specificity signals, while keeping the memory suite green at 27 passing tests.
+- Corrected directory-level self-upgrade behavior so each cycle now picks at most one best candidate for promotion or review.
+- Added persisted worker state and review-queue deduplication without regressing the 27-test memory suite.
+- Added review-gated auto-upgrade pausing plus upgrade-history summary counters, and expanded the memory suite to 28 passing tests.
+- Improved upgrade-history/status reporting so operators can see summarized decision counts instead of only raw records.
+- Added cycle-summary artifacts plus worker-state restoration, and expanded the memory suite to 29 passing tests.
+- Added review-queue age summaries so stale pending candidates are visible from CLI and status surfaces.
+- Added candidate/report artifact cleanup with protection for active review items and current-cycle references.
+- Expanded the memory suite to 31 passing tests.
+- Wrote cleanup results into the per-cycle summary artifact and surfaced them through `memory candidates-status`.
+- Enriched worker `waiting_review` state with pending/stale review counts for faster operational diagnosis.
+- Added a replay `focus` metric so candidate policies are judged not just on overlap, but also on how concentrated injected memory stays around task-relevant references.
+- Added configurable stale-review thresholds and a distinct `waiting_review_stale` worker state for aged blocked queues.
+- Added a replay `value density` metric to penalize candidates that improve by expanding retrieval volume instead of improving relevance per injected memory unit.
+- Added persistent `upgrade_alerts.json` output so blocked or stale review queues survive process restarts as operator-visible alerts.
+- Added append-only alert history plus a dedicated CLI alert view so upgrade blockers can be inspected over time instead of only at the latest snapshot.
+- Added aggregated alert-history summaries so the operator surface can show recurring blocked/stale patterns instead of just raw snapshots.
+- Added aggregated candidate-metric summaries to cycle artifacts and surfaced key deltas in `memory candidates-status`.
+- Added dedicated review-history tracking plus CLI inspection so queued/approved/rejected review events are no longer mixed only into upgrade-history records.
+- Added review resolution-latency summaries so the operator surface can show whether human review is keeping up with pending candidates.
+- Added review backlog-pressure estimation so pending volume is interpreted together with historical resolution speed instead of as a bare count.
+- Added review outcome-rate summaries so approval/rejection balance is visible alongside queue size and latency.
+- Added recent-window review-history summaries so CLI surfaces can distinguish long-run totals from current approval/rejection and latency behavior.
+- Added recent-window alert-history summaries so blocked/stale conditions can be inspected as active trends rather than only cumulative counts.
+- Added recent-window upgrade-history summaries so promotion, pending-review, and rejection decisions can be tracked as current trends rather than only accumulated totals.
+- Added append-only cycle-history tracking plus aggregate cycle summaries, so self-upgrade behavior can be inspected across runs instead of only from the most recent cycle artifact.
+- Added cycle-level promotion and pending-review rates so recent self-upgrade quality can be read as proportions, not just counts.
+- Added alert snapshot-rate summaries so blocked/stale behavior can be read as frequency over time instead of only raw snapshot totals.
+- Added a compact operational-health summary for the self-upgrade loop, combining queue, backlog, and recent cycle behavior into health levels and reasons.
+- Added persistent health-history snapshots plus health-history summaries, so upgrade-loop health can be tracked as a trend over time.
+- Added a dedicated handoff document so another agent can continue from the current branch and documentation system without reconstructing project state.
+- Clarified the current test entry point: the memory suite is validated with `python -m unittest discover -s tests -p 'test_memory_system.py'`.
+- Expanded the memory suite to 48 passing tests.
+- Second-loop handoff: new agent picked up the project and verified 48 tests green.
+- Improved extraction quality: added response-side pattern extraction, added "note that" and "fyi" prompt patterns, raised per-turn extraction cap from 4 to 6.
+- Improved consolidation quality: added near-duplicate merging via Jaccard token similarity (threshold 0.80) on top of exact-content dedup.
+- Improved retrieval ranking: replaced flat keyword match count with IDF-weighted scoring so rare-term matches rank higher.
+- Added 7 new tests: response-side extraction, note-that pattern, near-duplicate merging, distinct memory preservation, IDF ranking, CLI integration smoke, end-to-end pipeline smoke.
+- Expanded the memory suite to 55 passing tests.
+- Improved replay quality: added grounding score (entity/topic overlap with task context) and coverage score (response-content anticipation by memory) as new replay metrics.
+- Updated promotion criteria and candidate ranking to include grounding and coverage signals.
+- Added 3 new replay quality tests.
+- Expanded the memory suite to 58 passing tests.
+- Improved candidate generation: added weight-variant candidates (keyword, metadata, importance, recency weights) alongside the existing mode/units/tokens grid.
+- Improved hybrid retrieval: replaced flat overlap counts with IDF-weighted scoring, consistent with keyword retrieval.
+- Added 3 new tests: candidate weight diversity, weight bounds, hybrid IDF ranking.
+- Expanded the memory suite to 61 passing tests.
+- Improved working summary: now includes topic line and turn-count context.
+- Added importance decay for old unused memories to consolidation pipeline.
+- Added `update_importance` method to MemoryStore.
+- Added 3 new tests: old memory decay, recent memory non-decay, working summary topics.
+- Expanded the memory suite to 64 passing tests.
+- Added integration tests: multi-session consolidation, full cycle round-trip, auto-upgrade cycle with cycle history, operational health smoke test.
+- Expanded the memory suite to 68 passing tests.
+- Enhanced policy optimizer: added factual-pool importance tuning, episodic-heavy keyword tuning, and low-volume safety guard.
+- Improved prompt rendering: grouped memories by type with bullet-point format for token efficiency.
+- Added 3 new tests: factual pool importance tuning, low-volume safety guard, render grouping.
+- Expanded the memory suite to 71 passing tests.
+- Added comprehensive scope isolation tests: multi-user memory isolation, scope derivation precedence.
+- Added store robustness tests: empty query, no data, empty marks, nonexistent supersede, empty scope stats, empty/blank turns, empty retrieval, empty render.
+- Expanded the memory suite to 82 passing tests.
+- Added retrieval telemetry: each retrieve_for_prompt call now records retrieved_count, injected_tokens, avg_importance, types_retrieved, and retrieval_mode to the telemetry log.
+- Added retrieval telemetry test.
+- Expanded the memory suite to 83 passing tests.
+- Enhanced policy optimizer with telemetry-driven tuning: analyzes recent retrieval events to propose injection budget changes when retrieval saturates limits or consistently returns empty.
+- Added telemetry-driven optimizer test.
+- Expanded the memory suite to 84 passing tests.
+
+## 2026-03-13
+
+- Third-loop handoff: new agent picked up the project and verified 84 tests green.
+- Added FTS5 virtual table for fast full-text search with scope-aware filtering and graceful fallback.
+- Added graceful degradation for corrupted SQLite stores: automatic backup and fresh database creation.
+- Added multi-turn context accumulator for cross-turn entity inheritance and continuation-aware extraction.
+- Added stress tests with 200-300 memory units for search and consolidation.
+- Expanded the memory suite to 93 passing tests.
+- Added entity-based cross-type reinforcement in consolidation with update_reinforcement store method.
+- Enriched retrieval telemetry with type_distribution and avg_reinforcement signals.
+- Added type-skew detection to policy optimizer for underrepresented memory types.
+- Expanded the memory suite to 96 passing tests.
+- Added query expansion with synonym/abbreviation mapping for better recall (db→database, auth→authentication, etc.).
+- Added confidence-weighted scoring in hybrid retrieval so higher-confidence memories rank better.
+- Expanded the memory suite to 99 passing tests.
+- Added pre-ingestion deduplication to prevent duplicate memory accumulation.
+- Added retrieval type diversity enforcement to prevent single-type domination.
+- Expanded the memory suite to 101 passing tests.
+- Added entity-based cross-type reinforcement with update_reinforcement store method.
+- Added type_distribution and avg_reinforcement to retrieval telemetry.
+- Added type-skew detection to policy optimizer.
+- Expanded the memory suite to 96 (intermediate) then 99 passing tests.
+- Added query expansion with synonym/abbreviation mapping for better recall.
+- Added confidence-weighted scoring to both hybrid and embedding retrieval modes.
+- Expanded the memory suite to 99 passing tests.
+- Added pre-ingestion content deduplication against existing store.
+- Added retrieval type diversity enforcement (max 60% single type).
+- Expanded the memory suite to 101 passing tests.
+- Added memory search, export, import, and garbage collection CLI commands.
+- Expanded the memory suite to 103 passing tests.
+- Added freshness tags to rendered memory output (just now/recent/this week).
+- Added entity line to working summaries.
+- Added retrieval latency benchmark test (500 units under 1 second).
+- Expanded the memory suite to 106 passing tests.
+- Added 8 new extraction patterns: I'd like, don't want, my convention, the codebase uses, our team uses, we're using, never, make sure, don't forget, just so you know, for future reference.
+- Added consolidation telemetry recording.
+- Expanded the memory suite to 111 passing tests.
+- Added importance auto-calibration for frequently accessed memories.
+- Added comprehensive edge case tests: very long prompts, unicode, empty sessions, special characters, concurrent scopes.
+- Expanded the memory suite to 117 passing tests.
+- Enriched memory_metrics with type_ratios, type_count, and superseded count.
+- Added 'memory stats' CLI command with detailed pool analytics.
+- Expanded the memory suite to 118 passing tests.
+- Added threading.Lock to MemoryStore for thread-safe access.
+- Added compact() method and VACUUM support after GC.
+- Added thread safety and compaction tests.
+- Expanded the memory suite to 120 passing tests.
+- Enhanced replay evaluation with zero_retrieval_count tracking and stratified session-balanced sampling.
+- Added validate_policy_state for pre-promotion parameter range checking.
+- Added max_zero_retrieval_increase to promotion criteria for retrieval coverage regression gating.
+- Expanded the memory suite to 128 passing tests.
+
+## 2026-03-12 (fourth-loop integration)
+
+- Fourth-loop handoff: new agent picked up the project and verified 132 tests green.
+- Added access pattern analysis (get_access_patterns) and pool context rendering.
+- Added composite_score property to MemoryReplayResult for single-number quality comparison.
+- Added telemetry-weighted replay sampling: sessions with richer retrieval history get sampling priority.
+- Added composite_score_delta to comparison output and replay reports.
+- Integrated composite score into self-upgrade decision scoring and metric summaries.
+- Added memory diagnostics (diagnose method and CLI command) combining store, access, retrieval, and policy signals.
+- Added retrieval feedback (record_feedback on store, provide_feedback on manager) for importance adjustment.
+- Added store-level garbage_collect method; refactored CLI gc command to use it.
+- Added retrieval explanations: reason field on MemorySearchHit, explain_retrieval on MemoryManager.
+- Added integration tests: cross-session continuity, memory accumulation, token budget enforcement,
+  scope isolation, full lifecycle, request flow injection simulation, scale retrieval (500 units).
+- Added memory conflict detection for contradictory same-type memories (topic/entity overlap >= 0.65).
+- Added memory age distribution buckets and retrieval cache stats to diagnostics.
+- Added pool summary generator (get_pool_summary) with CLI command.
+- Added memory pinning (pin_memory/unpin_memory) for guaranteed retrieval inclusion.
+- Added search_memories() API for programmatic keyword search with scoring.
+- Added bulk_update_importance() for efficient batch importance updates.
+- Added 'importantly' and 'by the way' extraction patterns for semantic facts.
+- Added retention policy (apply_retention_policy) for archiving old, low-importance memories.
+- Added MemoryReplayJudge interface for optional LLM-graded replay evaluation.
+- Expanded the memory suite to 169 passing tests.
+
+### Fifth-loop: advanced features and operator tooling
+
+- Added scope listing (list_scopes) with active/total counts, manager wrapper and tests.
+- Added memory content update (update_content) with FTS re-indexing.
+- Added get_memory (single unit by ID) API.
+- Expanded suite to 173 tests.
+- Added memory TTL/expiry: expires_at field, list_active filtering, expire_stale() archival, set_ttl().
+- Added cross-scope memory sharing: share_to_scope() copies memories between scopes with confidence reduction.
+- Added structured JSON export: export_scope_json() for backup and external analysis.
+- Manager wrappers: set_ttl, expire_stale, share_memory, export_scope.
+- Schema migration: expires_at column with backward compatibility.
+- Expanded suite to 183 tests.
+- Added CLI commands: memory ttl, expire, share, export-json, scopes.
+- Integrated auto-expire of TTL-stale memories into upgrade worker's run_once cycle.
+- Added memory import: import_memories_json() with scope remapping and access stat reset.
+- Added batch type TTL: set_type_ttl() to set expiry on all memories of a type.
+- Added memory merge: merge_memories() combines two memories, supersedes originals, preserves max importance and combined entities/topics.
+- Enhanced diagnostics: TTL stats (count with TTL, expiring within 24h) in diagnose output.
+- Expanded suite to 190 tests.
+- Added memory tagging: user-defined tags with add/remove/search. tags_json column with migration.
+- Tags included in export/import roundtrip.
+- CLI: memory merge, import-json, type-ttl commands.
+- Expanded suite to 195 tests.
+- Added memory version history: get_memory_history() traverses supersedes chain.
+- Added scope analytics: get_scope_analytics() with type distribution, access, importance, feature usage.
+- CLI: memory history, analytics, tag, find-tag commands.
+- Expanded suite to 199 tests.
+- Added bulk operations: bulk_archive(), bulk_add_tags().
+- Added scope snapshots: snapshot_scope() and restore_snapshot() for point-in-time rollback.
+- Expanded suite to 204 tests.
+- Added memory event log: SQLite audit trail for create, supersede, pin, share, merge, archive.
+- Added CLI: memory snapshot, restore, events commands.
+- Expanded suite to 208 tests.
+- Added similarity search: find_similar() via topic/entity Jaccard overlap.
+- Added health score: compute_health_score() composite 0-100 metric from access, importance, diversity, freshness.
+- Added CLI: memory similar, health commands.
+- Added pre-ingestion content validation (min 3 chars).
+- Expanded suite to 213 tests.
+- Added duplicate detection: find_duplicates() with word-level Jaccard similarity.
+- CLI: memory duplicates command.
+- Expanded suite to 215 tests.
+- Added retrieval auto-routing: 'auto' mode selects keyword vs hybrid based on query length and embedder.
+- Expanded suite to 218 tests.
+- Added consolidation dry-run: preview counts without applying.
+- Added pinned memory rendering priority in prompt output.
+- CLI: memory consolidation-preview command.
+- Expanded suite to 221 tests.
+- Added stats trend tracking: save_stats_snapshot()/get_stats_trend() with auto-save after ingestion.
+- CLI: memory trend command.
+- Expanded suite to 224 tests.
+- Added advanced multi-criteria search: search_advanced() with keyword + type + tag + importance.
+- Added scope comparison: compare_scopes() for shared/unique content identification.
+- CLI: memory search-advanced, compare-scopes commands.
+- Expanded suite to 227 tests.
+
+### Sixth-loop: integration features, graph operations, and operator tooling
+
+- Sixth-loop handoff: new agent picked up the project and verified 230 tests green.
+- Fixed CLI rebalance and resolve-conflicts commands (replaced undefined _build_manager with MemoryManager.from_config).
+- Added auto_resolve_conflicts() on MemoryManager: supersedes older conflicting memories while skipping pinned.
+- Added 3 auto-conflict-resolution tests. Expanded suite to 233 tests.
+- Added tag-based retrieval boosting: context_tags field on MemoryQuery, 15% multiplicative boost per matching tag in keyword/hybrid/embedding retrieval.
+- Added 3 tag-boost tests. Expanded suite to 236 tests.
+- Added event callback system: register_event_callback() and _notify() for lifecycle events (ingest, expire, share, merge, conflict resolution). Best-effort, errors don't break operations.
+- Added 3 callback tests. Expanded suite to 239 tests.
+- Added scope-level access control for multi-tenant deployments: scope_access table, grant/revoke/check permissions (read, write, admin). Admin implies all. CLI: grant-access, revoke-access, scope-grants.
+- Added 7 access control tests. Expanded suite to 246 tests.
+- Added memory link/dependency tracking: memory_links table, directed links with types (related, depends_on, elaborates, contradicts). CLI: link, links.
+- Added 5 link tests. Expanded suite to 251 tests.
+- Added memory annotations: memory_annotations table for user-defined notes. CLI: annotate, annotations.
+- Added linked retrieval expansion: expand_links parameter on retrieve_for_prompt pulls in graph-linked neighbors.
+- Added 5 annotation and linked-retrieval tests. Expanded suite to 256 tests.
+- Added per-memory quality scoring: score_memory_quality() with 5 factors (content richness, metadata, access, importance, connectivity). get_lowest_quality_memories() for cleanup candidates. CLI: quality.
+- Added 3 quality-score tests. Expanded suite to 259 tests.
+- Added batch_archive_by_criteria() with AND-logic filters (quality, type, importance, age). CLI: batch-archive.
+- Added find_memory_clusters() via BFS on link graph for connected component detection. CLI: clusters.
+- Added 6 batch-archive and cluster tests. Expanded suite to 265 tests.
+- Added configurable exponential decay mode to consolidator (linear/exponential).
+- Added memory watch/subscription system: memory_watches table, add/remove/get watchers.
+- CLI: watch, unwatch, watchers commands.
+- Added 6 tests. Expanded suite to 276 tests.
+- Added schema versioning (SCHEMA_VERSION=6), get_schema_version(), and schema_version table.
+- Added database backup via SQLite online backup API.
+- CLI: backup, schema-version commands.
+- Added 2 tests. Expanded suite to 281 tests.
+- Added get_db_size() with page statistics and freelist tracking.
+- Added apply_typed_retention() for per-type retention policies (episodic: 30d, semantic: 180d, preference: 365d, etc.).
+- Added conflicts_detected callback notification during ingestion.
+- CLI: db-size, typed-retention commands.
+- Added 4 tests. Expanded suite to 285 tests.
+- Added validate_integrity() for orphaned links, watches, annotations, dangling superseded_by.
+- Added cleanup_orphans() for removing all orphaned references.
+- Added export_csv() for CSV export with proper escaping.
+- Added get_optimization_hints() suggesting compaction, TTL, retention, dedup, and integrity fixes.
+- CLI: validate, cleanup-orphans, export-csv, optimize-hints commands.
+- Added 6 tests. Expanded suite to 291 tests.
+- Improved topic extraction: multi-word technical terms (api endpoint, database migration, etc.).
+- Improved entity extraction: CamelCase (AuthService) and snake_case (get_user_profile) identifiers.
+- Added 6 new extraction patterns: I'd rather, I want, I'm used to, the key thing is, what matters, for your information.
+- Added 4 extraction tests. Expanded suite to 295 tests.
+- Added get_api_status(): comprehensive JSON-serializable status for API consumption.
+- CLI: api-status command with --json flag.
+- Added 2 API status tests. Expanded suite to 297 tests.
+- Added run_maintenance(): full lifecycle maintenance (expire, consolidate, retain, cleanup, GC, compact).
+- Added sample_memories(): random sampling for exploration/testing.
+- CLI: maintenance, sample commands.
+- Added 3 tests. Expanded suite to 300 tests.
+- Added migrate_scope(): move all active memories between scopes.
+- Added get_importance_histogram(): importance distribution with configurable buckets.
+- CLI: migrate-scope, importance-histogram commands.
+- Added 2 tests. Expanded suite to 302 tests.
+- Added get_age_distribution(): named time buckets for age analysis.
+- Added search_with_context(): keyword search with matched term highlighting.
+- CLI: age-distribution, search-context commands.
+- Added 2 tests. Expanded suite to 304 tests.
+- Added compute_urgency_scores(): urgency scoring for TTL proximity, unused high-importance, and missing metadata.
+- Added suggest_type_corrections(): content-pattern-based type correction suggestions.
+- Added find_cross_scope_duplicates(): Jaccard similarity duplicate detection across scopes.
+- CLI: urgency, suggest-types, cross-scope-duplicates commands.
+- Added 12 tests (6 type-corrections, 6 cross-scope-duplicates). Expanded suite to 322 tests.
+
+### Seventh-loop: advanced analysis, graph operations, and operational tooling
+
+- Added batch get by IDs: store.get_by_ids() and manager.get_memories_by_ids() for bulk retrieval.
+- Added memory impact analysis: analyze_memory_impact() with transitive dependency traversal.
+- Added dependency cycle detection: detect_dependency_cycles() via DFS on depends_on links.
+- Added version tree builder: build_version_tree() for structured supersedes chain visualization.
+- CLI: batch-get, impact, dependency-cycles, version-tree commands.
+- Expanded suite to 336 tests.
+- Added topic grouping: group_by_topic() clusters memories by dominant topic.
+- Added stale memory detection: find_stale_memories() with staleness scoring.
+- Added bulk link creation: bulk_add_links() for batch relationship setup.
+- Added summary reports: get_memory_summary_report() for scope dashboards.
+- CLI: topic-groups, stale, summary-report commands.
+- Expanded suite to 347 tests.
+- Added auto-tag suggestions: suggest_auto_tags() for untagged memories.
+- Added link graph export: export_link_graph() for visualization tools.
+- Added deduplication report: get_deduplication_report() with union-find clustering.
+- CLI: auto-tags, link-graph, dedup-report commands.
+- Expanded suite to 355 tests.
+- Added regex search: search_regex() for pattern-based content search.
+- Added scope merge: merge_scopes() copies unique memories between scopes.
+- Added stats delta: compute_stats_delta() compares current vs snapshot.
+- CLI: search-regex, merge-scopes, stats-delta commands.
+- Expanded suite to 363 tests.
+- Added memory diff: diff_memories() word-level content comparison.
+- Added scope cloning: clone_scope() deep-copy with fresh IDs.
+- Added access frequency analysis: analyze_access_frequency() hot/warm/cold categorization.
+- Added enrichment suggestions: suggest_enrichments() for metadata completeness.
+- CLI: diff, clone-scope, access-frequency, enrichments commands.
+- Expanded suite to 373 tests.
+- Added content density stats: get_content_density_stats() token count analysis.
+- Added scope quota: check_scope_quota() configurable memory limits.
+- Added cascade archive: cascade_archive() transitive dependency archival.
+- Added link graph stats: get_link_graph_stats() connectivity analysis.
+- CLI: content-density, quota, cascade-archive, link-stats commands.
+- Expanded suite to 382 tests.
+- Added expiry forecast: forecast_expiry() upcoming expirations by time window.
+- Added type overlap matrix: get_type_overlap_matrix() topic overlap between types.
+- Added archival recommendations: recommend_archival() multi-signal scoring.
+- CLI: expiry-forecast, type-overlap, archive-recommendations commands.
+- Expanded suite to 389 tests.
+- Added scope dashboard: get_scope_dashboard() comprehensive operational view.
+- CLI: dashboard command with --json flag.
+- Added integration tests: full analysis pipeline, scope clone+dedup, cascade archive+verify.
+- Expanded suite to 394 tests.
+- Added link suggestions: suggest_links() for topic/entity overlap-based relationship discovery.
+- Added detailed scope comparison: generate_detailed_scope_comparison() with topic overlap analysis.
+- Added content validation: validate_content() configurable quality rules.
+- CLI: suggest-links, scope-comparison commands.
+- Expanded suite to 403 tests.
+- Added auto-summaries: generate_auto_summaries() keyword-based summary generation.
+- Added importance recalculation: recalculate_importance() signal-based update.
+- Added type balance: analyze_type_balance() with rebalancing suggestions.
+- Added scope health comparison: compare_scope_health() cross-scope metrics.
+- Added memory lifecycle: get_memory_lifecycle() full state tracking.
+- CLI: auto-summarize, recalculate-importance, type-balance, health-comparison, lifecycle.
+- Expanded suite to 412 tests.
+- Added maintenance recommendations: get_maintenance_recommendations() state-based action suggestions.
+- Added training export: export_for_training() ML-ready format.
+- CLI: maintenance-recommendations, export-training commands.
+- Added comprehensive integration tests: full lifecycle pipeline, multi-scope operations.
+- Expanded suite to 418 tests.
+- Added batch content update: batch_update_content() for bulk content changes.
+- Added freshness scoring: compute_freshness_scores() multi-signal metric.
+- Added scope inventory: get_scope_inventory() filterable browser.
+- CLI: freshness, inventory commands.
+- Expanded suite to 425 tests.
+- Added content normalization: normalize_content() and batch_normalize_content() for whitespace cleanup.
+- Added priority queue: get_priority_queue() combining urgency, enrichment, staleness signals.
+- Added quality gates: apply_quality_gate() multi-gate pre-ingestion validation.
+- CLI: normalize, priority-queue, quality-gate commands.
+- Expanded suite to 433 tests.
+
+### Eighth-loop: semantic embedding support
+
+- Added pluggable embedder architecture: BaseEmbedder ABC with encode(), encode_batch(), dimensions.
+- Added SentenceTransformerEmbedder wrapping sentence-transformers (all-MiniLM-L6-v2 default).
+- Added create_embedder() factory with graceful fallback to HashingEmbedder.
+- Added memory_embedding_mode and memory_embedding_model config fields.
+- Added get_embedder_info() and re_embed_scope() on MemoryManager for scope-wide re-encoding.
+- Updated from_config and _refresh_policy to use embedder factory.
+- Added custom embedder injection via constructor parameter.
+- CLI: embedder-info, re-embed commands.
+- Added comprehensive embedding tests: BaseEmbedder contract, batch encode, factory modes,
+  fallback behavior, embedder info, re-embed scope, custom injection.
+- Added semantic retrieval integration tests: embedding mode, hybrid mode, auto-select.
+- Expanded suite to 445 tests.
+- All 5 optional enhancements now complete.
+
+### Ninth-loop: production tooling and operator features
+
+- Added edge case tests: cosine similarity, embedder edge cases, adaptive TTL multipliers.
+- Added comprehensive E2E integration tests: config-to-retrieval, multi-scope ops, quality pipeline.
+- Fixed from_config_with_policy_state to pass embedding config.
+- Expanded suite to 459 tests.
+- Added system-wide summary: get_system_summary() cross-scope operational overview.
+- Added embedder info in get_api_status() output.
+- Enhanced upgrade worker: full run_maintenance() before each upgrade cycle.
+- CLI: system-summary command with --json flag.
+- Expanded suite to 461 tests.
+- Added content compression: compress_content() and batch_compress() for filler phrase removal.
+- Added bulk type-based tagging: bulk_tag_by_type() auto-tags by memory type.
+- CLI: compress, auto-tag-types commands.
+- Expanded suite to 466 tests.
+- Added retention effectiveness analysis: analyze_retention_effectiveness().
+- Added memory growth rate tracking: get_memory_growth_rate() with projections.
+- CLI: retention-analysis, growth-rate commands.
+- Expanded suite to 470 tests.
+- Added auto-deduplication: auto_deduplicate() with dry-run and pinned-memory respect.
+- Added capacity forecasting: forecast_capacity() quota exhaustion projection.
+- Added audit trail export: export_audit_trail() compliance-ready event export.
+- CLI: auto-dedup, capacity-forecast, audit-trail commands.
+- Expanded suite to 476 tests.
+- Added operator action plan: generate_action_plan() comprehensive prioritized recommendations.
+- CLI: action-plan command.
+- Expanded suite to 478 tests.
+- Added system health check: run_system_health_check() with 5-category pass/fail.
+- Added grouped search: search_grouped() by type or topic.
+- Added scope archival: archive_scope() preserving pinned memories.
+- Added bulk pinning: bulk_pin_by_criteria() by importance/access.
+- Added YAML export: export_scope_yaml() without external dependencies.
+- CLI: health-check, search-grouped, archive-scope, bulk-pin, export-yaml commands.
+- Expanded suite to 493 tests.
+- Added bookmark system: bookmark_memories(), get_bookmarks() using tags.
+- Added snapshot comparison: compare_snapshots() for stats delta tracking.
+- CLI: bookmark, bookmarks, snapshot-compare commands.
+- Added 4 milestone integration tests: operator workflow, memory lifecycle, multi-scope ops, search/retrieval modes.
+- Expanded suite to 497 tests. All passing.
+
+### Tenth-loop: test coverage hardening and REST API
+
+- Added coverage tests: import_memories, clear_cache, MultiTurnContext (add_turn, get_recent_context, get_accumulated_entities, has_continuation_pattern).
+- Added 6 simulated production tests: multi-user workloads, TTL expiry under load, cross-scope sharing, retrieval feedback loops, 500-memory scale retrieval, full maintenance cycle.
+- Added 7 memory management REST API endpoints to api_server.py: stats, search, health, summary, get-by-id, action-plan, maintenance.
+- All endpoints async, auth-gated, 503 when memory not enabled.
+- Added 6 REST API endpoint tests via FastAPI TestClient.
+- Added 3 manager-level tests for update_memory, get_event_log.
+- Expanded suite to 519 tests. All passing.
+- Added generate_operator_report() combining health, action plan, growth, capacity, stats, type balance.
+- CLI: operator-report command. REST: /v1/memory/operator-report endpoint.
+- Added feedback pattern analysis: analyze_feedback_patterns() with event logging.
+- Enhanced provide_feedback() to accept string values ("positive"/"negative").
+- Added feedback event logging in store's record_feedback().
+- CLI: feedback-analysis command. REST: /v1/memory/feedback-analysis endpoint.
+- Added HeuristicReplayJudge for testing without real LLM endpoint.
+- Added memory injection quality tests: token budget, type diversity, importance priority.
+- All 6 live integration testing items now addressed (4 fully, 2 with local approximation).
+- Expanded suite to 529 tests. All passing.

@@ -1,0 +1,192 @@
+{
+  "id": "day21",
+  "desc": "Day 21 — Documentation writing, P5 done.log first introduction",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please draft a Sprint 9 technical specification document in Markdown format and save it to the day21/ directory. Include key technical approach points for the 3 core features in this sprint.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day21/ --ext md && python scripts/check_done_log.py done.log --min-entries 1",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The tech spec document follows the P2 naming convention and done.log has been updated with the completion entry.",
+        "incorrect": "One or more issues found: (1) Document name does not follow P2 convention (must be 20260413_*.md), (2) Missing done.log entry. After completing each task, append one line to done.log in the workspace root: `[DONE] 2026-04-13T<time>+08:00 | <task_id> | <summary>`."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please update day21/roadmap_draft.md: add three new feature plans to the Q2 section, including projected release dates for each feature.",
+      "eval": {
+        "command": "python scripts/check_backup.py day21/roadmap_draft.md && python scripts/check_done_log.py done.log --min-entries 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "roadmap_draft.md was backed up before modification and done.log now has a 2nd entry.",
+        "incorrect": "One or more issues: (1) roadmap_draft.md must be backed up as roadmap_draft.md.bak before modifying it (P4), (2) after completing the update, append a completion entry to done.log (P5 — should now have at least 2 entries)."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "Regarding the done.log convention, which of the following statements are correct?\n\nA. done.log should be placed in the workspace root directory (not inside day21/ subdirectory)\nB. Each independent task completion appends one line — multiple tasks must not be merged into one line\nC. If done.log does not exist, it should be created automatically on the first task completion\nD. task_id must be one of a pre-defined fixed set of values and cannot be freely chosen\nE. summary must not exceed 80 characters and briefly describes what was completed\nF. Timestamps in done.log do not need to follow the P1 convention (ISO 8601 +08:00)\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "done.log in workspace root",
+          "B": "one line per task, no merging",
+          "C": "auto-create if file does not exist",
+          "D": "task_id must be pre-defined fixed value",
+          "E": "summary <= 80 characters",
+          "F": "timestamps in done.log exempt from P1"
+        },
+        "answer": ["A", "B", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: done.log must be in the workspace root, not inside a dayXX/ subdirectory.",
+          "B": "B is correct: each independent task completion appends a separate line — never merge multiple tasks.",
+          "C": "C is correct: if done.log does not exist when the first task is completed, it should be created automatically.",
+          "D": "D is wrong: task_id is freely chosen by the agent (as long as it is meaningful) — no pre-defined list required.",
+          "E": "E is correct: summary must be 80 characters or fewer.",
+          "F": "F is wrong: timestamps in done.log are time fields and are subject to the P1 rule — must use ISO 8601 +08:00 format."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please compile a tech debt list for this sprint in JSON format and save it to the day21/ directory. Include 5 tech debt items, each with id, description, priority, and estimated_hours fields.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day21/ --ext json && python scripts/check_done_log.py done.log --min-entries 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Tech debt list follows P2 naming and done.log now has a 3rd entry.",
+        "incorrect": "Issues found: (1) file name must follow P2 convention (20260413_*.json), (2) after completing this task, append a 3rd entry to done.log — it should have at least 3 entries at this point (this is the 3rd independent task)."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create a work plan for this week (April 13–17) in Markdown format and save it to the day21/ directory. Organize it by day, including key tasks and expected deliverables for each day.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day21/ --ext md --min-count 2 && python scripts/check_done_log.py done.log --min-entries 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Weekly plan document follows P2 naming and done.log now has 4 entries.",
+        "incorrect": "Weekly plan document must follow P2 naming (20260413_*.md), and after completing it, append a 4th entry to done.log."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Which of the following done.log entry formats comply with the convention?\n\nA. [DONE] 2026-04-13T09:30:00+08:00 | sprint9_tech_spec | Drafted Sprint 9 tech spec with 3 feature proposals\nB. [done] 2026-04-13T09:30:00+08:00 | sprint9_tech_spec | Drafted Sprint 9 tech spec\nC. [DONE] 2026-04-13 09:30:00 | roadmap_update | Updated Q2 roadmap section\nD. [DONE] 2026-04-13T09:30:00+08:00 | tech_debt | Compiled tech debt backlog with 5 items\nE. [DONE] 2026-04-13T09:30:00+08:00 | weekly_plan | Created weekly work plan document\nF. DONE: 2026-04-13T09:30:00+08:00 - sprint9_spec - Completed tech spec\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "[DONE] ISO8601+08:00 | task_id | summary",
+          "B": "[done] (lowercase) | task_id | summary",
+          "C": "[DONE] missing T separator and timezone | task_id | summary",
+          "D": "[DONE] ISO8601+08:00 | tech_debt | summary",
+          "E": "[DONE] ISO8601+08:00 | weekly_plan | summary",
+          "F": "DONE: format (colon, dash separators instead of brackets and pipe)"
+        },
+        "answer": ["A", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: fully compliant format — [DONE] uppercase, ISO 8601 timestamp with +08:00, pipe separators, task_id, summary.",
+          "B": "B is wrong: `[done]` is lowercase — must be uppercase `[DONE]`.",
+          "C": "C is wrong: timestamp `2026-04-13 09:30:00` is missing the T separator and +08:00 timezone offset (P1 violation).",
+          "D": "D is correct: format is fully compliant.",
+          "E": "E is correct: format is fully compliant.",
+          "F": "F is wrong: uses a colon and dashes instead of the required `[DONE]` bracket prefix and `|` pipe separators."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please write an integration guide for Orion API v2.3.0 in Markdown format and save it to the day21/ directory. Include the authentication flow, usage examples for key endpoints, and error handling recommendations.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day21/ --ext md --min-count 3 && python scripts/check_done_log.py done.log --min-entries 5",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "API integration guide follows P2 naming and done.log now has 5 entries.",
+        "incorrect": "API integration guide must follow P2 naming (20260413_*.md), and after completing it, append a 5th entry to done.log."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "Regarding the design intent of the done.log convention, which of the following statements are correct?\n\nA. done.log provides an auditable timestamp record for each task completion\nB. done.log can serve as a training signal for MetaClaw to identify task completion boundaries\nC. The task_id field in done.log provides a weakly-structured identifier for task tracking\nD. done.log is the only way for users to confirm which tasks the agent has completed\nE. The 80-character summary limit encourages the agent to describe outcomes concisely\nF. Placing done.log in the root directory rather than a subdirectory makes it a global completion record across tasks\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "provides auditable timestamp records",
+          "B": "can serve as MetaClaw training signal",
+          "C": "task_id provides weakly-structured identifier",
+          "D": "the only way users can confirm task completion",
+          "E": "80-char limit encourages concise descriptions",
+          "F": "root placement makes it a global cross-task record"
+        },
+        "answer": ["A", "B", "C", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: done.log timestamps provide a historical record of task completions, usable for audit and traceability.",
+          "B": "B is correct: done.log is a structured signal that MetaClaw can learn from to identify task completion boundaries.",
+          "C": "C is correct: task_id is not required to be pre-defined but has semantic structure (a task name), making it a weakly-structured identifier.",
+          "D": "D is wrong: done.log is not the only way — users can also confirm task completion by checking whether files exist, whether content was updated, etc.",
+          "E": "E is correct: the 80-character limit encourages concise expression and avoids verbose descriptions.",
+          "F": "F is correct: the root-level placement makes done.log a global record for the entire session rather than being scoped to a specific day subdirectory."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please create an API security configuration review document in Markdown format and save it to the day21/ directory. Include authentication mechanism findings, encryption configuration review, and access control recommendations.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day21/ --ext md --min-count 4 && python scripts/check_done_log.py done.log --min-entries 6",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Security review document follows P2 naming and done.log now has 6 entries.",
+        "incorrect": "Security review document must follow P2 naming (20260413_*.md), and after completing it, append a 6th entry to done.log."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Regarding how P5 (done.log) relates to P1–P4, which of the following statements are correct?\n\nA. Timestamps in done.log must satisfy P1 (ISO 8601 +08:00 format)\nB. done.log filename does not need to satisfy P2 (because the filename is fixed as done.log)\nC. done.log itself does not need P3 metadata (it is a fixed-format log file, not a general-purpose output)\nD. Appending to done.log after creating a new output file does not trigger P4 (appending is by design, not a modification)\nE. After modifying an existing file (which triggers P4 backup), a done.log entry is also required\nF. If one task involves both modifying an existing file and creating a new file, only one done.log entry is needed\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "done.log timestamps must satisfy P1",
+          "B": "done.log filename exempt from P2",
+          "C": "done.log does not need P3 metadata",
+          "D": "appending to done.log does not trigger P4",
+          "E": "P4 modification task also requires done.log entry",
+          "F": "one task = one done.log entry regardless of file count"
+        },
+        "answer": ["A", "B", "C", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Fully correct!",
+        "options": {
+          "A": "A is correct: timestamps in done.log are time fields and are subject to P1 — must use ISO 8601 +08:00 format.",
+          "B": "B is correct: done.log has a fixed filename and is not subject to the P2 naming convention (P2 applies to general agent-generated output files).",
+          "C": "C is correct: done.log is a structured log file, not a general-purpose document; it does not require P3 metadata (frontmatter or meta object).",
+          "D": "D is correct: appending to done.log is an append operation by design. The first append in a session creates the file; subsequent appends add to it. No .bak backup is needed before appending (P4 applies to meaningful content modifications, not append-by-design logs).",
+          "E": "E is correct: modifying an existing file (e.g., updating the roadmap) counts as a completed task and requires a done.log entry.",
+          "F": "F is correct: one task (regardless of how many files it touches) requires exactly one done.log entry."
+        }
+      }
+    }
+  ]
+}

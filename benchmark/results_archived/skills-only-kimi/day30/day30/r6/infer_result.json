@@ -1,0 +1,139 @@
+{
+  "test_id": "day30",
+  "group_id": "day30",
+  "round_id": "r6",
+  "qa_id": "r6",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Issues: (1) create `day30/api_changelog.md.bak` before modifying (P4); (2) the updated file must include YAML frontmatter with ISO 8601 `created_at` — add it if the original lacked it (P3); (3) endpoint date fields in the document body must use ISO 8601 (P1); (4) append 4th done.log entry (P5).\nKeep this in mind as you continue with the next task.\n\nPlease write deployment notes for the features going to staging next week in Markdown format, save to day30/. Include: deployment window (date and time), components being deployed, pre-deployment checklist, rollback trigger conditions, and on-call contacts.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773863320.218317,
+    "finished_at": 1773863342.9908524,
+    "duration_ms": 22772,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T19:49:02.893Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day30_f4f0d7da-b004-4ff9-a0c2-e7fed6fc2e8f",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day30_a713c0d6",
+    "success": true,
+    "durationMs": 18590,
+    "messageCount": 37,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 15:48 EDT] [Previous Feedback] Issues: (1) create `day30/api_changelog.md.bak` before modifying (P4); (2) the updated file must include YAML frontmatter with ISO 8601 `created_at` — add it if the original lacked it (P3); (3) endpoint date fields in the document body must use ISO 8601 (P1); (4) append 4th done.log entry (P5).\nKeep this in mind as you continue with the next task.\n\nPlease write deployment notes for the features going to staging next week in Markdown format, save to day30/. Include: deployment window (date and time), components being deployed, pre-deployment checklist, rollback trigger conditions, and on-call contacts."
+          }
+        ],
+        "timestamp": 1773863324304
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "read",
+            "arguments": {
+              "file_path": "day30/api_changelog.md"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "call_kimi_1",
+            "name": "write",
+            "arguments": {
+              "file_path": "day30/20260424_deployment_notes.md",
+              "content": "---\ncreated_at: \"2026-04-24T18:00:00+08:00\"\nversion: \"1.0\"\ntype: deployment_notes\n---\n\n# Sprint 10 Features — Staging Deployment Notes\n\n**Deployment Window**: 2026-04-27T02:00:00+08:00 — 2026-04-27T04:00:00+08:00\n\n**Duration**: 2 hours  \n**Environment**: Staging  \n**Scheduled by**: Alex Zhang\n\n---\n\n## Components Being Deployed\n\n1. **Notification Service v2** (`notifications-v2.4.0`)\n   - Real-time WebSocket support\n   - Batch delivery optimization\n\n2. **Batch Sync API** (`sync-api-1.2.0`)\n   - Mobile client synchronization endpoint\n   - Conflict resolution updates\n\n3. **New Dashboard** (`dashboard-3.0.0-beta`)\n   - Feature flagged for internal testing\n   - Sprint metrics widget\n\n4. **Enhanced Task Filtering** (`tasks-api-2.3.0`)\n   - Bulk update operations\n   - Archive filtering support\n\n---\n\n## Pre-Deployment Checklist\n\n- [ ] All CI/CD pipelines passing\n- [ ] Database migrations reviewed and approved\n- [ ] Configuration changes validated in dev environment\n- [ ] Feature flags configured correctly in staging\n- [ ] Monitoring dashboards verified\n- [ ] On-call engineer notified and available\n- [ ] Rollback plan documented and reviewed\n\n---\n\n## Rollback Trigger Conditions\n\n**Immediate Rollback Required If:**\n\n1. Error rate exceeds 1% for more than 5 minutes\n2. P95 response time exceeds 500ms for more than 10 minutes\n3. Any component health check failing for more than 3 minutes\n4. Database connection pool exhaustion detected\n5. Critical user journey (login, task creation) broken\n\n**Rollback Procedure:**\n1. Execute `kubectl rollout undo deployment/<component>`\n2. Revert database migrations if applicable\n3. Notify team via #alerts channel\n4. Create incident ticket in Jira\n\n---\n\n## On-Call Contacts\n\n| Role | Name | Contact |\n|------|------|---------|\n| Tech Lead | Alex Zhang | alex.zhang@oriontech.com / +86-138-0000-0001 |\n| Backend Lead | Bai | bai@oriontech.com / +86-138-0000-0002 |\n| DevOps | Chen | chen@oriontech.com / +86-138-0000-0003 |\n| QA Lead | Dana | dana@oriontech.com / +86-138-0000-0004 |\n| Escalation | Manager | manager@oriontech.com / +86-138-0000-0000 |\n\n---\n\n## Post-Deployment Verification\n\n- [ ] Smoke tests pass on staging environment\n- [ ] Integration tests complete successfully\n- [ ] Performance metrics within acceptable bounds\n- [ ] Feature flags functioning correctly\n- [ ] Dashboard accessible to internal users\n\n---\n\n## Notes\n\n- Deployment scheduled during low-traffic window\n- Monitoring alert thresholds temporarily increased to reduce noise\n- Full production deployment pending successful staging verification\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773863324307
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "# Project Orion API Changelog\n\nLast Updated: April 24, 2026\n\n## Sprint 10 Week 1 (2026-04-20 to 2026-04-24)\n\n### New Endpoints\n- `GET /notifications/v2` — Real-time notification stream (WebSocket ready) — Added 2026-04-21\n- `POST /sync/batch` — Batch sync endpoint for mobile clients — Added 2026-04-22\n- `PUT /tasks/bulk-update` — Bulk update task properties — Added 2026-04-22\n- `GET /dashboard/metrics` — Retrieve dashboard performance metrics — Added 2026-04-23\n- `POST /export/json` — Export data in JSON format — Added 2026-04-24\n- `POST /export/csv` — Export data in CSV format — Added 2026-04-24\n- `GET /metrics/sprint` — Retrieve sprint performance metrics — Added 2026-04-24\n\n### Modified Endpoints\n- `GET /tasks` — Added `include_archived` query parameter\n- `POST /export` — Added support for CSV format (previously JSON only)\n\n### Breaking Changes\nNone in this sprint week.\n\n### Deprecations\n- `GET /notifications/v1` — Deprecated in favor of `/notifications/v2`, sunset scheduled for Sprint 12\n\n## Sprint 9 (2026-04-07 to 2026-04-17)\n\n### New Endpoints\n- `GET /tasks/filter` — Filter tasks by priority and status\n- `POST /dashboard/widgets` — Create custom dashboard widgets\n- `GET /export/preview` — Preview data export (beta)\n\n### Breaking Changes\nNone in this sprint.\n"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773863338483
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_1",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 2570 bytes to day30/20260424_deployment_notes.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773863338484
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "<|tool_calls_section_begin|> <|tool_call_begin|> callkimi0d9ff88b4e8a40e0bbbf2b6cccb8f93f5d9d8c0e4 {\"command\": \"cp day30/api_changelog.md day30/api_changelog.md.bak\"} <|tool_call_end|> <|tool_call_begin|> functionsread25cc9d98e68b405db2b3cc5d6ca1de9e8f8c4d93 {\"file_path\": \"day30/api_changelog.md\"} <|tool_call_end|> <|tool_calls_section_end|>"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773863338487
+      }
+    ]
+  },
+  "answer": "callkimi0d9ff88b4e8a40e0bbbf2b6cccb8f93f5d9d8c0e4 {\"command\": \"cp day30/api_changelog.md day30/api_changelog.md.bak\"} functionsread25cc9d98e68b405db2b3cc5d6ca1de9e8f8c4d93 {\"file_path\": \"day30/api_changelog.md\"}\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: frontmatter missing or empty field: author\n",
+    "stderr": ""
+  }
+}

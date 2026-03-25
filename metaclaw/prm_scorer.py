@@ -21,6 +21,8 @@ import logging
 import re
 from typing import Any, Optional
 
+from openai import OpenAI
+
 logger = logging.getLogger(__name__)
 
 _BOXED_RE = re.compile(r"\\boxed\{([-+]?\d)\}")
@@ -169,13 +171,6 @@ class PRMScorer:
         if llm_client is not None:
             self._client = llm_client
         else:
-            try:
-                from openai import OpenAI  # optional dep — install with: pip install metaclaw[evolve]
-            except ImportError as e:
-                raise ImportError(
-                    "PRMScorer requires the 'openai' package. "
-                    "Install it with: pip install metaclaw[evolve]"
-                ) from e
             base_url = prm_url.rstrip("/")
             client_kwargs: dict[str, Any] = {"api_key": api_key}
             client_kwargs["base_url"] = base_url

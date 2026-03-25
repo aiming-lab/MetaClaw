@@ -1,0 +1,210 @@
+{
+  "id": "day16",
+  "desc": "Day 16 — Documentation writing, P4 backup first introduction",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day16/api_docs.md to add documentation for the new /projects endpoint in v2.3.0, including request format, response examples, and error codes.",
+      "feedback": {
+        "correct": "Backup api_docs.md.bak was correctly created before modifying the file.",
+        "incorrect": "Before modifying day16/api_docs.md, you must first back it up as day16/api_docs.md.bak. Our operational standard requires creating a .bak copy before modifying any existing file, so the original content can be restored if needed."
+      },
+      "eval": {
+        "command": "python scripts/check_backup.py day16/api_docs.md",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "Which of the following statements about the \"backup before modifying\" rule are correct?\n\nA. A .bak backup is only required when modifying existing files\nB. A .bak backup is also required when creating new files\nC. The backup file should be named <original_filename>.bak, saved in the same directory\nD. The .bak file should contain the original content before modification, not after\nE. If the same file is modified twice, two .bak files are needed (.bak1 and .bak2)\nF. Overwriting the .bak file (keeping only the most recent backup) is acceptable\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — P4 only triggers when modifying existing files, not when creating new ones.",
+          "B": "Incorrect — New files have no original content to back up.",
+          "C": "Correct — The backup must be named `<original_filename>.bak` in the same directory.",
+          "D": "Correct — The .bak must be created before modification, containing the original content.",
+          "E": "Incorrect — Only the most recent .bak is required; overwrite on each subsequent modification.",
+          "F": "Correct — Overwriting the previous .bak on repeated modifications is the correct approach."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "Only required when modifying existing files",
+          "B": "Also required for new files",
+          "C": "Named <original>.bak in same directory",
+          "D": ".bak contains pre-modification content",
+          "E": "Two modifications require .bak1 and .bak2",
+          "F": "Overwriting .bak keeping latest is acceptable"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "F"
+        ]
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please update day16/sprint_review_summary.md to add the missing API deployment strategy decision from last week's Sprint Review.",
+      "feedback": {
+        "correct": "sprint_review_summary.md.bak was correctly created before modification.",
+        "incorrect": "Before modifying day16/sprint_review_summary.md, you must first create the backup file day16/sprint_review_summary.md.bak. Please perform the backup step before modifying any existing file."
+      },
+      "eval": {
+        "command": "python scripts/check_backup.py day16/sprint_review_summary.md",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update day16/q2_timeline.json to fix the incorrectly formatted date fields — change all dates to ISO 8601 format with +08:00 timezone offset.",
+      "feedback": {
+        "correct": ".bak backup was correctly created before modifying q2_timeline.json.",
+        "incorrect": "Before modifying day16/q2_timeline.json, you must first create day16/q2_timeline.json.bak. P4 applies to all file types (JSON, Markdown, Python, etc.), not just text documents."
+      },
+      "eval": {
+        "command": "python scripts/check_backup.py day16/q2_timeline.json",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "In the following scenarios, which ones require creating a .bak backup before the operation?\n\nA. Appending a new chapter to the existing day16/api_docs.md\nB. Creating a brand-new file 20260406_new_report.json under day16/\nC. Fixing incorrectly formatted timestamps in the existing day16/q2_timeline.json\nD. Reading the content of day16/sprint_review_summary.md (read-only, no modifications)\nE. Changing a section title in day16/api_docs.md from \"v2.2\" to \"v2.3\"\nF. Deleting day16/old_draft.md (assuming the file exists)\n\nPlease answer in \\bbox{X,Y,...} format (select operations that require .bak).",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Required — appending to an existing file is a modification and requires .bak.",
+          "B": "Not required — creating a new file does not trigger P4.",
+          "C": "Required — modifying file content requires .bak.",
+          "D": "Not required — read-only operations don't change the file.",
+          "E": "Required — modifying existing file content requires .bak.",
+          "F": "Not explicitly required by P4 (P4 specifically covers \"modification\"); deletion handling is situational."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "Append new chapter to existing file",
+          "B": "Create new report file",
+          "C": "Fix timestamps in existing file",
+          "D": "Read-only, no modification",
+          "E": "Modify section title in existing file",
+          "F": "Delete existing file"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please create a new API integration test document in Markdown format under the day16/ directory. The content should include test environment setup, test case list, and expected results.",
+      "feedback": {
+        "correct": "New document naming follows P2 convention correctly.",
+        "incorrect": "The new document must follow P2 naming convention (20260406_*.md). Note that this is a new file — no .bak required."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day16/ --ext md --min-count 2",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Based on the updated day16/api_docs.md, please create a supplementary onboarding document (do not modify the original onboarding file — create a new supplement) under day16/. Include the new features of v2.3.0.",
+      "feedback": {
+        "correct": "Onboarding supplement document naming follows P2 convention.",
+        "incorrect": "The supplement document must follow P2 naming convention (20260406_*.md), e.g. `20260406_onboarding_v230_supplement.md`."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day16/ --ext md --min-count 3",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "Which of the following statements about the .bak file are correct?\n\nA. The .bak file is created before the modification begins\nB. The .bak file content must be identical to the pre-modification original (byte-for-byte)\nC. Modification of the original file may only begin after .bak is created\nD. The .bak file can be stored in a different directory, as long as it can be found\nE. If a .bak file already exists (left from a previous modification), it can be overwritten directly\nF. The .bak file should be deleted immediately after modification is complete\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — the backup must be completed before any modification starts.",
+          "B": "Correct — .bak must be an exact copy of the pre-modification file.",
+          "C": "Correct — operation order: first backup (cp file file.bak), then modify.",
+          "D": "Incorrect — the .bak file must be in the **same directory** as the original.",
+          "E": "Correct — if .bak already exists from a previous modification, overwrite it.",
+          "F": "Incorrect — .bak files should be kept as historical backups, not deleted."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": ".bak created before modification starts",
+          "B": ".bak content is byte-for-byte identical to pre-modification original",
+          "C": "Modification starts only after .bak is created",
+          "D": ".bak can be in a different directory",
+          "E": "Existing .bak can be overwritten",
+          "F": ".bak should be deleted after modification"
+        },
+        "answer": [
+          "A",
+          "B",
+          "C",
+          "E"
+        ]
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "There is a pre-existing test configuration file at day16/test_config.json (contains incorrectly formatted timestamp fields). Please update this file to convert all timestamp fields to ISO 8601 format.",
+      "feedback": {
+        "correct": ".bak backup was correctly created before modifying test_config.json.",
+        "incorrect": "Before modifying day16/test_config.json, you must first create day16/test_config.json.bak. This rule applies to all file types."
+      },
+      "eval": {
+        "command": "python scripts/check_backup.py day16/test_config.json",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "In the following scenarios, which ones are \"modifying an existing file\" (requiring .bak) vs \"creating a new file\" (no .bak needed)?\nPlease select all cases that are \"modifying an existing file\":\n\nA. File api_docs.md already exists; append a new endpoint description to it\nB. File 20260406_new_report.json does not yet exist; create it with data\nC. File q2_timeline.json already exists; fix its date format errors\nD. Read the content of sprint_review_summary.md to generate a summary (no write-back)\nE. File config.py already exists; modify its timeout parameter\nF. Copy api_docs.md to a new file named 20260406_api_docs_v2.md (original unchanged, new file created)\n\nPlease answer in \\bbox{X,Y,...} format (select \"modifying existing file\").",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Modification — appending to an existing file requires .bak.",
+          "B": "New file — does not exist yet, no .bak needed.",
+          "C": "Modification — changing existing file content requires .bak.",
+          "D": "Not a modification — read-only, no .bak needed.",
+          "E": "Modification — modifying an existing file's parameter requires .bak.",
+          "F": "New file — the copy operation creates a new file (api_docs.md itself is unchanged), no .bak needed."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "Existing api_docs.md — append content",
+          "B": "Non-existent file — create new",
+          "C": "Existing q2_timeline.json — fix format",
+          "D": "Read-only, no write-back",
+          "E": "Existing config.py — modify parameter",
+          "F": "Copy api_docs.md to new file (original unchanged)"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      }
+    }
+  ]
+}

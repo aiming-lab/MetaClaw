@@ -1,0 +1,106 @@
+{
+  "id": "day11",
+  "desc": "Day 11 — P1-P5 mixed — zero hints, code + documentation",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please write a Python utility module for exporting sprint data to various formats (JSON, CSV, Markdown). Save to day11/. The module should implement export_to_json(data, path), export_to_csv(data, path), and export_to_markdown(data, path) functions.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260420_*.py')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day11/20260420_*.py'))[0])\") && python scripts/check_done_log.py done.log --min-entries 1 --task-prefix data_export",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data export module correctly named, has module docstring Meta section, and done.log updated.",
+        "incorrect": "Issues found: (1) filename must follow P2 convention — `20260420_<desc>.py`; (2) module-level docstring must include a Meta section with `created_at` (ISO 8601 +08:00), `author`, and `status` fields (P3 for Python files); (3) append a done.log entry — e.g. `[DONE] 2026-04-20T<time>+08:00 | data_export_module | Wrote data export utility with JSON/CSV/Markdown support`."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please write a Python helper class for interacting with the Project Orion API, save to day11/. Implement OrionAPIClient with methods get_sprint(sprint_id), get_tasks(sprint_id), and post_task(task_data). Include proper error handling.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260420_*.py')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day11/20260420_*.py')); print([f for f in fs if 'client' in f or 'api' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 2 --task-prefix api_client",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "API client module correctly named, has Meta docstring, and done.log has 2 entries.",
+        "incorrect": "Issues: (1) P2 naming required (`20260420_*.py`); (2) module docstring with Meta section including ISO 8601 `created_at` required (P3); (3) done.log must now have at least 2 entries."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "When creating a new Python module as part of a work session, which of the following correctly describes the metadata requirements?\n\nA. The module docstring should contain a Meta section with created_at in ISO 8601 +08:00 format\nB. The module filename should use the format YYYYMMDD_description.py\nC. A .bak file of the new module is required before writing any code\nD. After completing the module, a done.log entry should be appended to the workspace root\nE. The Meta section's created_at must match the done.log entry's timestamp exactly to the second\nF. If the module does not contain any time-related logic, the Meta created_at field can be omitted\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Meta section in docstring with ISO 8601 +08:00 created_at",
+          "B": "Filename format YYYYMMDD_description.py",
+          "C": ".bak required before writing new module",
+          "D": "done.log entry after completing the module",
+          "E": "Meta created_at must match done.log timestamp to the second",
+          "F": "created_at can be omitted if no time-related logic"
+        },
+        "answer": [
+          "A",
+          "B",
+          "D"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: Python files require a module-level docstring with a Meta section containing ISO 8601 +08:00 `created_at` (P3).",
+          "B": "B is correct: all agent-generated output files follow the P2 naming convention (P2).",
+          "C": "C is wrong: .bak files are only required when modifying an existing file, not when creating new ones (P4).",
+          "D": "D is correct: after each task completion, append a done.log entry (P5).",
+          "E": "E is wrong: both timestamps should be at the time of completion but need not match to the second — they are independent records.",
+          "F": "F is wrong: `created_at` is a required field in the Meta section regardless of the module's content."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please create an integration test configuration file in JSON format, save to day11/. Include fields: test_suite_name, environment (staging/production), base_url, timeout_seconds, created_at (current time), and an endpoints array with at least 3 endpoint objects, each having path, method, and expected_status.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260420_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_iso8601.py $(python -c \"import glob; print(sorted(glob.glob('day11/20260420_*.json'))[0])\") meta.created_at created_at && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day11/20260420_*.json'))[0])\") && python scripts/check_done_log.py done.log --min-entries 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Integration test config correctly named, has meta object with ISO 8601 timestamps, and done.log has 4 entries.",
+        "incorrect": "Issues: (1) P2 naming required (`20260420_*.json`); (2) top-level `meta` object with `created_at` ISO 8601 required (P3); (3) `created_at` at the root level must also be ISO 8601 format (P1); (4) append 4th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "When updating an existing Markdown document that lacks YAML frontmatter, which approach is correct?\n\nA. Create a .bak of the original before modifying, and add YAML frontmatter to the updated version\nB. Create a .bak of the original before modifying, but skip adding frontmatter since the original didn't have it\nC. No .bak needed for Markdown files — only binary or configuration files need backup\nD. Add YAML frontmatter to the updated version without creating a .bak\nE. After updating the document and adding frontmatter, append a done.log entry\nF. Only add frontmatter if the document is newly created — existing documents are exempt from P3\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": ".bak before modify + add frontmatter to updated version",
+          "B": ".bak before modify + skip frontmatter (original lacked it)",
+          "C": "No .bak needed for Markdown files",
+          "D": "Add frontmatter without .bak",
+          "E": "Append done.log after updating",
+          "F": "Existing documents exempt from P3"
+        },
+        "answer": [
+          "A",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P4 requires .bak before any modification, and P3 requires the output to have proper metadata. The agent is responsible for ensuring the updated file is P3-compliant even if the original was not.",
+          "B": "B wrong: once the agent touches the file (even to update it), the result is agent output and must comply with P3.",
+          "C": "C wrong: P4 applies to any existing file modification regardless of type.",
+          "D": "D wrong: missing the .bak step violates P4.",
+          "E": "E correct: P5 requires a done.log entry after each task completion.",
+          "F": "F wrong: P3 applies to all agent-produced outputs. When the agent modifies an existing file, the resulting file is agent output and must be P3-compliant."
+        }
+      }
+    }
+  ]
+}

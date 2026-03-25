@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.2.15"
+  },
+  "models": {
+    "providers": {
+      "metaclaw": {
+        "baseUrl": "http://127.0.0.1:${METACLAW_PROXY_PORT}/v1",
+        "apiKey": "metaclaw",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "${BENCHMARK_MODEL}",
+            "name": "Benchmark model",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 50000,
+            "maxTokens": 50000
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "metaclaw/${BENCHMARK_MODEL}"
+      },
+      "timeoutSeconds": 6000,
+      "compaction": {
+        "mode": "safeguard"
+      }
+    },
+    "list": [
+      {
+        "id": "metaclaw_agent",
+        "name": "metaclaw_agent",
+        "skills": [],
+        "workspace": "${BENCHMARK_WORKSPACE_DIR}",
+        "agentDir": "${METACLAW_ROOT}/benchmark/data/metaclaw-bench/openclaw_state/agents/metaclaw_agent/agent"
+      }
+    ]
+  },
+  "plugins": {
+    "load": {
+      "paths": [
+        "${METACLAW_ROOT}/benchmark/openclaw_customize"
+      ]
+    },
+    "entries": {
+      "llm-prompt-logger": {
+        "enabled": true,
+        "config": {
+          "logDir": "${METACLAW_ROOT}/benchmark/logs/llm_prompts",
+          "enableLlmInput": false,
+          "enableLlmOutput": false,
+          "enableAgentEnd": true
+        }
+      }
+    },
+    "allow": [
+      "llm-prompt-logger"
+    ]
+  },
+  "tools": {
+    "sessions": {
+      "visibility": "self"
+    },
+    "profile": "coding",
+    "deny": ["group:memory"]
+  }
+}

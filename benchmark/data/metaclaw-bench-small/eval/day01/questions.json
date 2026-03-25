@@ -1,0 +1,111 @@
+{
+  "id": "day01",
+  "desc": "Day 01 — P1 first encounter — documentation, PM, code domains",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please organize the standup notes from day01/standup_raw.txt into a structured JSON file saved as day01/standup.json. The file should include the following fields: meeting_time (the time the meeting was held), attendees (list of people who attended), and action_items (array where each item contains task, assignee, and due_date).",
+      "feedback": {
+        "correct": "The standup.json file is properly structured with all required fields.",
+        "incorrect": "There's an issue with the time field formats. All time-related fields must use a full datetime format with timezone offset. For example, a 9:30 AM meeting today should be recorded as 2026-03-16T09:30:00+08:00 — note the T separator between date and time, and the +08:00 at the end."
+      },
+      "eval": {
+        "command": "python scripts/check_iso8601.py day01/standup.json meeting_time action_items[].due_date",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "Which of the following time strings conform to the correct standard format (must include a +08:00 timezone offset)? Select all that apply.\n\nA. 2026-03-16T09:30:00+08:00\nB. 2026-03-16 09:30:00\nC. 2026-03-16T09:30:00Z\nD. 2026/03/16 09:30\nE. 2026-03-16T09:30:00.000+08:00\nF. 20260316T093000+0800\n\nAnswer using \\bbox{X} or \\bbox{X,Y} format.",
+      "feedback": {
+        "correct": "Correct! A and E are both valid — they use the full datetime format with a T separator and explicit +08:00 timezone offset.",
+        "options": {
+          "A": "A is correct: standard full datetime format with T separator and +08:00 timezone offset.",
+          "B": "B is incorrect: missing the T separator between date and time, and no timezone offset.",
+          "C": "C is incorrect: uses Z (UTC) instead of the required +08:00 offset.",
+          "D": "D is incorrect: uses slashes instead of hyphens, lacks the T separator and timezone offset.",
+          "E": "E is correct: milliseconds are optional; the +08:00 timezone offset is present.",
+          "F": "F is incorrect: this is compact ISO 8601 format (no hyphens or colons); we require the extended format."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "2026-03-16T09:30:00+08:00",
+          "B": "2026-03-16 09:30:00",
+          "C": "2026-03-16T09:30:00Z",
+          "D": "2026/03/16 09:30",
+          "E": "2026-03-16T09:30:00.000+08:00",
+          "F": "20260316T093000+0800"
+        },
+        "answer": [
+          "A",
+          "E"
+        ]
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Alex has decided to add a new task to the sprint: review the third-party OAuth integration proposal. Assign it to Bai with a deadline of this Wednesday at 6:00 PM. Please add this new task to day01/sprint_tasks.json with id T-405, and include both created_at and due_date fields.",
+      "feedback": {
+        "correct": "Task T-405 has been added with correctly formatted timestamps.",
+        "incorrect": "Task T-405 is missing or has incorrectly formatted time fields. The due_date for Wednesday 6:00 PM should be: 2026-03-18T18:00:00+08:00"
+      },
+      "eval": {
+        "command": "python -c \"import json,sys; d=json.load(open('day01/sprint_tasks.json')); t=next((x for x in d['tasks'] if x['id']=='T-405'),None); sys.exit(0 if t and t.get('due_date') and t.get('created_at') else 1)\" && python scripts/check_iso8601.py day01/sprint_tasks.json tasks[].due_date tasks[].created_at",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "In project management JSON files, which of the following time field values have the correct format?\n\nA. \"target_date\": \"2026-03-19T18:00:00+08:00\"\nB. \"last_updated\": \"2026-03-17\"\nC. \"discovered_at\": \"2026-03-17T09:15:00+08:00\"\nD. \"deadline\": \"EOD Friday\"\nE. \"expected_resolved_at\": \"2026-03-18T12:00:00+08:00\"\nF. \"sprint_start\": \"2026-W12-1\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "\"target_date\": \"2026-03-19T18:00:00+08:00\"",
+          "B": "\"last_updated\": \"2026-03-17\"",
+          "C": "\"discovered_at\": \"2026-03-17T09:15:00+08:00\"",
+          "D": "\"deadline\": \"EOD Friday\"",
+          "E": "\"expected_resolved_at\": \"2026-03-18T12:00:00+08:00\"",
+          "F": "\"sprint_start\": \"2026-W12-1\""
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! A, C, and E all use the full datetime format with timezone offset.",
+        "options": {
+          "A": "Correct. This follows the full datetime format with date, time, and timezone offset (+08:00).",
+          "B": "Incorrect. This only includes the date portion without time and timezone. Should be: 2026-03-17T10:00:00+08:00",
+          "C": "Correct. This is properly formatted with complete datetime and timezone information.",
+          "D": "Incorrect. Natural language like 'EOD Friday' is ambiguous. Should specify exact datetime like 2026-03-20T18:00:00+08:00",
+          "E": "Correct. This has all required components: date, time, and timezone offset.",
+          "F": "Incorrect. ISO week notation is not the standard format needed. Should use full datetime: 2026-03-16T00:00:00+08:00"
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please correct all time field example values in day01/api_spec_stub.json to use the standard format, then save it as day01/api_spec_v2.3.json. Time field specifications: created_after corresponds to 2026-03-01 00:00:00, updated_before corresponds to this Friday 18:00, start_date corresponds to today 09:00, deadline corresponds to end of Q2 (2026-06-30 18:00).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import json,re,sys; d=json.load(open('day01/api_spec_v2.3.json')); pat=re.compile(r'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\[0-9\\]+)?\\+08:00$'); params=d['paths']['/projects']['get']['parameters']; examples=[p['example'] for p in params]+[d['paths']['/projects']['post']['requestBody']['content']['application/json']['example']['start_date'],d['paths']['/projects']['post']['requestBody']['content']['application/json']['example']['deadline']]; bad=[v for v in examples if not pat.match(str(v))]; sys.exit(0 if not bad else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! All time field examples in the API specification now use the correct format. The datetime values are properly formatted with timezone information.",
+        "incorrect": "The API specification still contains incorrectly formatted time examples. All datetime fields should use the format like `2026-03-01T00:00:00+08:00`. Please check created_after, updated_before, start_date, and deadline fields."
+      }
+    }
+  ]
+}

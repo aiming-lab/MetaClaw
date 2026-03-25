@@ -1,0 +1,118 @@
+{
+  "test_id": "day16",
+  "group_id": "day16",
+  "round_id": "r6",
+  "qa_id": "r6",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease create a new API integration test document in Markdown format under the day16/ directory. The content should include test environment setup, test case list, and expected results.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773857637.5287385,
+    "finished_at": 1773857676.1291194,
+    "duration_ms": 38600,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T18:14:36.051Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day16_1744a6fe-cb81-4c59-bc6e-868ebb861b10",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day16_c89efb8e",
+    "success": true,
+    "durationMs": 33989,
+    "messageCount": 28,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 14:14 EDT] [Previous Feedback] Correct!\n\nPlease create a new API integration test document in Markdown format under the day16/ directory. The content should include test environment setup, test case list, and expected results."
+          }
+        ],
+        "timestamp": 1773857642068
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "functions.write:14",
+            "name": "write",
+            "arguments": {
+              "file_path": "day16/api_integration_tests.md",
+              "content": "# API Integration Test Document\n\n**Version:** v2.3.0  \n**Last Updated:** 2026-04-06  \n**Test Environment:** Staging  \n\n---\n\n## Test Environment Setup\n\n### Prerequisites\n\n- Access to staging API at `https://api-staging.metaclaw.io/v2`\n- Valid test authentication token with appropriate scopes\n- Test database seeded with fixture data\n- Network connectivity to all dependent services\n\n### Environment Configuration\n\n| Component | Version | Endpoint |\n|-----------|---------|----------|\n| API Gateway | v2.3.0 | https://api-staging.metaclaw.io/v2 |\n| PostgreSQL | 15.x | staging-db.metaclaw.internal:5432 |\n| Redis | 7.x | staging-cache.metaclaw.internal:6379 |\n| Auth Service | v1.8.0 | staging-auth.metaclaw.internal |\n\n### Test Data\n\n- **Test User 1:** `usr_test001` (Admin role)\n- **Test User 2:** `usr_test002` (Developer role)\n- **Test Project:** `prj_test001` (Active status)\n- **Test Task:** `tsk_test001` (Assigned to usr_test002)\n\n### Authentication\n\nGenerate a test token before running the test suite:\n\n```bash\ncurl -X POST https://auth-staging.metaclaw.io/token \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"client_id\":\"test_client\",\"client_secret\":\"test_secret\"}'\n```\n\n---\n\n## Test Case List\n\n### TC-001: GET /users - List Users\n\n**Purpose:** Verify user listing endpoint returns paginated results  \n**Method:** GET  \n**Endpoint:** `/users?page=1&limit=10`  \n**Auth Required:** Yes  \n\n**Request:**\n```http\nGET /users?page=1&limit=10\nAuthorization: Bearer TEST_TOKEN\n```\n\n**Expected Results:**\n- Status: 200 OK\n- Response contains `data` array with user objects\n- Pagination object includes `page`, `limit`, and `total` fields\n- Each user object has: `id`, `email`, `name`, `role`, `created_at`\n\n---\n\n### TC-002: POST /users - Create User\n\n**Purpose:** Verify new user creation with valid data  \n**Method:** POST  \n**Endpoint:** `/users`  \n**Auth Required:** Yes (Admin role)  \n\n**Request:**\n```http\nPOST /users\nAuthorization: Bearer TEST_TOKEN\nContent-Type: application/json\n\n{\n  \"email\": \"integrationtest@example.com\",\n  \"name\": \"Integration Test User\",\n  \"role\": \"developer\"\n}\n```\n\n**Expected Results:**\n- Status: 201 Created\n- Response contains created user with generated `id`\n- `created_at` timestamp is present\n- User can be retrieved via GET /users/{id}\n\n---\n\n### TC-003: POST /users - Duplicate Email\n\n**Purpose:** Verify duplicate email handling  \n**Method:** POST  \n**Endpoint:** `/users`  \n**Auth Required:** Yes  \n\n**Request:**\n```http\nPOST /users\nAuthorization: Bearer TEST_TOKEN\nContent-Type: application/json\n\n{\n  \"email\": \"usr_test001@example.com\",\n  \"name\": \"Duplicate User\",\n  \"role\": \"developer\"\n}\n```\n\n**Expected Results:**\n- Status: 409 Conflict\n- Error response with code: `duplicate_email`\n- Error message indicates email already exists\n\n---\n\n### TC-004: GET /projects - List Projects\n\n**Purpose:** Verify project listing with filters  \n**Method:** GET  \n**Endpoint:** `/projects?status=active&page=1`  \n**Auth Required:** Yes  \n\n**Request:**\n```http\nGET /projects?status=active&page=1\nAuthorization: Bearer TEST_TOKEN\n```\n\n**Expected Results:**\n- Status: 200 OK\n- Returns only projects with `status: \"active\"`\n- Pagination metadata is correct\n- Each project has: `id`, `name`, `description`, `status`, `owner`, `created_at`, `updated_at`\n\n---\n\n### TC-005: POST /projects - Create Project\n\n**Purpose:** Verify project creation workflow  \n**Method:** POST  \n**Endpoint:** `/projects`  \n**Auth Required:** Yes  \n\n**Request:**\n```http\nPOST /projects\nAuthorization: Bearer TEST_TOKEN\nContent-Type: application/json\n\n{\n  \"name\": \"Integration Test Project\",\n  \"description\": \"Project created during integration testing\",\n  \"owner\": \"usr_test001\"\n}\n```\n\n**Expected Results:**\n- Status: 201 Created\n- Project has generated `id` starting with `prj_`\n- Initial status is \"active\"\n- `created_at` and `updated_at` are present and equal\n\n---\n\n### TC-006: GET /tasks - Filter by Assignee\n\n**Purpose:** Verify task filtering by assignee  \n**Method:** GET  \n**Endpoint:** `/tasks?assignee=usr_test002&status=active`  \n**Auth Required:** Yes  \n\n**Request:**\n```http\nGET /tasks?assignee=usr_test002&status=active\nAuthorization: Bearer TEST_TOKEN\n```\n\n**Expected Results:**\n- Status: 200 OK\n- All returned tasks have `assignee: \"usr_test002\"`\n- All returned tasks have `status: \"active\"`\n- Response time < 500ms\n\n---\n\n### TC-007: PUT /tasks/{id} - Update Task Status\n\n**Purpose:** Verify task status update  \n**Method:** PUT  \n**Endpoint:** `/tasks/tsk_test001`  \n**Auth Required:** Yes  \n\n**Request:**\n```http\nPUT /tasks/tsk_test001\nAuthorization: Bearer TEST_TOKEN\nContent-Type: application/json\n\n{\n  \"status\": \"completed\",\n  \"notes\": \"Integration test completed\"\n}\n```\n\n**Expected Results:**\n- Status: 200 OK\n- Task object returned with updated `status: \"completed\"`\n- `updated_at` timestamp is newer than original\n- `notes` field contains update text\n\n---\n\n### TC-008: Unauthorized Request\n\n**Purpose:** Verify authentication enforcement  \n**Method:** GET  \n**Endpoint:** `/users`  \n**Auth Required:** No token sent  \n\n**Request:**\n```http\nGET /users\n```\n\n**Expected Results:**\n- Status: 401 Unauthorized\n- Error response with code: `unauthorized`\n- Error message indicates missing or invalid token\n\n---\n\n### TC-009: Invalid Token\n\n**Purpose:** Verify handling of malformed tokens  \n**Method:** GET  \n**Endpoint:** `/projects`  \n\n**Request:**\n```http\nGET /projects\nAuthorization: Bearer invalid_token_12345\n```\n\n**Expected Results:**\n- Status: 401 Unauthorized\n- Error code: `invalid_token`\n- No data is returned\n\n---\n\n### TC-010: Rate Limiting\n\n**Purpose:** Verify rate limit enforcement  \n**Method:** GET  \n**Endpoint:** `/users`  \n\n**Steps:**\n1. Send 105 requests in rapid succession (exceeding 100 req/hour limit)\n2. Observe responses\n\n**Expected Results:**\n- First 100 requests: Status 200 OK\n- Requests 101+: Status 429 Too Many Requests\n- Response includes `Retry-After` header\n- Rate limit headers present: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`\n\n---\n\n## Test Execution Summary\n\n| Test ID | Endpoint | Status | Notes |\n|---------|----------|--------|-------|\n| TC-001 | GET /users | ⬜ Pending | |\n| TC-002 | POST /users | ⬜ Pending | |\n| TC-003 | POST /users (error) | ⬜ Pending | |\n| TC-004 | GET /projects | ⬜ Pending | |\n| TC-005 | POST /projects | ⬜ Pending | |\n| TC-006 | GET /tasks | ⬜ Pending | |\n| TC-007 | PUT /tasks/{id} | ⬜ Pending | |\n| TC-008 | GET /users (no auth) | ⬜ Pending | |\n| TC-009 | GET /projects (invalid token) | ⬜ Pending | |\n| TC-010 | GET /users (rate limit) | ⬜ Pending | |\n\n---\n\n## Post-Test Cleanup\n\nAfter test execution:\n1. Delete test users created during test runs\n2. Delete test projects created during test runs\n3. Reset rate limit counters\n4. Archive test logs\n\n---\n\n## Known Issues\n\n- TC-010 (Rate Limiting) may require adjusting thresholds on staging\n- Database latency may cause intermittent failures in high-frequency test sequences\n\n## Sign-off\n\n- **Test Engineer:** _________________  Date: _________\n- **Backend Lead:** _________________  Date: _________\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773857642071
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "functions.write:14",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 7057 bytes to day16/api_integration_tests.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773857669191
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Done. Created `day16/api_integration_tests.md` with:\n\n1. **Test Environment Setup** — Prerequisites, component versions, endpoints, test data fixtures, and authentication instructions\n\n2. **Test Case List** — 10 comprehensive test cases covering:\n   - **TC-001–TC-003:** Users endpoint (list, create, duplicate email handling)\n   - **TC-004–TC-005:** Projects endpoint (list with filters, create) — the new v2.3.0 endpoints\n   - **TC-006–TC-007:** Tasks endpoint (filter by assignee, update status)\n   - **TC-008–TC-010:** Error handling (unauthorized, invalid token, rate limiting)\n\n3. **Expected Results** — For each test case including:\n   - Expected HTTP status codes\n   - Required response fields and structure\n   - Performance thresholds\n   - Rate limit header validation\n\n4. **Execution Summary Table** — Status tracking with checkboxes, plus post-test cleanup procedures."
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773857669195
+      }
+    ]
+  },
+  "answer": "Done. Created `day16/api_integration_tests.md` with:\n\n1. **Test Environment Setup** — Prerequisites, component versions, endpoints, test data fixtures, and authentication instructions\n\n2. **Test Case List** — 10 comprehensive test cases covering:\n   - **TC-001–TC-003:** Users endpoint (list, create, duplicate email handling)\n   - **TC-004–TC-005:** Projects endpoint (list with filters, create) — the new v2.3.0 endpoints\n   - **TC-006–TC-007:** Tasks endpoint (filter by assignee, update status)\n   - **TC-008–TC-010:** Error handling (unauthorized, invalid token, rate limiting)\n\n3. **Expected Results** — For each test case including:\n   - Expected HTTP status codes\n   - Required response fields and structure\n   - Performance thresholds\n   - Rate limit header validation\n\n4. **Execution Summary Table** — Status tracking with checkboxes, plus post-test cleanup procedures.\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: expected >= 2 P2-compliant .md file(s) in day16/, found 0\n",
+    "stderr": ""
+  }
+}

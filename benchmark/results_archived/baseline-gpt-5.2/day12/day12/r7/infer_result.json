@@ -1,0 +1,76 @@
+{
+  "test_id": "day12",
+  "group_id": "day12",
+  "round_id": "r7",
+  "qa_id": "r7",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] The monthly summary file requires correct naming (20260331_*.json) and a top-level meta object.\nKeep this in mind as you continue with the next task.\n\nPlease perform a quality assessment on the raw data processed today and generate an assessment report in JSON format, saved to the day12/ directory. Include: a data completeness score, a list of issues found, and recommended fixes.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773900232.6781583,
+    "finished_at": 1773900420.2006917,
+    "duration_ms": 187522,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-19T06:06:30.129Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day12_67578085-c2da-46c8-a6d0-21a33c0e7577",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day12_b52c8445",
+    "success": true,
+    "durationMs": 153857,
+    "messageCount": 37,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Thu 2026-03-19 02:03 EDT] [Previous Feedback] The monthly summary file requires correct naming (20260331_*.json) and a top-level meta object.\nKeep this in mind as you continue with the next task.\n\nPlease perform a quality assessment on the raw data processed today and generate an assessment report in JSON format, saved to the day12/ directory. Include: a data completeness score, a list of issues found, and recommended fixes."
+          }
+        ],
+        "timestamp": 1773900236274
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_whyb6dtfSs6Q2OZwPKNN6Ylj",
+            "name": "exec",
+            "arguments": {
+              "command": "python - <<'PY'\nimport json\nfrom pathlib import Path\nfrom datetime import date\n\nissues=[]\nrecs=[]\nchecks=[]\n\ndef add_check(name, passed, detail=None, severity='warning'):\n    checks.append({'check':name,'passed':passed,'severity':severity,'detail':detail})\n    if not passed:\n        issues.append({'severity':severity,'issue':name,'detail':detail})\n\n# Expected files\nexpected_files=[\n  ('api_stats_raw','day12/monthly_api_stats_raw.json'),\n  ('user_sessions_raw','day12/user_sessions_raw.json'),\n  ('exception_events_raw','day12/exception_events_raw.json')\n]\n\npresent=0\nfor key,path in expected_files:\n    if Path(path).exists():\n        present+=1\n        add_check(f'file_exists:{key}', True, path)\n    else:\n        add_check(f'file_exists:{key}', False, f'missing: {path}', severity='error' if key=='exception_events_raw' else 'warning')\n\n# API raw checks\napi_path=Path('day12/monthly_api_stats_raw.json')\napi=json.loads(api_path.read_text())\nendpoints=api.get('endpoints',[])\nadd_check('api:has_report_period', isinstance(api.get('report_period'),str) and api['report_period'].strip()!='', api.get('report_period'))\nadd_check('api:has_period_start', isinstance(api.get('period_start'),str), api.get('period_start'))\nadd_check('api:has_period_end', isinstance(api.get('period_end'),str), api.get('period_end'))\nadd_check('api:endpoints_nonempty', isinstance(endpoints,list) and len(endpoints)>0, f'count={len(endpoints) if isinstance(endpoints,list) else None}')\n\n# Validate endpoints\nsum_calls=0\nbad_rates=0\nmissing_fields=0\nfor e in endpoints:\n    for f in ['path','calls','avg_response_ms','error_rate']:\n        if f not in e:\n            missing_fields+=1\n    if isinstance(e.get('calls'),int):\n        sum_calls += e['calls']\n    r=e.get('error_rate')\n    if not (isinstance(r,(int,float)) and 0<=r<=1):\n        bad_rates += 1\n\nadd_check('api:endpoints_have_required_fields', missing_fields==0, f'missing_field_instances={missing_fields}', severity='error' if missing_fields else 'warning')\nadd_check('api:error_rate_in_0_1', bad_rates==0, f'bad_error_rate_endpoints={bad_rates}', severity='error' if bad_rates else 'warning')\n\napi_total=api.get('total_calls')\nadd_check('api:total_calls_matches_sum_endpoints', isinstance(api_total,int) and api_total==sum_calls, f'total_calls={api_total}, sum_endpoints={sum_calls}', severity='error')\n\n# User sessions raw checks\nuser_path=Path('day12/user_sessions_raw.json')\nusr=json.loads(user_path.read_text())\nsessions=usr.get('sessions',[])\nadd_check('users:has_period', isinstance(usr.get('period'),str) and usr['period'].strip()!='', usr.get('period'))\nadd_check('users:sessions_nonempty', isinstance(sessions,list) and len(sessions)>0, f'count={len(sessions) if isinstance(sessions,list) else None}')\n\nsum_sessions=0\nmissing_fields=0\nbad_counts=0\nfor s in sessions:\n    for f in ['user_id','session_count','avg_duration_min','last_active']:\n        if f not in s:\n            missing_fields+=1\n    cnt=s.get('session_count')\n    if not isinstance(cnt,int) or cnt<0:\n        bad_counts+=1\n    else:\n        sum_sessions += cnt\n\nadd_check('users:sessions_have_required_fields', missing_fields==0, f'missing_field_instances={missing_fields}', severity='error' if missing_fields else 'warning')\nadd_check('users:session_count_nonnegative_int', bad_counts==0, f'bad_session_count_rows={bad_counts}', severity='error' if bad_counts else 'warning')\n\nusr_total_sessions=usr.get('total_sessions')\nadd_check('users:total_sessions_matches_sum', isinstance(usr_total_sessions,int) and usr_total_sessions==sum_sessions, f'total_sessions={usr_total_sessions}, sum_session_count={sum_sessions}', severity='error')\n\nusr_total_users=usr.get('total_users')\nadd_check('users:total_users_matches_count', isinstance(usr_total_users,int) and usr_total_users==len(sessions), f'total_users={usr_total_users}, len(sessions)={len(sessions)}', severity='error')\n\n# Cross-file consistency: period labels\nadd_check('cross:period_labels_consistent', api.get('report_period')==usr.get('period'), f\"api.report_period={api.get('report_period')} vs users.period={usr.get('period')}\")\n\n# Score\n# Start at 100; subtract per failed check (error -15, warning -5)\nscore=100\nfor c in checks:\n    if not c['passed']:\n        score -= 15 if c['severity']=='error' else 5\nscore=max(0,score)\n\n# Recommendations based on issues\nfor iss in issues:\n    if iss['issue'].startswith('file_exists:exception_events_raw'):\n        recs.append('Add a raw exception events dataset (e.g., day12/exception_events_raw.json) with fields: timestamp, error_type, endpoint/path, and optionally request_id/user_id, to enable exception statistics and monthly integration.')\n    if iss['issue']=='api:total_calls_matches_sum_endpoints':\n        recs.append('Recompute api.total_calls to equal the sum of endpoint calls, or fix endpoint call counts to match the provided total_calls.')\n    if iss['issue']=='users:total_sessions_matches_sum':\n        recs.append('Recompute user_sessions_raw.total_sessions to equal the sum of sessions[].session_count, or correct the per-user session_count values.')\n    if iss['issue']=='users:total_users_matches_count':\n        recs.append('Recompute user_sessions_raw.total_users to equal sessions.length, or add/remove session rows to match.')\n\n# de-dup recs\nrecs=list(dict.fromkeys(recs))\n\nreport={\n  'meta':{\n    'created_at':'2026-03-31T09:00:00+08:00',\n    'author':'metaclaw_agent',\n    'status':'done'\n  },\n  'content':{\n    'schema_version':'1.0',\n    'report_name':'raw_data_quality_assessment',\n    'report_period':{'label':'March 2026','start_date':'2026-03-01','end_date':'2026-03-31'},\n    'inputs_assessed':{\n      'files_expected':[p for _,p in expected_files],\n      'files_present':present,\n      'files_expected_count':len(expected_files)\n    },\n    'data_completeness_score':score,\n    'checks':checks,\n    'issues_found':issues,\n    'recommended_fixes':recs,\n    'notes':[\n      'Completeness score starts at 100 and subtracts 15 for each failed error-severity check and 5 for each failed warning-severity check.'\n    ]\n  }\n}\n\nout=Path('day12/20260331_raw_data_quality_assessment.json')\nout.write_text(json.dumps(report,indent=2,ensure_ascii=False)+\"\\n\")\nprint('wrote',out)\nprint('score',score,'failed',sum(1 for c in checks if not c['passed']))\nPY"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773900300502
+      }
+    ]
+  },
+  "answer": "completed\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  }
+}

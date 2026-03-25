@@ -1,0 +1,1 @@
+Today's tasks: (1) consolidate metadata compliance for all outputs from this week, (2) generate the Q2 kickoff package, (3) output a weekly summary in multiple formats (JSON, Markdown, CSV), (4) prepare a work guide for next week.

@@ -1,0 +1,224 @@
+{
+  "id": "day02",
+  "desc": "Day 02 — Sprint 7 milestone updates and progress report (P1 consolidation)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day02/milestones.json and convert all target_date fields to standard datetime format. Calculate the specific dates and times: this Wednesday = March 18, this Thursday = March 19, next Monday = March 23, all with 18:00 as the deadline time; M-4 already specifies this Friday at 5pm as the reference.",
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/milestones.json milestones[].target_date",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! All target_date fields in milestones.json now use the standard datetime format with timezone information. This makes the milestone deadlines unambiguous and machine-readable.",
+        "incorrect": "The target_date fields need to be in standard datetime format with timezone. For example, 'this Thursday' should be converted to a specific datetime like 2026-03-19T18:00:00+08:00. Please update all milestone target dates to use this format: YYYY-MM-DDTHH:MM:SS+08:00"
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please add a last_updated field to each milestone in day02/milestones.json with the current time (today at 10:00 AM). Also update M-2's status from 'pending' to 'in_progress'.",
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/milestones.json milestones[].last_updated",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! All milestones now have properly formatted last_updated timestamps, and M-2's status has been updated to reflect current progress.",
+        "incorrect": "The last_updated field should use the standard datetime format with timezone. For example, today at 10:00 AM should be: 2026-03-17T10:00:00+08:00. Please ensure all last_updated fields follow this format."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please extract the blocker information from day02/blockers.md and create a structured file day02/blockers.json. Each blocker should include: title, discovered_at, reporter, and expected_resolved_at fields.",
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/blockers.json blockers[].discovered_at blockers[].expected_resolved_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Great work! The blocker data has been successfully extracted into a structured format with all time fields properly formatted. This makes it much easier to track and analyze blocking issues.",
+        "incorrect": "The time fields in blockers.json need to use the standard datetime format with timezone. For example, 'this morning' should be converted to a specific datetime like 2026-03-17T09:00:00+08:00, and 'tomorrow afternoon' should be 2026-03-18T14:00:00+08:00. Please ensure discovered_at and expected_resolved_at use the format: YYYY-MM-DDTHH:MM:SS+08:00"
+      }
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "In project management JSON files, which of the following time field values have the correct format?\n\nA. \"target_date\": \"2026-03-19T18:00:00+08:00\"\nB. \"last_updated\": \"2026-03-17\"\nC. \"discovered_at\": \"2026-03-17T09:15:00+08:00\"\nD. \"deadline\": \"EOD Friday\"\nE. \"expected_resolved_at\": \"2026-03-18T12:00:00+08:00\"\nF. \"sprint_start\": \"2026-W12-1\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "\"target_date\": \"2026-03-19T18:00:00+08:00\"",
+          "B": "\"last_updated\": \"2026-03-17\"",
+          "C": "\"discovered_at\": \"2026-03-17T09:15:00+08:00\"",
+          "D": "\"deadline\": \"EOD Friday\"",
+          "E": "\"expected_resolved_at\": \"2026-03-18T12:00:00+08:00\"",
+          "F": "\"sprint_start\": \"2026-W12-1\""
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! A, C, and E all use the full datetime format with timezone offset.",
+        "options": {
+          "A": "Correct. This follows the full datetime format with date, time, and timezone offset (+08:00).",
+          "B": "Incorrect. This only includes the date portion without time and timezone. Should be: 2026-03-17T10:00:00+08:00",
+          "C": "Correct. This is properly formatted with complete datetime and timezone information.",
+          "D": "Incorrect. Natural language like 'EOD Friday' is ambiguous. Should specify exact datetime like 2026-03-20T18:00:00+08:00",
+          "E": "Correct. This has all required components: date, time, and timezone offset.",
+          "F": "Incorrect. ISO week notation is not the standard format needed. Should use full datetime: 2026-03-16T00:00:00+08:00"
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please draft the Tuesday progress sync report and save it as day02/progress_report_draft.json. Include these fields: report_date (today), generated_at (current time around 10:30), period_start (this Monday at 09:00), period_end (this Friday at 18:00), summary (a string), and milestones_status (an array).",
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/progress_report_draft.json report_date generated_at period_start period_end",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! The progress report draft has all time fields properly formatted. This ensures the reporting period and generation time are precisely recorded.",
+        "incorrect": "All time-related fields in the progress report need standard datetime format with timezone. For example: report_date should be 2026-03-17T00:00:00+08:00, generated_at should be 2026-03-17T10:30:00+08:00, period_start should be 2026-03-16T09:00:00+08:00, and period_end should be 2026-03-20T18:00:00+08:00. Please use the format: YYYY-MM-DDTHH:MM:SS+08:00"
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Bai just completed task T-401 (API docs update). Please create a task completion record at day02/completed_tasks.json recording: task_id, title, completed_at (just now around 11:15), reviewed_by (Alex), and review_completed_at (expected today at 2:00 PM).",
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/completed_tasks.json completed_tasks[].completed_at completed_tasks[].review_completed_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! The task completion record has been created with properly formatted timestamps for both completion and review times.",
+        "incorrect": "The time fields need to be in standard datetime format with timezone. For example: completed_at should be 2026-03-17T11:15:00+08:00, and review_completed_at should be 2026-03-17T14:00:00+08:00. Please use the format: YYYY-MM-DDTHH:MM:SS+08:00"
+      }
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "Here is a partial progress_report.json:\n```json\n{\n  \"report_date\": \"2026-03-17T00:00:00+08:00\",\n  \"generated_at\": \"Mar 17, 2026 10:30 AM\",\n  \"period_start\": \"2026-03-16T09:00:00+08:00\",\n  \"period_end\": \"2026-03-20 18:00:00\",\n  \"next_sync\": \"next Tuesday at 10am\"\n}\n```\nWhich field values need to be modified?\n\nA. report_date: \"2026-03-17T00:00:00+08:00\"\nB. generated_at: \"Mar 17, 2026 10:30 AM\"\nC. period_start: \"2026-03-16T09:00:00+08:00\"\nD. period_end: \"2026-03-20 18:00:00\"\nE. next_sync: \"next Tuesday at 10am\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "report_date: \"2026-03-17T00:00:00+08:00\"",
+          "B": "generated_at: \"Mar 17, 2026 10:30 AM\"",
+          "C": "period_start: \"2026-03-16T09:00:00+08:00\"",
+          "D": "period_end: \"2026-03-20 18:00:00\"",
+          "E": "next_sync: \"next Tuesday at 10am\""
+        },
+        "answer": [
+          "B",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! B, D, and E all need to be updated.",
+        "options": {
+          "A": "Correct format. This field properly includes date, time (midnight), and timezone offset.",
+          "B": "Incorrect format. This uses natural language date formatting. Should be: 2026-03-17T10:30:00+08:00",
+          "C": "Correct format. This field has all required components in the proper format.",
+          "D": "Incorrect format. Missing the 'T' separator and timezone offset. Should be: 2026-03-20T18:00:00+08:00",
+          "E": "Incorrect format. Natural language is ambiguous. Should be: 2026-03-24T10:00:00+08:00"
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please create day02/reminders.json with the following reminders:\n1. Today at 3:00 PM: Check M-2 (Auth bug) progress\n2. Tomorrow at 9:30 AM: Standup meeting\n3. This Thursday at 11:00 AM: Follow up on API review\nEach reminder should include: title, remind_at, and created_at (current time around 11:45) fields.",
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/reminders.json reminders[].remind_at reminders[].created_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! All reminders have been created with properly formatted timestamps. The system can now reliably trigger these reminders at the correct times.",
+        "incorrect": "All time fields in reminders.json need standard datetime format with timezone. For example: today at 3:00 PM should be 2026-03-17T15:00:00+08:00, tomorrow at 9:30 AM should be 2026-03-18T09:30:00+08:00, this Thursday at 11:00 AM should be 2026-03-19T11:00:00+08:00, and created_at should be 2026-03-17T11:45:00+08:00. Use the format: YYYY-MM-DDTHH:MM:SS+08:00"
+      }
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "In a project management context, which of the following time descriptions correctly match their standard format representation? (Today is Tuesday, March 17, 2026, CST timezone)\n\nA. \"this Thursday EOD (18:00)\" → \"2026-03-19T18:00:00+08:00\"\nB. \"last Friday afternoon\" → \"2026-03-13T14:00:00+08:00\"\nC. \"next business day morning\" → \"2026-03-18T09:00:00+08:00\"\nD. \"yesterday noon\" → \"2026-03-16T12:00:00+08:00\"\nE. \"end of this month\" → \"2026-03-31T23:59:59+08:00\"\nF. \"two hours ago\" → \"2026-03-17T08:00:00+08:00\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "\"this Thursday EOD (18:00)\" → \"2026-03-19T18:00:00+08:00\"",
+          "B": "\"last Friday afternoon\" → \"2026-03-13T14:00:00+08:00\"",
+          "C": "\"next business day morning\" → \"2026-03-18T09:00:00+08:00\"",
+          "D": "\"yesterday noon\" → \"2026-03-16T12:00:00+08:00\"",
+          "E": "\"end of this month\" → \"2026-03-31T23:59:59+08:00\"",
+          "F": "\"two hours ago\" → \"2026-03-17T08:00:00+08:00\""
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! A, C, D, and E are all accurate conversions.",
+        "options": {
+          "A": "Correct. Thursday is March 19, and EOD with specified 18:00 time converts precisely.",
+          "B": "Incorrect. While March 13 is last Friday, 'afternoon' is too vague to assume 14:00 specifically. A more precise time reference is needed for accurate conversion.",
+          "C": "Correct. Next business day from Tuesday is Wednesday (March 18), and morning typically starts at 09:00 in business context.",
+          "D": "Correct. Yesterday is March 16, and noon is precisely 12:00:00.",
+          "E": "Correct. March has 31 days, and end of month is precisely 23:59:59 on that date.",
+          "F": "Incorrect. 'Two hours ago' is a relative time reference that depends on the current time. Without knowing the exact current time, this cannot be converted to an absolute timestamp."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please update day02/progress_report_draft.json to create the final version at day02/progress_report_final.json. Add these fields to the existing content: finalized_at (current time around 2:00 PM) and next_report_scheduled (next Tuesday at the same time, which is March 24 at 10:30).",
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/progress_report_final.json report_date generated_at period_start period_end finalized_at next_report_scheduled",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! The final progress report has been created with all time fields properly formatted, including the finalization timestamp and next scheduled report time.",
+        "incorrect": "All time fields must use standard datetime format with timezone. Specifically: finalized_at should be 2026-03-17T14:00:00+08:00 and next_report_scheduled should be 2026-03-24T10:30:00+08:00. Please ensure all fields use the format: YYYY-MM-DDTHH:MM:SS+08:00"
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "Regarding best practices for time fields in project management systems, which of the following statements are correct?\n\nA. Using natural language like 'next Friday' for deadline fields makes records more readable\nB. Storing all time fields in a consistent datetime format with timezone avoids ambiguity\nC. due_date only needs the date part — time and timezone are not required\nD. In JSON files, time field values should be strings rather than numeric timestamps\nE. All time fields in the same project should use the same timezone offset (+08:00)\nF. The generated_at field can be left empty until the report is finalized\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Using natural language like 'next Friday' for deadline fields makes records more readable",
+          "B": "Storing all time fields in a consistent datetime format with timezone avoids ambiguity",
+          "C": "due_date only needs the date part — time and timezone are not required",
+          "D": "In JSON files, time field values should be strings rather than numeric timestamps",
+          "E": "All time fields in the same project should use the same timezone offset (+08:00)",
+          "F": "The generated_at field can be left empty until the report is finalized"
+        },
+        "answer": [
+          "B",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! B, D, and E are all good practices.",
+        "options": {
+          "A": "Incorrect. Natural language is ambiguous and can be misinterpreted, especially across different timezones or when viewed later. Always use precise datetime formats.",
+          "B": "Correct. A consistent datetime format with timezone information eliminates ambiguity and ensures all stakeholders interpret times identically.",
+          "C": "Incorrect. Including time and timezone is essential. A deadline of '2026-03-20' is ambiguous — does it mean midnight? End of day? In which timezone?",
+          "D": "Correct. String-based datetime representations are human-readable, widely supported, and don't suffer from precision or epoch issues of numeric timestamps.",
+          "E": "Correct. Using a consistent timezone offset across all project time fields ensures consistency and simplifies comparisons and scheduling.",
+          "F": "Incorrect. The generated_at field should record when the draft was created. Leaving it empty loses the audit trail."
+        }
+      },
+      "update": []
+    }
+  ]
+}

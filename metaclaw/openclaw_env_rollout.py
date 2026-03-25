@@ -1,5 +1,5 @@
 """
-Programmatic rollout: task JSONL → Qwen3-native agent loop → RL proxy.
+Programmatic rollout: task JSONL → Qwen3-native agent loop → Tinker proxy.
 
 Architecture (mirrors OpenClaw-RL, passive proxy + external task driver):
 
@@ -9,7 +9,7 @@ Architecture (mirrors OpenClaw-RL, passive proxy + external task driver):
         ↓  HTTP POST  X-Session-Id + X-Turn-Type: main
     proxy (localhost:30000)
         ↓  SamplingClient.sample_async
-    Tinker-compatible backend / Qwen3
+    Tinker / Qwen3
         ↓  parse <tool_call>
     subprocess (real openclaw CLI)
         ↓  stdout / stderr observation
@@ -148,25 +148,6 @@ async def _exec_command(cmd: str, timeout: float = 30.0) -> str:
         return f"Error: {e}"
 
 
-def _build_proxy_headers(
-    session_id: str,
-    turn_type: str,
-    *,
-    session_done: bool = False,
-    proxy_api_key: str = "",
-) -> dict[str, str]:
-    """Build proxy headers for rollout requests, including optional auth."""
-    headers = {
-        "X-Session-Id": session_id,
-        "X-Turn-Type": turn_type,
-    }
-    if session_done:
-        headers["X-Session-Done"] = "true"
-    if proxy_api_key:
-        headers["Authorization"] = f"Bearer {proxy_api_key}"
-    return headers
-
-
 # ── Single episode ────────────────────────────────────────────────────────────
 
 async def run_task_episode(
@@ -177,7 +158,6 @@ async def run_task_episode(
     max_steps: int = 15,
     temperature: float = 0.6,
     max_tokens: int = 2048,
-    proxy_api_key: str = "",
 ) -> dict[str, Any]:
     """
     Run one complete task episode.
@@ -198,7 +178,7 @@ async def run_task_episode(
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         for step in range(max_steps):
-            # ── Call proxy (Qwen3 via RL backend) ─────────────────────────
+            # ── Call proxy (Qwen3 via Tinker) ─────────────────────────────
             try:
                 resp = await client.post(
                     f"{proxy_url}/v1/chat/completions",
@@ -209,11 +189,10 @@ async def run_task_episode(
                         "temperature": temperature,
                         "max_tokens": max_tokens,
                     },
-                    headers=_build_proxy_headers(
-                        session_id,
-                        "main",
-                        proxy_api_key=proxy_api_key,
-                    ),
+                    headers={
+                        "X-Session-Id": session_id,
+                        "X-Turn-Type": "main",
+                    },
                 )
                 resp.raise_for_status()
                 output = resp.json()
@@ -271,12 +250,11 @@ async def run_task_episode(
                     "temperature": temperature,
                     "max_tokens": 64,
                 },
-                headers=_build_proxy_headers(
-                    session_id,
-                    "main",
-                    session_done=True,
-                    proxy_api_key=proxy_api_key,
-                ),
+                headers={
+                    "X-Session-Id": session_id,
+                    "X-Turn-Type": "main",
+                    "X-Session-Done": "true",
+                },
             )
         except Exception as e:
             logger.warning("[EnvRollout] %s session-close failed: %s", task_id, e)
@@ -330,7 +308,6 @@ async def rollout_loop(
     max_steps_per_episode: int = 15,
     temperature: float = 0.6,
     model_id: str = "Qwen3-4B-Instruct-2507",
-    proxy_api_key: str = "",
 ) -> None:
     """
     Continuously run task episodes in parallel, feeding training data to the proxy.
@@ -366,7 +343,6 @@ async def rollout_loop(
                     model_id=model_id,
                     max_steps=max_steps_per_episode,
                     temperature=temperature,
-                    proxy_api_key=proxy_api_key,
                 )
                 for i, t in enumerate(batch)
             ],

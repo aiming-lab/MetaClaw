@@ -1,0 +1,121 @@
+{
+  "test_id": "day16",
+  "group_id": "day16",
+  "round_id": "r7",
+  "qa_id": "r7",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] The new document must follow P2 naming convention (20260406_*.md). Note that this is a new file — no .bak required.\nKeep this in mind as you continue with the next task.\n\nBased on the updated day16/api_docs.md, please create a supplementary onboarding document (do not modify the original onboarding file — create a new supplement) under day16/. Include the new features of v2.3.0.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773900984.4470983,
+    "finished_at": 1773901212.606491,
+    "duration_ms": 228159,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-19T06:19:42.512Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day16_1744a6fe-cb81-4c59-bc6e-868ebb861b10",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day16_4b548285",
+    "success": true,
+    "durationMs": 194558,
+    "messageCount": 54,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Thu 2026-03-19 02:16 EDT] [Previous Feedback] The new document must follow P2 naming convention (20260406_*.md). Note that this is a new file — no .bak required.\nKeep this in mind as you continue with the next task.\n\nBased on the updated day16/api_docs.md, please create a supplementary onboarding document (do not modify the original onboarding file — create a new supplement) under day16/. Include the new features of v2.3.0."
+          }
+        ],
+        "timestamp": 1773900987955
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_50crsxLVRzDis9eFqyqB5oCj",
+            "name": "read",
+            "arguments": {
+              "path": "day16/api_docs.md"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773900987959
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_50crsxLVRzDis9eFqyqB5oCj",
+        "toolName": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "# API Documentation - v2.3.0\n\n## Overview\n\nThis document provides comprehensive API documentation for the MetaClaw platform API version 2.3.0. The API follows RESTful principles and returns JSON responses.\n\n## Base URL\n\n```\nhttps://api.metaclaw.io/v2\n```\n\n## Authentication\n\nAll API requests require authentication using Bearer tokens:\n\n```\nAuthorization: Bearer YOUR_API_TOKEN\n```\n\n## Endpoints\n\n### GET /users\n\nRetrieves a list of users in the system.\n\n**Request:**\n```http\nGET /users?page=1&limit=20\n```\n\n**Query Parameters:**\n- `page` (optional): Page number for pagination (default: 1)\n- `limit` (optional): Number of results per page (default: 20, max: 100)\n\n**Response (200 OK):**\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"usr_abc123\",\n      \"email\": \"user@example.com\",\n      \"name\": \"John Doe\",\n      \"role\": \"developer\",\n      \"created_at\": \"2026-03-15T10:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 45\n  }\n}\n```\n\n**Error Codes:**\n- `401`: Unauthorized - Invalid or missing authentication token\n- `403`: Forbidden - Insufficient permissions\n- `500`: Internal Server Error\n\n### POST /users\n\nCreates a new user in the system.\n\n**Request:**\n```http\nPOST /users\nContent-Type: application/json\n\n{\n  \"email\": \"newuser@example.com\",\n  \"name\": \"Jane Smith\",\n  \"role\": \"developer\"\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"data\": {\n    \"id\": \"usr_xyz789\",\n    \"email\": \"newuser@example.com\",\n    \"name\": \"Jane Smith\",\n    \"role\": \"developer\",\n    \"created_at\": \"2026-04-06T09:15:00Z\"\n  }\n}\n```\n\n**Error Codes:**\n- `400`: Bad Request - Invalid input data\n- `401`: Unauthorized\n- `409`: Conflict - User with this email already exists\n- `500`: Internal Server Error\n\n### GET /tasks\n\nRetrieves a list of tasks.\n\n**Request:**\n```http\nGET /tasks?status=active&assignee=usr_abc123\n```\n\n**Query Parameters:**\n- `status` (optional): Filter by task status (active, completed, archived)\n- `assignee` (optional): Filter by assigned user ID\n- `page` (optional): Page number\n- `limit` (optional): Results per page\n\n**Response (200 OK):**\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"tsk_001\",\n      \"title\": \"Implement authentication\",\n      \"description\": \"Add JWT-based authentication to the API\",\n      \"status\": \"active\",\n      \"assignee\": \"usr_abc123\",\n      \"created_at\": \"2026-04-01T14:20:00Z\",\n      \"due_date\": \"2026-04-10T17:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 8\n  }\n}\n```\n\n**Error Codes:**\n- `401`: Unauthorized\n- `500`: Internal Server Error\n\n### PUT /tasks/{task_id}\n\nUpdates an existing task.\n\n**Request:**\n```http\nPUT /tasks/tsk_001\nContent-Type: application/json\n\n{\n  \"status\": \"completed\",\n  \"notes\": \"Authentication implementation completed and tested\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"data\": {\n    \"id\": \"tsk_001\",\n    \"title\": \"Implement authentication\",\n    \"status\": \"completed\",\n    \"notes\": \"Authentication implementation completed and tested\",\n    \"updated_at\": \"2026-04-06T11:30:00Z\"\n  }\n}\n```\n\n**Error Codes:**\n- `400`: Bad Request\n- `401`: Unauthorized\n- `404`: Not Found - Task does not exist\n- `500`: Internal Server Error\n\n### GET /projects\n\nRetrieves a paginated list of projects.\n\n**Request:**\n```http\nGET /projects?status=active&owner=usr_abc123&page=1&limit=20\n```\n\n**Query Parameters:**\n- `status` (optional): Filter by project status (`active`, `archived`)\n- `owner` (optional): Filter by owning user ID\n- `page` (optional): Page number for pagination (default: 1)\n- `limit` (optional): Number of results per page (default: 20, max: 100)\n\n**Response (200 OK):**\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"prj_001\",\n      \"name\": \"Project Orion\",\n      \"description\": \"Core product roadmap and delivery tracking\",\n      \"status\": \"active\",\n      \"owner\": {\n        \"id\": \"usr_abc123\",\n        \"name\": \"John Doe\",\n        \"email\": \"user@example.com\"\n      },\n      \"created_at\": \"2026-04-01T09:00:00Z\",\n      \"updated_at\": \"2026-04-06T12:10:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 12\n  }\n}\n```\n\n**Error Codes:**\n- `401`: Unauthorized\n- `403`: Forbidden - Insufficient permissions\n- `500`: Internal Server Error\n\n### POST /projects\n\nCreates a new project.\n\n**Request:**\n```http\nPOST /projects\nContent-Type: application/json\n\n{\n  \"name\": \"Sprint 9 Planning\",\n  \"description\": \"Sprint planning and execution tracking\",\n  \"owner_id\": \"usr_abc123\"\n}\n```\n\n**Request Body Fields:**\n- `name` (required): Project name (1-120 chars)\n- `description` (optional): Project description (max 2,000 chars)\n- `owner_id` (required): Owning user ID\n\n**Response (201 Created):**\n```json\n{\n  \"data\": {\n    \"id\": \"prj_013\",\n    \"name\": \"Sprint 9 Planning\",\n    \"description\": \"Sprint planning and execution tracking\",\n    \"status\": \"active\",\n    \"owner\": {\n      \"id\": \"usr_abc123\",\n      \"name\": \"John Doe\",\n      \"email\": \"user@example.com\"\n    },\n    \"created_at\": \"2026-04-06T13:05:00Z\",\n    \"updated_at\": \"2026-04-06T13:05:00Z\"\n  }\n}\n```\n\n**Error Codes:**\n- `400`: Bad Request - Invalid input data\n- `401`: Unauthorized\n- `403`: Forbidden - Insufficient permissions\n- `409`: Conflict - Project with this name already exists\n- `422`: Unprocessable Entity - Validation failed\n- `500`: Internal Server Error\n\n### GET /projects/{project_id}\n\nRetrieves a single project by ID.\n\n**Request:**\n```http\nGET /projects/prj_001\n```\n\n**Response (200 OK):**\n```json\n{\n  \"data\": {\n    \"id\": \"prj_001\",\n    \"name\": \"Project Orion\",\n    \"description\": \"Core product roadmap and delivery tracking\",\n    \"status\": \"active\",\n    \"owner\": {\n      \"id\": \"usr_abc123\",\n      \"name\": \"John Doe\",\n      \"email\": \"user@example.com\"\n    },\n    \"created_at\": \"2026-04-01T09:00:00Z\",\n    \"updated_at\": \"2026-04-06T12:10:00Z\"\n  }\n}\n```\n\n**Error Codes:**\n- `401`: Unauthorized\n- `403`: Forbidden\n- `404`: Not Found - Project does not exist\n- `500`: Internal Server Error\n\n### PATCH /projects/{project_id}\n\nUpdates mutable fields on an existing project.\n\n**Request:**\n```http\nPATCH /projects/prj_001\nContent-Type: application/json\n\n{\n  \"name\": \"Project Orion (Backend)\",\n  \"description\": \"Backend delivery tracking\",\n  \"status\": \"active\"\n}\n```\n\n**Request Body Fields (all optional):**\n- `name`: Project name (1-120 chars)\n- `description`: Project description (max 2,000 chars)\n- `status`: Project status (`active`, `archived`)\n\n**Response (200 OK):**\n```json\n{\n  \"data\": {\n    \"id\": \"prj_001\",\n    \"name\": \"Project Orion (Backend)\",\n    \"description\": \"Backend delivery tracking\",\n    \"status\": \"active\",\n    \"updated_at\": \"2026-04-06T14:20:00Z\"\n  }\n}\n```\n\n**Error Codes:**\n- `400`: Bad Request - Invalid input data\n- `401`: Unauthorized\n- `403`: Forbidden\n- `404`: Not Found\n- `422`: Unprocessable Entity - Validation failed\n- `500`: Internal Server Error\n\n### DELETE /projects/{project_id}\n\nArchives a project (soft delete).\n\n**Request:**\n```http\nDELETE /projects/prj_001\n```\n\n**Response (204 No Content):**\n\n(empty body)\n\n**Error Codes:**\n- `401`: Unauthorized\n- `403`: Forbidden\n- `404`: Not Found\n- `409`: Conflict - Project cannot be archived due to existing dependencies\n- `500`: Internal Server Error\n\n## Rate Limiting\n\nThe API implements rate limiting to ensure fair usage:\n- **Free tier**: 100 requests per hour\n- **Pro tier**: 1,000 requests per hour\n- **Enterprise tier**: 10,000 requests per hour\n\nRate limit information is included in response headers:\n- `X-RateLimit-Limit`: Maximum requests allowed\n- `X-RateLimit-Remaining`: Requests remaining in current window\n- `X-RateLimit-Reset`: Timestamp when the rate limit resets\n\n## Error Response Format\n\nAll error responses follow this format:\n\n```json\n{\n  \"error\": {\n    \"code\": \"error_code\",\n    \"message\": \"Human-readable error message\",\n    \"details\": {\n      \"field\": \"Additional context about the error\"\n    }\n  }\n}\n```\n\n## Changelog\n\n### v2.3.0 (2026-04-06)\n- Added `/projects` endpoints for project management\n\n### v2.2.3 (2026-03-20)\n- Improved error messages for validation failures\n- Added support for bulk operations on tasks\n\n### v2.2.2 (2026-03-10)\n- Fixed pagination bug in /users endpoint\n- Performance improvements for large result sets\n\n### v2.2.1 (2026-02-28)\n- Added rate limiting headers\n- Enhanced authentication error responses\n\n### v2.2.0 (2026-02-15)\n- Initial release of v2.2 API\n- New task management endpoints\n- Improved user management\n"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773901019871
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_m22FfUHqvs5Y8SuZwb4n9CNX",
+            "name": "exec",
+            "arguments": {
+              "command": "ls day16 | grep -i onboarding || true"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773901150248
+      }
+    ]
+  },
+  "answer": "completed\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: expected >= 3 P2-compliant .md file(s) in day16/, found 0\n",
+    "stderr": ""
+  }
+}

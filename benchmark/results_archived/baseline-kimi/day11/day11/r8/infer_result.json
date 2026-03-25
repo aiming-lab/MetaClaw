@@ -1,0 +1,78 @@
+{
+  "test_id": "day11",
+  "group_id": "day11",
+  "round_id": "r8",
+  "qa_id": "r8",
+  "question_type": "multi_choice",
+  "question": "[Previous Feedback] Sprint goal document has correct naming and frontmatter.\n\nWhen using the status field in frontmatter, which of the following mappings between scenarios and status values are correct?\n\nA. A document just created with no content filled in yet → status: pending\nB. Document content is complete, waiting for others to review → status: done\nC. Document is being written, not yet finished → status: in_progress\nD. Document has been reviewed and officially published → status: done\nE. Document needs revision, has review comments → status: pending\nF. Blank document (only has frontmatter) → status: in_progress\n\nPlease answer in \\bbox{X,Y,...} format (select all correct mappings).",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773846778.0953264,
+    "finished_at": 1773846801.1567895,
+    "duration_ms": 23061,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T15:13:21.081Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day11_242507f8-7586-4298-a299-def88cbd1804",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day11_8aaec9eb",
+    "success": true,
+    "durationMs": 18994,
+    "messageCount": 30,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 11:13 EDT] [Previous Feedback] Sprint goal document has correct naming and frontmatter.\n\nWhen using the status field in frontmatter, which of the following mappings between scenarios and status values are correct?\n\nA. A document just created with no content filled in yet → status: pending\nB. Document content is complete, waiting for others to review → status: done\nC. Document is being written, not yet finished → status: in_progress\nD. Document has been reviewed and officially published → status: done\nE. Document needs revision, has review comments → status: pending\nF. Blank document (only has frontmatter) → status: in_progress\n\nPlease answer in \\bbox{X,Y,...} format (select all correct mappings)."
+          }
+        ],
+        "timestamp": 1773846782090
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Based on the status field semantics demonstrated in previous file creation tasks:\n\n| Status | Meaning |\n|--------|---------|\n| `pending` | Document created but not started, or needs revision (awaiting work) |\n| `in_progress` | Currently being written/edited (active work in progress) |\n| `done` | Content complete — covers both \"awaiting review\" and \"published\" states |\n\nAnalyzing each mapping:\n\n- **A** ✅ — Blank/new document = `pending`\n- **B** ✅ — Content complete (even if waiting review) = `done`\n- **C** ✅ — Actively being written = `in_progress`\n- **D** ✅ — Reviewed and published = `done`\n- **E** ✅ — Has review comments, needs revision = `pending` (back to queue)\n- **F** ❌ — Blank document should be `pending`, not `in_progress` (work hasn't started)\n\n\\bbox{A,B,C,D,E}"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773846782092
+      }
+    ]
+  },
+  "answer": "Based on the status field semantics demonstrated in previous file creation tasks:\n\n| Status | Meaning |\n|--------|---------|\n| `pending` | Document created but not started, or needs revision (awaiting work) |\n| `in_progress` | Currently being written/edited (active work in progress) |\n| `done` | Content complete — covers both \"awaiting review\" and \"published\" states |\n\nAnalyzing each mapping:\n\n- **A** ✅ — Blank/new document = `pending`\n- **B** ✅ — Content complete (even if waiting review) = `done`\n- **C** ✅ — Actively being written = `in_progress`\n- **D** ✅ — Reviewed and published = `done`\n- **E** ✅ — Has review comments, needs revision = `pending` (back to queue)\n- **F** ❌ — Blank document should be `pending`, not `in_progress` (work hasn't started)\n\n\\bbox{A,B,C,D,E}\n",
+  "inline_score": {
+    "passed": false,
+    "type": "multi_choice",
+    "format_valid": true,
+    "selected": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ]
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "test_id": "day07",
+  "group_id": "day07",
+  "round_id": "r5",
+  "qa_id": "r5",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease draft the Sprint 8 technical specification document in Markdown, covering the interface definitions and implementation points for the 3 core feature modules to be implemented. Save it to the day07/ directory.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773846596.2736223,
+    "finished_at": 1773846700.565702,
+    "duration_ms": 104292,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T15:11:31.348Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day07_f4089966-4f1e-4e41-a2ff-fc75547d8784",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day07_3535765e",
+    "success": true,
+    "durationMs": 91586,
+    "messageCount": 27,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 11:09 EDT] [Previous Feedback] Correct!\n\nPlease draft the Sprint 8 technical specification document in Markdown, covering the interface definitions and implementation points for the 3 core feature modules to be implemented. Save it to the day07/ directory."
+          }
+        ],
+        "timestamp": 1773846599762
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "functionsfunctionsfunctionswrite9",
+            "arguments": {
+              "file_path": "day07/20260324_sprint8_technical_specification.md",
+              "content": "# Sprint 8 Technical Specification\n\n**Sprint**: Sprint 8  \n**Date**: March 24 – April 4, 2026  \n**Document Version**: 1.0  \n**Author**: Alex Zhang, Backend Tech Lead  \n**Reviewers**: Backend Engineering Team\n\n---\n\n## Overview\n\nSprint 8 focuses on implementing the foundational infrastructure for API v2.3.0, including authentication system upgrades, rate limiting enforcement, and API endpoint migration support. This specification defines the interface contracts and implementation requirements for the three core feature modules.\n\n---\n\n## Module 1: OAuth2 + JWT Authentication System\n\n### 1.1 Description\nImplement a complete OAuth2-compliant authentication system using JWT tokens to replace the legacy API key authentication. This module provides secure token issuance, validation, refresh, and revocation capabilities.\n\n### 1.2 Interface Definitions\n\n#### POST /auth/token\n**Request:**\n```json\n{\n  \"grant_type\": \"client_credentials\",\n  \"client_id\": \"string\",\n  \"client_secret\": \"string\",\n  \"scope\": \"read write\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"access_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"refresh_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}\n```\n\n**Response (401 Unauthorized):**\n```json\n{\n  \"error\": \"invalid_client\",\n  \"error_description\": \"Client authentication failed\"\n}\n```\n\n#### POST /auth/token/refresh\n**Request:**\n```json\n{\n  \"grant_type\": \"refresh_token\",\n  \"refresh_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"access_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600\n}\n```\n\n#### POST /auth/token/revoke\n**Request Headers:**\n```\nAuthorization: Bearer {access_token}\n```\n\n**Request:**\n```json\n{\n  \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"token_type_hint\": \"access_token\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"revoked\": true\n}\n```\n\n### 1.3 Implementation Points\n\n| Component | Requirement | Priority |\n|-----------|-------------|----------|\n| JWT Library | Use `github.com/golang-jwt/jwt/v5` | High |\n| Signing Algorithm | RS256 (RSA with SHA-256) | High |\n| Token Expiration | Access: 1 hour, Refresh: 7 days | High |\n| Key Rotation | Support weekly key rotation without downtime | Medium |\n| Token Storage | Redis cluster for revocation list | High |\n| Rate Limiting | 10 requests/minute per client on /auth endpoints | Medium |\n\n### 1.4 Data Models\n\n```go\n// TokenClaims represents JWT token claims\ntype TokenClaims struct {\n    jwt.RegisteredClaims\n    ClientID    string   `json:\"client_id\"`\n    Scope       string   `json:\"scope\"`\n    Tier        string   `json:\"tier\"`        // \"free\" or \"paid\"\n    IssuedAt    int64    `json:\"iat\"`\n    ExpiresAt   int64    `json:\"exp\"`\n}\n\n// TokenResponse represents OAuth2 token response\ntype TokenResponse struct {\n    AccessToken  string `json:\"access_token\"`\n    TokenType    string `json:\"token_type\"`\n    ExpiresIn    int    `json:\"expires_in\"`\n    RefreshToken string `json:\"refresh_token,omitempty\"`\n    Scope        string `json:\"scope,omitempty\"`\n}\n```\n\n---\n\n## Module 2: Tiered Rate Limiting Engine\n\n### 2.1 Description\nImplement a distributed rate limiting system that enforces tier-based request quotas. The system must handle the new limits (1,000 req/hour for free tier, 10,000 req/hour for paid tier) with proper HTTP 429 responses and retry-after headers.\n\n### 2.2 Interface Definitions\n\n#### Rate Limit Headers (All API Responses)\n```\nX-RateLimit-Limit: 1000\nX-RateLimit-Remaining: 945\nX-RateLimit-Reset: 1711281600\nX-RateLimit-Retry-After: 0\n```\n\n#### Response When Limit Exceeded (429 Too Many Requests)\n```json\n{\n  \"error\": \"rate_limit_exceeded\",\n  \"error_description\": \"API rate limit exceeded. Please retry after 3600 seconds.\",\n  \"retry_after\": 3600,\n  \"limit\": 1000,\n  \"window\": \"hour\"\n}\n```\n\n### 2.3 Implementation Points\n\n| Component | Requirement | Priority |\n|-----------|-------------|----------|\n| Algorithm | Sliding window counter with Redis | High |\n| Storage | Redis sorted sets for window tracking | High |\n| Header Injection | Middleware for all API responses | High |\n| Burst Allowance | 10% burst capacity for paid tier | Medium |\n| Header Format | RFC 6585 compliant | Medium |\n| Whitelist | Internal services bypass (configurable) | Low |\n\n### 2.4 Configuration\n\n```yaml\nrate_limiting:\n  free_tier:\n    requests_per_hour: 1000\n    burst_percentage: 0\n    window_seconds: 3600\n  paid_tier:\n    requests_per_hour: 10000\n    burst_percentage: 10\n    window_seconds: 3600\n  redis:\n    cluster_enabled: true\n    key_prefix: \"ratelimit:\"\n    ttl_padding: 60\n```\n\n### 2.5 Middleware Interface\n\n```go\n// RateLimiter defines the rate limiting interface\ntype RateLimiter interface {\n    Allow(ctx context.Context, clientID string, tier string) (*LimitStatus, error)\n    GetLimitStatus(ctx context.Context, clientID string, tier string) (*LimitStatus, error)\n}\n\n// LimitStatus represents current rate limit state\ntype LimitStatus struct {\n    Limit     int       `json:\"limit\"`\n    Remaining int       `json:\"remaining\"`\n    ResetAt   time.Time `json:\"reset_at\"`\n    Window    string    `json:\"window\"`\n}\n```\n\n---\n\n## Module 3: API v1 Deprecation & Migration Framework\n\n### 3.1 Description\nBuild a framework to support the graceful deprecation of v1 API endpoints. Includes deprecation headers, sunset notices, migration helpers, and telemetry to track v1 usage for stakeholder communications.\n\n### 3.2 Interface Definitions\n\n#### Deprecation Headers (All v1 Responses)\n```\nDeprecation: true\nSunset: Wed, 30 Jun 2026 23:59:59 GMT\nLink: </docs/migration-guide>; rel=\"migration\"; title=\"API Migration Guide\"\n```\n\n#### Migration Status Endpoint\n**GET /v1/migration-status**\n\n**Response (200 OK):**\n```json\n{\n  \"current_version\": \"v1\",\n  \"deprecation_date\": \"2026-06-30T23:59:59Z\",\n  \"days_remaining\": 98,\n  \"migration_guide_url\": \"https://docs.oriontech.com/migration/v1-to-v2\",\n  \"recommended_version\": \"v2.2\",\n  \"available_versions\": [\"v2.2\", \"v2.3\"],\n  \"contact_support\": \"api-support@oriontech.com\"\n}\n```\n\n#### v1 Usage Telemetry Endpoint (Internal)\n**GET /admin/v1-usage-stats**\n\n**Response (200 OK):**\n```json\n{\n  \"report_period\": {\n    \"start\": \"2026-03-17T00:00:00Z\",\n    \"end\": \"2026-03-24T00:00:00Z\"\n  },\n  \"total_requests\": 154320,\n  \"unique_clients\": 47,\n  \"endpoints\": [\n    {\n      \"path\": \"/v1/projects\",\n      \"method\": \"GET\",\n      \"requests\": 45230,\n      \"unique_clients\": 42\n    },\n    {\n      \"path\": \"/v1/tasks\",\n      \"method\": \"POST\",\n      \"requests\": 12340,\n      \"unique_clients\": 28\n    }\n  ],\n  \"clients_by_tier\": {\n    \"free\": 35,\n    \"paid\": 12\n  }\n}\n```\n\n### 3.3 Implementation Points\n\n| Component | Requirement | Priority |\n|-----------|-------------|----------|\n| Deprecation Headers | Add to all v1 endpoint responses | High |\n| Sunset Date | Fixed: June 30, 2026 23:59:59 UTC | High |\n| Telemetry Collection | Log all v1 requests with client ID | High |\n| Migration Guide Link | Point to internal docs platform | Medium |\n| Warning Logs | Emit WARN level logs for v1 access | Medium |\n| Usage Dashboard | Weekly auto-generated usage reports | Low |\n\n### 3.4 Migration Helpers\n\n```go\n// DeprecationMiddleware adds deprecation headers to v1 responses\nfunc DeprecationMiddleware(next http.Handler) http.Handler {\n    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        w.Header().Set(\"Deprecation\", \"true\")\n        w.Header().Set(\"Sunset\", \"Wed, 30 Jun 2026 23:59:59 GMT\")\n        w.Header().Set(\"Link\", \"</docs/migration-guide>; rel=\\\"migration\\\"; title=\\\"API Migration Guide\\\"\")\n        next.ServeHTTP(w, r)\n    })\n}\n\n// TelemetryCollector logs v1 usage for migration tracking\ntype TelemetryCollector struct {\n    Storage UsageStorage\n}\n\nfunc (tc *TelemetryCollector) Collect(ctx context.Context, req *http.Request, clientID string) error {\n    record := &UsageRecord{\n        Timestamp:   time.Now().UTC(),\n        ClientID:    clientID,\n        Endpoint:    req.URL.Path,\n        Method:      req.Method,\n        UserAgent:   req.UserAgent(),\n    }\n    return tc.Storage.Save(ctx, record)\n}\n\n// UsageRecord represents a single v1 API usage record\ntype UsageRecord struct {\n    Timestamp   time.Time `json:\"timestamp\"`\n    ClientID    string    `json:\"client_id\"`\n    Endpoint    string    `json:\"endpoint\"`\n    Method      string    `json:\"method\"`\n    UserAgent   string    `json:\"user_agent\"`\n    Tier        string    `json:\"tier\"`\n}\n```\n\n---\n\n## Cross-Module Dependencies\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│                     API Gateway Layer                        │\n├─────────────────────────────────────────────────────────────┤\n│  Module 1: OAuth2 + JWT    │  Module 2: Rate Limiting       │\n│  (Authentication)          │  (Quota Enforcement)            │\n└────────────────────────────┴────────────────────────────────┘\n                             │\n                             ▼\n┌─────────────────────────────────────────────────────────────┐\n│              Module 3: v1 Deprecation Framework              │\n│         (Headers, Telemetry, Migration Support)              │\n└─────────────────────────────────────────────────────────────┘\n```\n\n---\n\n## Acceptance Criteria\n\n### Module 1 (OAuth2 + JWT)\n- [ ] Token issuance endpoint returns valid JWT with correct claims\n- [ ] Token refresh endpoint issues new access token\n- [ ] Token revocation invalidates access in < 5 seconds\n- [ ] RS256 signing with key rotation support\n- [ ] All endpoints protected by JWT validation middleware\n\n### Module 2 (Rate Limiting)\n- [ ] Free tier limited to 1,000 requests/hour\n- [ ] Paid tier limited to 10,000 requests/hour\n- [ ] Proper headers returned on all API responses\n- [ ] HTTP 429 returned with Retry-After when limit exceeded\n- [ ] Distributed rate limiting works across multiple instances\n\n### Module 3 (v1 Deprecation)\n- [ ] All v1 responses include Deprecation and Sunset headers\n- [ ] Telemetry data collected for all v1 requests\n- [ ] /v1/migration-status endpoint returns accurate information\n- [ ] Weekly usage reports generated automatically\n- [ ] Migration guide link accessible and functional\n\n---\n\n## Timeline\n\n| Week | Module Focus | Deliverables |\n|------|--------------|--------------|\n| Week 1 (Mar 24–28) | Module 1 | OAuth2 endpoints, JWT middleware, token storage |\n| Week 2 (Mar 31–Apr 4) | Module 2 + 3 | Rate limiting middleware, deprecation headers, telemetry |\n\n---\n\n## Risks & Mitigations\n\n| Risk | Impact | Mitigation |\n|------|--------|------------|\n| Redis cluster availability | Rate limiting failure | Circuit breaker fallback to local memory |\n| JWT key rotation disruption | Auth failures | Blue-green rotation with overlap period |\n| v1 telemetry storage growth | Cost/performance | 90-day retention policy, compression |\n\n---\n\n**Document Status**: Draft  \n**Last Updated**: March 24, 2026\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773846608924
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "functionsfunctionsfunctionswrite9",
+        "content": [
+          {
+            "type": "text",
+            "text": "Tool functionsfunctionsfunctionswrite9 not found"
+          }
+        ],
+        "details": {},
+        "isError": true,
+        "timestamp": 1773846691344
+      }
+    ]
+  },
+  "answer": "⚠️ 🧩 Functionsfunctionsfunctionswrite9 failed\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: expected >= 3 P2-compliant .md file(s) in day07/, found 1\n",
+    "stderr": ""
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "id": "day09",
+  "desc": "Day 09 — P5 first encounter — no preset done.log",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please draft a Sprint 9 technical specification document in Markdown format and save it to the day09/ directory. Include key technical approach points for the 3 core features in this sprint.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext md && python scripts/check_done_log.py done.log --min-entries 1",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The tech spec document follows the P2 naming convention and done.log has been updated with the completion entry.",
+        "incorrect": "One or more issues found: (1) Document name does not follow P2 convention (must be 20260413_*.md), (2) Missing done.log entry. After completing each task, append one line to done.log in the workspace root: `[DONE] 2026-04-13T<time>+08:00 | <task_id> | <summary>`."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "Regarding the done.log convention, which of the following statements are correct?\n\nA. done.log should be placed in the workspace root directory (not inside day09/ subdirectory)\nB. Each independent task completion appends one line — multiple tasks must not be merged into one line\nC. If done.log does not exist, it should be created automatically on the first task completion\nD. task_id must be one of a pre-defined fixed set of values and cannot be freely chosen\nE. summary must not exceed 80 characters and briefly describes what was completed\nF. Timestamps in done.log do not need to follow the P1 convention (ISO 8601 +08:00)\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "done.log in workspace root",
+          "B": "one line per task, no merging",
+          "C": "auto-create if file does not exist",
+          "D": "task_id must be pre-defined fixed value",
+          "E": "summary <= 80 characters",
+          "F": "timestamps in done.log exempt from P1"
+        },
+        "answer": [
+          "A",
+          "B",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: done.log must be in the workspace root, not inside a dayXX/ subdirectory.",
+          "B": "B is correct: each independent task completion appends a separate line — never merge multiple tasks.",
+          "C": "C is correct: if done.log does not exist when the first task is completed, it should be created automatically.",
+          "D": "D is wrong: task_id is freely chosen by the agent (as long as it is meaningful) — no pre-defined list required.",
+          "E": "E is correct: summary must be 80 characters or fewer.",
+          "F": "F is wrong: timestamps in done.log are time fields and are subject to the P1 rule — must use ISO 8601 +08:00 format."
+        }
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please compile a tech debt list for this sprint in JSON format and save it to the day09/ directory. Include 5 tech debt items, each with id, description, priority, and estimated_hours fields.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext json && python scripts/check_done_log.py done.log --min-entries 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Tech debt list follows P2 naming and done.log now has a 3rd entry.",
+        "incorrect": "Issues found: (1) file name must follow P2 convention (20260413_*.json), (2) after completing this task, append a 3rd entry to done.log — it should have at least 3 entries at this point (this is the 3rd independent task)."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please write an integration guide for Orion API v2.3.0 in Markdown format and save it to the day09/ directory. Include the authentication flow, usage examples for key endpoints, and error handling recommendations.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext md && python scripts/check_done_log.py done.log --min-entries 3 --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "API integration guide follows P2 naming and done.log now has 5 entries.",
+        "incorrect": "API integration guide must follow P2 naming (20260413_*.md), and after completing it, append a 5th entry to done.log."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "When done.log already has 3 existing entries from a previous day, what is the correct behavior?\n\nA. Append new entries to the end of the existing file, preserving all previous entries\nB. Overwrite the file with only today's entries (start fresh each day)\nC. Create a new file done_20260414.log for today's entries\nD. The existing entries from yesterday remain unchanged, only new entries are added\nE. The total number of entries should increase with each completed task\nF. If today's entries are more important, the old ones can be removed to save space\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Append new entries, preserve all previous",
+          "B": "Overwrite with only today's entries",
+          "C": "Create done_20260414.log for today",
+          "D": "Yesterday's entries unchanged, only new added",
+          "E": "Total count increases with each task",
+          "F": "Remove old entries to save space"
+        },
+        "answer": [
+          "A",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: append-only, never overwrite existing content.",
+          "B": "B wrong: overwriting would destroy the historical record. done.log is a cumulative log.",
+          "C": "C wrong: the file name must be `done.log` (fixed), not date-prefixed variants.",
+          "D": "D correct: previous entries are immutable history.",
+          "E": "E correct: the entry count grows monotonically throughout the session.",
+          "F": "F wrong: entries must never be removed; done.log is an append-only audit trail."
+        }
+      }
+    }
+  ]
+}

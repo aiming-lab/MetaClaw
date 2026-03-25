@@ -1,0 +1,104 @@
+{
+  "id": "day10",
+  "desc": "Day 10 — P1-P5 comprehensive — data processing with preset done.log",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please analyze the Q1 API metrics data (you can use reasonable estimated values) and create a Q1 final metrics summary report, JSON format, save to day10/. Include analysis_period_start (2026-01-01T00:00:00+08:00), analysis_period_end (2026-03-31T23:59:59+08:00), generated_at (current time), and key_metrics object with avg_response_ms, error_rate_pct, uptime_pct.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext json && python scripts/check_done_log.py done.log --task-prefix q1",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Q1 metrics report naming correct and done.log has a q1-prefixed entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.json); (2) append done.log entry with task_id starting with \"q1\" (e.g. `q1_metrics_analysis`); (3) time fields must use ISO 8601 format (P1)."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "In a data analysis context, which of the following tasks should trigger a done.log entry?\n\nA. Generating a Q1 metrics summary report (new file created in day10/)\nB. Reading raw CSV data to understand its structure (no output created)\nC. Updating the SLO tracker with this week's compliance data (existing file modified)\nD. Running a mental calculation to estimate error rates (no file output)\nE. Creating an error trend analysis report (new JSON file in day10/)\nF. Generating a weekly API health summary document (new file created)\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Generating report → new file created",
+          "B": "Reading only → no output",
+          "C": "Updating tracker → existing file modified",
+          "D": "Mental calculation → no file output",
+          "E": "Creating analysis report → new file",
+          "F": "Generating health summary → new document"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: creating a new report is a completed task, requires done.log entry.",
+          "B": "B wrong: reading data without producing output is not a \"completed task\" in P5 terms.",
+          "C": "C correct: updating an existing file with new data is a completed task, requires done.log entry.",
+          "D": "D wrong: internal calculations without file output don't constitute a done.log-worthy task.",
+          "E": "E correct: creating a new analysis report is a completed task.",
+          "F": "F correct: generating a summary document is a completed task."
+        }
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please create a weekly API health summary report, Markdown format, save to day10/. Include sections for availability, error rates, response times, and notable incidents.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext md && python scripts/check_done_log.py done.log --task-prefix api_health",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "API health summary naming correct and done.log has api_health-prefixed entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.md); (2) append done.log entry with task_id starting with `api_health`."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please create a data quality audit report for today's processed datasets, JSON format, save to day10/. Include audit_completed_at (current time), datasets_audited (array with name and quality_score), overall_quality_grade (A/B/C/D).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext json && python scripts/check_done_log.py done.log --task-prefix data_quality --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data quality audit naming correct, done.log has data_quality entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.json); (2) append done.log entry with task_id like `data_quality_audit`; (3) audit_completed_at must use ISO 8601 format."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "After 5 weeks of working with the MetaClaw agent, which of the following complete task descriptions demonstrates perfect adherence to ALL five rules (P1-P5)?\n\nA. New file: 20260417_sprint9_summary.json, meta.created_at: \"2026-04-17T09:00:00+08:00\", meta.author: \"metaclaw_agent\", meta.status: \"done\", content time fields use ISO 8601, done.log entry: \"[DONE] 2026-04-17T09:05:00+08:00 | sprint9_week2_summary | Created Sprint 9 Week 2 final summary report\"\n\nB. Modified file: sprint9_board.json, .bak created before modification, modified time fields use ISO 8601, done.log entry: \"[DONE] 2026-04-17T10:00:00+08:00 | sprint_board_update | Updated Sprint 9 board — all tasks marked done\"\n\nC. New Python file: 20260417_compliance_checker.py, module docstring with Meta section (ISO 8601 created_at), no done.log entry (forgot)\n\nD. New Markdown file: 20260417_retrospective.md, YAML frontmatter with ISO 8601 created_at, author, status, done.log entry format correct\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "New JSON: P2+P3+P1+P5 all correct (P4 N/A for new file)",
+          "B": "Modified file: P4+P1+P5 correct (P2 N/A for existing file, P3 N/A for .bak)",
+          "C": "New Python: P2+P3+P1 correct but P5 missing",
+          "D": "New Markdown: P2+P3+P1+P5 all correct"
+        },
+        "answer": [
+          "A",
+          "B",
+          "D"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A fully compliant: new JSON file → P2 (naming), P3 (meta object), P1 (time fields), P5 (done.log). P4 not applicable (new file).",
+          "B": "B fully compliant: modified existing file → P4 (backup created), P1 (time fields updated correctly), P5 (done.log). P2 not applicable (existing filename unchanged). P3 not applicable to .bak files.",
+          "C": "C P5 violation: missing done.log entry.",
+          "D": "D fully compliant: new Markdown → P2 (naming), P3 (frontmatter), P1 (created_at ISO 8601), P5 (done.log)."
+        }
+      }
+    }
+  ]
+}

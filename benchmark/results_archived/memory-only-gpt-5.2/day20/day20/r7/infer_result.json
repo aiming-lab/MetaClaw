@@ -1,0 +1,170 @@
+{
+  "test_id": "day20",
+  "group_id": "day20",
+  "round_id": "r7",
+  "qa_id": "r7",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Sprint Review report naming follows P2 convention correctly.\n\nPlease create an archive index of this week's output files in JSON format, saved to the day20/ directory (create a new file). List all files modified or created this week (day16-day20), including whether .bak files exist.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773734454.5049944,
+    "finished_at": 1773734496.6044014,
+    "duration_ms": 42099,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T08:01:36.482Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day20_4a0ece6a-e1a5-4d84-99ba-46b47ac8d581",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day20_595b6453",
+    "success": true,
+    "durationMs": 38066,
+    "messageCount": 63,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 04:00 EDT] [Previous Feedback] Sprint Review report naming follows P2 convention correctly.\n\nPlease create an archive index of this week's output files in JSON format, saved to the day20/ directory (create a new file). List all files modified or created this week (day16-day20), including whether .bak files exist."
+          }
+        ],
+        "timestamp": 1773734458414
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_GsPctBu9W9Mo7DxttSli9lZ8",
+            "name": "exec",
+            "arguments": {
+              "command": "python - <<'PY'\nimport os, json, pathlib, datetime\nroot='.'\ndirs=[f'day{d}' for d in range(16,21)]\nfiles=[]\nfor d in dirs:\n    if not os.path.isdir(d):\n        continue\n    for p in sorted(pathlib.Path(d).glob('*')):\n        if p.is_file():\n            st=p.stat()\n            files.append((str(p), st.st_mtime, st.st_size))\n# build entries\nentries=[]\nfor path, mtime, size in files:\n    bak_path = path + '.bak'\n    entries.append({\n        'path': path,\n        'type': 'backup' if path.endswith('.bak') else 'file',\n        'size_bytes': size,\n        'modified_at': datetime.datetime.fromtimestamp(mtime, tz=datetime.timezone.utc).isoformat().replace('+00:00','Z'),\n        'bak': {\n            'exists': (not path.endswith('.bak')) and os.path.exists(bak_path),\n            'path': bak_path if (not path.endswith('.bak')) and os.path.exists(bak_path) else None\n        }\n    })\n# sort by path\nentries.sort(key=lambda x:x['path'])\nout={\n  'week': {\n    'label': 'Sprint 9 Week 1',\n    'date_range': {'start':'2026-04-06','end':'2026-04-10'},\n    'source_directories': [d for d in dirs if os.path.isdir(d)]\n  },\n  'generated_at': '2026-04-10T17:00:00+08:00',\n  'scope_notes': [\n    'Index lists files present under day16/..day20/ in this workspace snapshot.',\n    'modified_at timestamps are from the current filesystem (UTC); use git history for authoritative business dates.',\n    'bak.exists is true when a sibling file named <original>.bak exists.'\n  ],\n  'files': entries\n}\nprint(json.dumps(out, indent=2, ensure_ascii=False))\nPY"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773734458416
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_GsPctBu9W9Mo7DxttSli9lZ8",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"week\": {\n    \"label\": \"Sprint 9 Week 1\",\n    \"date_range\": {\n      \"start\": \"2026-04-06\",\n      \"end\": \"2026-04-10\"\n    },\n    \"source_directories\": [\n      \"day20\"\n    ]\n  },\n  \"generated_at\": \"2026-04-10T17:00:00+08:00\",\n  \"scope_notes\": [\n    \"Index lists files present under day16/..day20/ in this workspace snapshot.\",\n    \"modified_at timestamps are from the current filesystem (UTC); use git history for authoritative business dates.\",\n    \"bak.exists is true when a sibling file named <original>.bak exists.\"\n  ],\n  \"files\": [\n    {\n      \"path\": \"day20/20260410_sprint9_week1_sprint_review_report.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 326,\n      \"modified_at\": \"2026-03-17T08:00:48.219197Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/README.md\",\n      \"type\": \"file\",\n      \"size_bytes\": 1195,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/api_benchmark.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 587,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/app_config.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 464,\n      \"modified_at\": \"2026-03-17T08:00:31.023175Z\",\n      \"bak\": {\n        \"exists\": true,\n        \"path\": \"day20/app_config.json.bak\"\n      }\n    },\n    {\n      \"path\": \"day20/app_config.json.bak\",\n      \"type\": \"backup\",\n      \"size_bytes\": 465,\n      \"modified_at\": \"2026-03-17T08:00:06.783144Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/ci_config.yaml\",\n      \"type\": \"file\",\n      \"size_bytes\": 446,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/deploy_checklist.md\",\n      \"type\": \"file\",\n      \"size_bytes\": 699,\n      \"modified_at\": \"2026-03-17T07:59:39.159108Z\",\n      \"bak\": {\n        \"exists\": true,\n        \"path\": \"day20/deploy_checklist.md.bak\"\n      }\n    },\n    {\n      \"path\": \"day20/deploy_checklist.md.bak\",\n      \"type\": \"backup\",\n      \"size_bytes\": 699,\n      \"modified_at\": \"2026-03-17T07:59:29.051095Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/weekly_status.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 591,\n      \"modified_at\": \"2026-03-17T07:58:28.011016Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    }\n  ]\n}"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 54,
+          "aggregated": "{\n  \"week\": {\n    \"label\": \"Sprint 9 Week 1\",\n    \"date_range\": {\n      \"start\": \"2026-04-06\",\n      \"end\": \"2026-04-10\"\n    },\n    \"source_directories\": [\n      \"day20\"\n    ]\n  },\n  \"generated_at\": \"2026-04-10T17:00:00+08:00\",\n  \"scope_notes\": [\n    \"Index lists files present under day16/..day20/ in this workspace snapshot.\",\n    \"modified_at timestamps are from the current filesystem (UTC); use git history for authoritative business dates.\",\n    \"bak.exists is true when a sibling file named <original>.bak exists.\"\n  ],\n  \"files\": [\n    {\n      \"path\": \"day20/20260410_sprint9_week1_sprint_review_report.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 326,\n      \"modified_at\": \"2026-03-17T08:00:48.219197Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/README.md\",\n      \"type\": \"file\",\n      \"size_bytes\": 1195,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/api_benchmark.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 587,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/app_config.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 464,\n      \"modified_at\": \"2026-03-17T08:00:31.023175Z\",\n      \"bak\": {\n        \"exists\": true,\n        \"path\": \"day20/app_config.json.bak\"\n      }\n    },\n    {\n      \"path\": \"day20/app_config.json.bak\",\n      \"type\": \"backup\",\n      \"size_bytes\": 465,\n      \"modified_at\": \"2026-03-17T08:00:06.783144Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/ci_config.yaml\",\n      \"type\": \"file\",\n      \"size_bytes\": 446,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/deploy_checklist.md\",\n      \"type\": \"file\",\n      \"size_bytes\": 699,\n      \"modified_at\": \"2026-03-17T07:59:39.159108Z\",\n      \"bak\": {\n        \"exists\": true,\n        \"path\": \"day20/deploy_checklist.md.bak\"\n      }\n    },\n    {\n      \"path\": \"day20/deploy_checklist.md.bak\",\n      \"type\": \"backup\",\n      \"size_bytes\": 699,\n      \"modified_at\": \"2026-03-17T07:59:29.051095Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/weekly_status.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 591,\n      \"modified_at\": \"2026-03-17T07:58:28.011016Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    }\n  ]\n}",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day20_595b6453"
+        },
+        "isError": false,
+        "timestamp": 1773734478473
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_j8HScaAftMNlxU0WuMtXwGUq",
+            "name": "write",
+            "arguments": {
+              "path": "day20/20260410_weekly_archive_index.json",
+              "content": "{\n  \"week\": {\n    \"label\": \"Sprint 9 Week 1\",\n    \"date_range\": {\n      \"start\": \"2026-04-06\",\n      \"end\": \"2026-04-10\"\n    },\n    \"source_directories\": [\n      \"day20\"\n    ]\n  },\n  \"generated_at\": \"2026-04-10T17:00:00+08:00\",\n  \"scope_notes\": [\n    \"Index lists files present under day16/..day20/ in this workspace snapshot.\",\n    \"modified_at timestamps are from the current filesystem (UTC); use git history for authoritative business dates.\",\n    \"bak.exists is true when a sibling file named <original>.bak exists.\"\n  ],\n  \"files\": [\n    {\n      \"path\": \"day20/20260410_sprint9_week1_sprint_review_report.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 326,\n      \"modified_at\": \"2026-03-17T08:00:48.219197Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/README.md\",\n      \"type\": \"file\",\n      \"size_bytes\": 1195,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/api_benchmark.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 587,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/app_config.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 464,\n      \"modified_at\": \"2026-03-17T08:00:31.023175Z\",\n      \"bak\": {\n        \"exists\": true,\n        \"path\": \"day20/app_config.json.bak\"\n      }\n    },\n    {\n      \"path\": \"day20/app_config.json.bak\",\n      \"type\": \"backup\",\n      \"size_bytes\": 465,\n      \"modified_at\": \"2026-03-17T08:00:06.783144Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/ci_config.yaml\",\n      \"type\": \"file\",\n      \"size_bytes\": 446,\n      \"modified_at\": \"2026-03-16T04:25:00.884283Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/deploy_checklist.md\",\n      \"type\": \"file\",\n      \"size_bytes\": 699,\n      \"modified_at\": \"2026-03-17T07:59:39.159108Z\",\n      \"bak\": {\n        \"exists\": true,\n        \"path\": \"day20/deploy_checklist.md.bak\"\n      }\n    },\n    {\n      \"path\": \"day20/deploy_checklist.md.bak\",\n      \"type\": \"backup\",\n      \"size_bytes\": 699,\n      \"modified_at\": \"2026-03-17T07:59:29.051095Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    },\n    {\n      \"path\": \"day20/weekly_status.json\",\n      \"type\": \"file\",\n      \"size_bytes\": 591,\n      \"modified_at\": \"2026-03-17T07:58:28.011016Z\",\n      \"bak\": {\n        \"exists\": false,\n        \"path\": null\n      }\n    }\n  ]\n}\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773734478477
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_j8HScaAftMNlxU0WuMtXwGUq",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 2626 bytes to day20/20260410_weekly_archive_index.json"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773734493202
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Created `day20/20260410_weekly_archive_index.json` (new file) listing all files found under **day16–day20** in this workspace snapshot and whether each has a sibling `.bak`.\n\nNote: in this workspace, only `day20/` exists, so the index’s `source_directories` is `[\"day20\"]`."
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773734493208
+      }
+    ]
+  },
+  "answer": "Created `day20/20260410_weekly_archive_index.json` (new file) listing all files found under **day16–day20** in this workspace snapshot and whether each has a sibling `.bak`.\n\nNote: in this workspace, only `day20/` exists, so the index’s `source_directories` is `[\"day20\"]`.\n",
+  "inline_score": {
+    "passed": true,
+    "exit_code": 0,
+    "stdout": "OK (2 matching file(s): 20260410_sprint9_week1_sprint_review_report.json, 20260410_weekly_archive_index.json)\n",
+    "stderr": ""
+  }
+}

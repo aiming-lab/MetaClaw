@@ -1,0 +1,220 @@
+{
+  "id": "day04",
+  "desc": "Day 04 - API documentation and utility code development with time format standardization (Thursday, March 19, 2026)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please correct all time field example values in day04/api_spec_stub.json to use the standard format, then save it as day04/api_spec_v2.3.json. Time field specifications: created_after corresponds to 2026-03-01 00:00:00, updated_before corresponds to this Friday 18:00, start_date corresponds to today 09:00, deadline corresponds to end of Q2 (2026-06-30 18:00).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import json,re,sys; d=json.load(open('day04/api_spec_v2.3.json')); pat=re.compile(r'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\[0-9\\]+)?\\+08:00$'); params=d['paths']['/projects']['get']['parameters']; examples=[p['example'] for p in params]+[d['paths']['/projects']['post']['requestBody']['content']['application/json']['example']['start_date'],d['paths']['/projects']['post']['requestBody']['content']['application/json']['example']['deadline']]; bad=[v for v in examples if not pat.match(str(v))]; sys.exit(0 if not bad else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! All time field examples in the API specification now use the correct format. The datetime values are properly formatted with timezone information.",
+        "incorrect": "The API specification still contains incorrectly formatted time examples. All datetime fields should use the format like `2026-03-01T00:00:00+08:00`. Please check created_after, updated_before, start_date, and deadline fields."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please normalize the release dates in day04/changelog_stub.md and create the final version as day04/CHANGELOG.md. Unify all dates to the complete format (release time convention is 12:00 on the day).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import re,sys; text=open('day04/CHANGELOG.md').read(); dates=re.findall(r'\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00',text); bad_dates=re.findall(r'\\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\b|\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4}',text); sys.exit(0 if len(dates)>=2 and not bad_dates else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! The CHANGELOG.md now has all release dates in the standardized format. All version release times are properly documented.",
+        "incorrect": "The CHANGELOG still contains non-standard date formats. All release dates should be in the format like `2026-01-15T12:00:00+08:00`. Please convert dates like \"January 15th, 2026\" or \"2026/02/28\" to the standard format."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "When writing API documentation and code comments, which of the following time format usages are correct?\n\nA. In OpenAPI example values, use \"2026-03-19T09:00:00+08:00\" for datetime fields\nB. In code comments, write \"// Last updated: March 19, 2026\" for modification time\nC. In a function docstring, write \":param created_at: datetime string, e.g. '2026-03-19T09:00:00+08:00'\"\nD. In API response JSON, the created_at field example is \"2026-03-19 09:00:00\"\nE. In README, record the API launch time as \"2026-03-19T00:00:00+08:00\"\nF. In CHANGELOG, write the release time as \"Released: 19 March 2026\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "In OpenAPI example values, use \"2026-03-19T09:00:00+08:00\" for datetime fields",
+          "B": "In code comments, write \"// Last updated: March 19, 2026\" for modification time",
+          "C": "In a function docstring, write \":param created_at: datetime string, e.g. '2026-03-19T09:00:00+08:00'\"",
+          "D": "In API response JSON, the created_at field example is \"2026-03-19 09:00:00\"",
+          "E": "In README, record the API launch time as \"2026-03-19T00:00:00+08:00\"",
+          "F": "In CHANGELOG, write the release time as \"Released: 19 March 2026\""
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, and E all demonstrate proper usage of the standardized datetime format in their respective contexts.",
+        "options": {
+          "A": "Correct - OpenAPI example values should use the full ISO 8601 format with timezone",
+          "B": "Incorrect - Code comments about modification times should also use the standard format, not informal date strings",
+          "C": "Correct - Function docstrings should provide clear examples of the expected datetime format",
+          "D": "Incorrect - API response examples should use the full format with timezone, not just a space-separated format",
+          "E": "Correct - Documentation files like README should use the standard datetime format for timestamps",
+          "F": "Incorrect - CHANGELOG release times should use the standard format, not informal date strings"
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please write a Python utility function file day04/log_utils.py that implements the function `format_log_entry(level, message)` which returns a formatted log string: `[<datetime>] [<level>] <message>`. The file should include a module docstring explaining the time format requirements, and provide a usage example comment (the time in the example must use the correct format).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import re,sys; code=open('day04/log_utils.py').read(); has_iso=bool(re.search(r'\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*\\+08:00', code)); has_func='def format_log_entry' in code; sys.exit(0 if has_iso and has_func else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Great! The log_utils.py file is well-structured with proper documentation and the format_log_entry function. The example demonstrates the correct datetime format.",
+        "incorrect": "The log_utils.py file needs improvement. Ensure it includes: (1) the format_log_entry function, (2) module docstring with time format requirements, and (3) usage examples with correct datetime format like `2026-03-19T09:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create day04/api_versions.json to record API version history: v2.1.0 (released 2026-01-15), v2.2.0 (released 2026-02-28), v2.3.0 (released today 2026-03-19). Each version should include version, released_at (release time convention 12:00), and deprecated_at (null indicates not deprecated) fields.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day04/api_versions.json versions[].released_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! The api_versions.json file correctly records the version history with properly formatted release timestamps.",
+        "incorrect": "The api_versions.json file has issues with the datetime format. All released_at fields should use the format like `2026-01-15T12:00:00+08:00`. Please ensure all version release times follow this standard."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "When designing time-related request parameters for the Orion API, which of the following practices are correct?\n\nA. The type description for query parameter created_after should specify \"datetime string with +08:00 timezone\"\nB. Both start_time and end_time range parameters should use the standard full datetime format\nC. To simplify client usage, accept multiple time formats and normalize them server-side\nD. API documentation examples should demonstrate the correct datetime format, e.g. \"2026-03-19T00:00:00+08:00\"\nE. For fields that only need date precision (like birth_date), a pure date format \"2000-01-01\" is acceptable\nF. API responses should consistently use +08:00 timezone rather than UTC\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "The type description for query parameter created_after should specify \"datetime string with +08:00 timezone\"",
+          "B": "Both start_time and end_time range parameters should use the standard full datetime format",
+          "C": "To simplify client usage, accept multiple time formats and normalize them server-side",
+          "D": "API documentation examples should demonstrate the correct datetime format, e.g. \"2026-03-19T00:00:00+08:00\"",
+          "E": "For fields that only need date precision (like birth_date), a pure date format \"2000-01-01\" is acceptable",
+          "F": "API responses should consistently use +08:00 timezone rather than UTC"
+        },
+        "answer": [
+          "A",
+          "B",
+          "D",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, B, D, and F all represent good API design practices for time-related fields, emphasizing consistency and clarity.",
+        "options": {
+          "A": "Correct - Parameter descriptions should explicitly specify the expected datetime format including timezone",
+          "B": "Correct - Time range parameters should consistently use the full datetime format",
+          "C": "Incorrect - While convenient, accepting multiple formats can lead to ambiguity. It's better to enforce a single standard format",
+          "D": "Correct - Documentation examples should always demonstrate the correct format to guide API consumers",
+          "E": "Incorrect - For consistency, even date-only fields should use the full datetime format (typically with 00:00:00 time)",
+          "F": "Correct - Using a consistent timezone (+08:00) across all responses helps avoid confusion"
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create day04/test_fixtures.json to provide test data for /tasks endpoint integration testing. Include 3 task records, each with id, title, created_at, updated_at, due_date, and completed_at (null for incomplete tasks) fields.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day04/test_fixtures.json tasks[].created_at tasks[].updated_at tasks[].due_date",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! The test_fixtures.json file contains properly structured test data with all datetime fields in the correct format.",
+        "incorrect": "The test_fixtures.json file has datetime format issues. All time fields (created_at, updated_at, due_date) should use the format like `2026-03-19T09:00:00+08:00`. Please ensure all timestamps follow this standard."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "When handling time in Python code, which of the following practices help ensure outputs conform to the correct format?\n\nA. Use datetime.now().isoformat() to directly generate a timestamp string\nB. Use datetime.now(timezone(timedelta(hours=8))).strftime(\"%Y-%m-%dT%H:%M:%S+08:00\")\nC. Document in function docstrings that parameters should be datetime strings\nD. Use str(datetime.now()) to generate a timestamp string\nE. Validate all time outputs with a regex pattern before writing to file\nF. Encapsulate time-handling logic in a shared utility function\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "Use datetime.now().isoformat() to directly generate a timestamp string",
+          "B": "Use datetime.now(timezone(timedelta(hours=8))).strftime(\"%Y-%m-%dT%H:%M:%S+08:00\")",
+          "C": "Document in function docstrings that parameters should be datetime strings",
+          "D": "Use str(datetime.now()) to generate a timestamp string",
+          "E": "Validate all time outputs with a regex pattern before writing to file",
+          "F": "Encapsulate time-handling logic in a shared utility function"
+        },
+        "answer": [
+          "B",
+          "C",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options B, C, E, and F all represent best practices for ensuring consistent datetime formatting in Python code.",
+        "options": {
+          "A": "Incorrect - datetime.now().isoformat() doesn't include timezone information by default and may not match the required +08:00 format",
+          "B": "Correct - This explicitly sets the +08:00 timezone and formats the output to match the standard",
+          "C": "Correct - Clear documentation helps other developers understand and maintain the time format requirements",
+          "D": "Incorrect - str(datetime.now()) produces a format without timezone information",
+          "E": "Correct - Validation before writing helps catch formatting errors early",
+          "F": "Correct - Centralized time-handling logic ensures consistency across the codebase"
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please create day04/deploy_record.json to record today's v2.3.0 deployment: build_started_at (today 13:00), build_completed_at (13:45), deploy_started_at (14:00), deploy_completed_at (14:12), deployed_by (\"metaclaw_agent\"), environment (\"production\").",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day04/deploy_record.json build_started_at build_completed_at deploy_started_at deploy_completed_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! The deploy_record.json file accurately records the deployment timeline with properly formatted timestamps.",
+        "incorrect": "The deploy_record.json file has datetime format issues. All timestamp fields (build_started_at, build_completed_at, deploy_started_at, deploy_completed_at) should use the format like `2026-03-19T13:00:00+08:00`. Please ensure all timestamps follow this standard."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Below is a Python code snippet with comments and documentation. Which parts handle time format correctly?\n\nA. # Created: 2026-03-19T09:00:00+08:00\nB. \"\"\"Returns: str - timestamp in format YYYY-MM-DD HH:MM:SS\"\"\"\nC. example_payload = {\"created_at\": \"2026-03-19T09:00:00+08:00\"}\nD. # TODO: fix date handling before 2026/04/01 deadline\nE. assert response[\"updated_at\"].endswith(\"+08:00\"), \"Wrong timezone\"\nF. default_time = \"2026-03-19T00:00:00Z\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "# Created: 2026-03-19T09:00:00+08:00",
+          "B": "\"\"\"Returns: str - timestamp in format YYYY-MM-DD HH:MM:SS\"\"\"",
+          "C": "example_payload = {\"created_at\": \"2026-03-19T09:00:00+08:00\"}",
+          "D": "# TODO: fix date handling before 2026/04/01 deadline",
+          "E": "assert response[\"updated_at\"].endswith(\"+08:00\"), \"Wrong timezone\"",
+          "F": "default_time = \"2026-03-19T00:00:00Z\""
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, and E all demonstrate proper time format handling in different code contexts.",
+        "options": {
+          "A": "Correct - This comment uses the proper ISO 8601 format with +08:00 timezone",
+          "B": "Incorrect - This docstring describes a non-standard format without timezone information",
+          "C": "Correct - This example payload uses the correct datetime format",
+          "D": "Incorrect - This comment uses a slash-separated date format (2026/04/01) instead of the standard format",
+          "E": "Correct - This assertion validates that the timezone is correctly set to +08:00",
+          "F": "Incorrect - This uses UTC timezone (Z) instead of the required +08:00"
+        }
+      }
+    }
+  ]
+}

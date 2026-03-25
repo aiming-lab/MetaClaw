@@ -1,0 +1,128 @@
+{
+  "id": "day04",
+  "desc": "Day 04 — P1+P2 combined validation — project management",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Based on day04/sprint8_progress_raw.txt, please generate a Sprint 8 mid-point progress report in JSON format, saved to the day04/ directory. Include report_generated_at (current time), sprint_progress_pct (overall progress), tasks (status of each task), and risks (identified risks).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day04/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The progress report file is correctly named.",
+        "incorrect": "The progress report file naming does not meet our standards. Should use `20260326_<description>.json`, e.g. `20260326_sprint8_midpoint_report.json`."
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "The following are several PM document file names and partial content. Which are fully compliant (both P1 naming and P2 time format satisfied)?\n\nA. File name 20260326_sprint8_midpoint.json, contains generated_at: \"2026-03-26T09:00:00+08:00\"\nB. File name sprint8_midpoint_report.json, contains generated_at: \"2026-03-26T09:00:00+08:00\"\nC. File name 20260326_milestone_snapshot.json, contains target_date: \"this Friday\"\nD. File name 20260326_resource_plan.json, contains available_from: \"2026-03-30T09:00:00+08:00\"\nE. File name 20260326_risk_assessment.md (no time fields)\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Naming correct + time field ISO 8601",
+          "B": "Naming violation (no date prefix) + time field correct",
+          "C": "Naming correct + time field is natural language",
+          "D": "Naming correct + time field ISO 8601",
+          "E": "Naming correct + no time fields (compliant)"
+        },
+        "answer": [
+          "A",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A compliant: naming and time field are both correct.",
+          "B": "B naming violation: missing date prefix — should be 20260326_sprint8_midpoint_report.json.",
+          "C": "C time field violation: target_date 'this Friday' is natural language and must use ISO 8601 format.",
+          "D": "D compliant: naming and time field are both correct.",
+          "E": "E compliant: correct naming, Markdown file has no time fields, not subject to P1."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Based on day04/resource_availability.txt, please generate the staffing schedule for next week (March 30 - April 3), saved as JSON to the day04/ directory. For each person, include name, available_days (date array in ISO 8601 format), and unavailable_reason (if any).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day04/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The staffing schedule file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260326_next_week_resource_plan.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "Several PM documents need to be generated today. Which of the following names are correct?\n\nA. Sprint 8 mid-point report: 20260326_sprint8_midpoint_report.json\nB. Milestone snapshot: milestone_snapshot_20260326.json\nC. Next week schedule: 20260326_next_week_schedule.json\nD. Risk assessment: 20260326_risk_assessment.md\nE. Meeting decisions: decisions_20260326.json\nF. Project kanban snapshot: 20260326_kanban_snapshot.json\n\nAnswer using \\bbox{X,Y,...} format (select correctly named files).",
+      "eval": {
+        "options": {
+          "A": "20260326_sprint8_midpoint_report.json",
+          "B": "milestone_snapshot_20260326.json",
+          "C": "20260326_next_week_schedule.json",
+          "D": "20260326_risk_assessment.md",
+          "E": "decisions_20260326.json",
+          "F": "20260326_kanban_snapshot.json"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: format is fully correct.",
+          "B": "B wrong: date is not at the prefix position — should be 20260326_milestone_snapshot.json.",
+          "C": "C correct: format is fully correct.",
+          "D": "D correct: format is fully correct.",
+          "E": "E wrong: date is not at the prefix position — should be 20260326_decisions.json.",
+          "F": "F correct: format is fully correct."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "The following is the final file list after Sprint Review. Which files are fully compliant in both naming AND key time fields?\n\nA. File name 20260327_sprint8_review.json, generated_at: \"2026-03-27T14:00:00+08:00\"\nB. File name 20260327_week2_plan.json, plan_start: \"2026-03-30\" (pure date)\nC. File name archive_index.json, archived_at: \"2026-03-27T17:00:00+08:00\"\nD. File name 20260327_team_stats.csv (no time fields)\nE. File name 20260327_okr_tracker.json, tracking_period_start: \"2026-03-30T09:00:00+08:00\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "Naming correct + time field ISO 8601",
+          "B": "Naming correct + plan_start pure date (P1 violation)",
+          "C": "Naming violation (no date prefix) + time field correct",
+          "D": "Naming correct + no time fields (compliant)",
+          "E": "Naming correct + time field ISO 8601"
+        },
+        "answer": [
+          "A",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A fully compliant: naming correct and time field uses ISO 8601 +08:00.",
+          "B": "B P1 violation: plan_start is a pure date (missing time and timezone offset).",
+          "C": "C P2 violation: no date prefix in the file name.",
+          "D": "D fully compliant: naming correct, CSV has no time fields (P1 not applicable).",
+          "E": "E fully compliant: naming correct and time field uses ISO 8601 +08:00."
+        }
+      },
+      "update": []
+    }
+  ]
+}

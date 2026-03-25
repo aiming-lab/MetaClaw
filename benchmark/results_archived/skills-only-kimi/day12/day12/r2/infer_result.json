@@ -1,0 +1,75 @@
+{
+  "test_id": "day12",
+  "group_id": "day12",
+  "round_id": "r2",
+  "qa_id": "r2",
+  "question_type": "multi_choice",
+  "question": "[Previous Feedback] The JSON output file has the following issues: (1) the filename must follow P2 convention (20260331_desc.json), (2) the file must include a top-level `meta` object in the following format:\\n```json\\n{\"meta\": {\"created_at\": \"2026-03-31T<time>+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"content\": {...}}\\n```\nKeep this in mind as you continue with the next task.\n\nWhich of the following JSON structures contain a compliant meta object?\n\nA. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nB. {\"metadata\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nC. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\"}, \"data\": [...]}\nD. {\"data\": [...], \"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"pending\"}}\nE. {\"meta\": {\"created_at\": \"2026/03/31 09:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nF. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\", \"version\": \"1.0\"}, \"data\": [...]}\n\nPlease answer in \\bbox{X,Y,...} format.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773855582.5625563,
+    "finished_at": 1773855602.622428,
+    "duration_ms": 20059,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T17:40:02.514Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day12_67578085-c2da-46c8-a6d0-21a33c0e7577",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day12_301332f1",
+    "success": true,
+    "durationMs": 16917,
+    "messageCount": 10,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 13:39 EDT] [Previous Feedback] The JSON output file has the following issues: (1) the filename must follow P2 convention (20260331_desc.json), (2) the file must include a top-level `meta` object in the following format:\\n```json\\n{\"meta\": {\"created_at\": \"2026-03-31T<time>+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"content\": {...}}\\n```\nKeep this in mind as you continue with the next task.\n\nWhich of the following JSON structures contain a compliant meta object?\n\nA. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nB. {\"metadata\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nC. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\"}, \"data\": [...]}\nD. {\"data\": [...], \"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"pending\"}}\nE. {\"meta\": {\"created_at\": \"2026/03/31 09:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nF. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\", \"version\": \"1.0\"}, \"data\": [...]}\n\nPlease answer in \\bbox{X,Y,...} format."
+          }
+        ],
+        "timestamp": 1773855585597
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Let me analyze each option against the required meta object format:\n\n**Requirements:**\n- Top-level key: `\"meta\"` (not `\"metadata\"`)\n- Must contain: `created_at` (ISO format with `+08:00`), `author` = `\"metaclaw_agent\"`, `status` = `\"done\"`\n- ISO format required: `YYYY-MM-DDTHH:MM:SS+08:00`\n\n**Analysis:**\n\n- **A**: Key is `\"meta\"` ✓, `created_at` format correct ✓, `author` correct ✓, `status` = `\"done\"` ✓, all fields present ✓\n- **B**: Key is `\"metadata\"` ✗ (must be `\"meta\"`)\n- **C**: Missing `status` field ✗\n- **D**: `status` = `\"pending\"` ✗ (must be `\"done\"`)\n- **E**: `created_at` uses wrong format (`2026/03/31 09:00`) ✗ (must be ISO 8601 with T separator and offset)\n- **F**: Key is `\"meta\"` ✓, all required fields present with correct values ✓, extra field `version` is allowed (doesn't violate schema)\n\n\\boxed{A,F}"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773855585599
+      }
+    ]
+  },
+  "answer": "Let me analyze each option against the required meta object format:\n\n**Requirements:**\n- Top-level key: `\"meta\"` (not `\"metadata\"`)\n- Must contain: `created_at` (ISO format with `+08:00`), `author` = `\"metaclaw_agent\"`, `status` = `\"done\"`\n- ISO format required: `YYYY-MM-DDTHH:MM:SS+08:00`\n\n**Analysis:**\n\n- **A**: Key is `\"meta\"` ✓, `created_at` format correct ✓, `author` correct ✓, `status` = `\"done\"` ✓, all fields present ✓\n- **B**: Key is `\"metadata\"` ✗ (must be `\"meta\"`)\n- **C**: Missing `status` field ✗\n- **D**: `status` = `\"pending\"` ✗ (must be `\"done\"`)\n- **E**: `created_at` uses wrong format (`2026/03/31 09:00`) ✗ (must be ISO 8601 with T separator and offset)\n- **F**: Key is `\"meta\"` ✓, all required fields present with correct values ✓, extra field `version` is allowed (doesn't violate schema)\n\n\\boxed{A,F}\n",
+  "inline_score": {
+    "passed": false,
+    "type": "multi_choice",
+    "format_valid": true,
+    "selected": [
+      "A",
+      "F"
+    ]
+  }
+}

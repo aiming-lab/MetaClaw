@@ -1,0 +1,247 @@
+{
+  "id": "day08",
+  "desc": "Day 08 — Data processing tasks (P2 cross-domain transfer)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please analyze the data in day08/api_requests_raw.csv, count the request volume and average response time by hour, and save the analysis results to the day08/ directory in JSON format.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The analysis result file is correctly named.",
+        "incorrect": "Data analysis result file naming does not meet standards. Should use `20260325_<description>.json` format, e.g. `20260325_api_request_trend.json`."
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please process day08/user_activity_raw.json and generate a user activity analysis report, saved to the day08/ directory in JSON format. Include generated_at (current time), total_users, active_users (logged in within last 7 days), and avg_sessions summary metrics.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The user activity report file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260325_user_activity_report.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "In data processing scenarios, which of the following output file names are correct?\n\nA. 20260325_api_request_trend.json\nB. api_trend_analysis_20260325.csv\nC. 20260325_user_activity_report.json\nD. UserActivityReport.json\nE. 20260325_metrics_export.csv\nF. metrics_20260325.csv\nG. 20260325_error_event_summary.json\n\nAnswer using \\bbox{X,Y,...} format (select correct ones).",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "20260325_api_request_trend.json",
+          "B": "api_trend_analysis_20260325.csv (date at end)",
+          "C": "20260325_user_activity_report.json",
+          "D": "UserActivityReport.json (no date)",
+          "E": "20260325_metrics_export.csv",
+          "F": "metrics_20260325.csv (date at end)",
+          "G": "20260325_error_event_summary.json"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E",
+          "G"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: proper YYYYMMDD prefix and snake_case description.",
+          "B": "B wrong: date should be a prefix, not at the end.",
+          "C": "C correct: proper YYYYMMDD prefix and snake_case description.",
+          "D": "D wrong: missing date prefix and uses CamelCase instead of snake_case.",
+          "E": "E correct: proper YYYYMMDD prefix and snake_case description.",
+          "F": "F wrong: date should be a prefix, not at the end.",
+          "G": "G correct: proper YYYYMMDD prefix and snake_case description."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please export today's key business metrics as a CSV file for the PM, saved to the day08/ directory. Columns should include: date, metric_name, value, unit.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext csv",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The CSV export file is correctly named.",
+        "incorrect": "CSV export file naming does not meet standards. Should use `20260325_<description>.csv` format, e.g. `20260325_business_metrics_export.csv`."
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please organize this week's API anomaly events (5xx errors and timeouts) and generate an error event summary file in JSON format, saved to the day08/ directory. Include generated_at (current time), total_errors, error_types (count of each error type), and worst_endpoint.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext json --min-count 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The anomaly summary file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260325_error_event_summary.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please perform a data quality check on the raw data processed today (api_requests_raw.csv and user_activity_raw.json) and generate a quality report, saved to the day08/ directory in Markdown format.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The data quality report file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260325_data_quality_report.md` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "What practical benefits does using the YYYYMMDD_desc.ext naming convention bring to data processing workflows?\n\nA. File system alphabetical sorting is equivalent to date sorting, making it easy to find historical data\nB. The naming convention makes file names shorter, saving storage space\nC. You can quickly determine the timeliness of data (whether it's the latest) from the file name\nD. Files of the same type generated by different team members won't overwrite each other due to name conflicts\nE. snake_case naming makes it easier for scripts to batch process specific types of files using glob patterns\nF. Fixed-format file names can be parsed as metadata by automation tools\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "Alphabetical sort equals date sort",
+          "B": "Shorter names save storage",
+          "C": "Quickly determine data timeliness",
+          "D": "Avoids same-type file name conflicts",
+          "E": "snake_case enables easy glob pattern processing",
+          "F": "Fixed format parseable as metadata"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: YYYYMMDD prefix ensures alphabetical sorting matches chronological order.",
+          "B": "B wrong: adding date prefix actually makes names longer, not shorter.",
+          "C": "C correct: you can immediately see the date from the filename.",
+          "D": "D wrong: same-day same-type files still need differentiation in the description part.",
+          "E": "E correct: snake_case descriptions allow easy glob patterns like 20260325_*.json.",
+          "F": "F correct: consistent format enables automated parsing and metadata extraction."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Based on the data from the first three days of this week, please generate an API request volume daily trend comparison analysis, saved to the day08/ directory in JSON format. Include analysis_generated_at (current time), days (request volume summary per day), and trend_summary.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext json --min-count 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The trend comparison analysis file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260325_weekly_trend_comparison.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "Analysis report files need to satisfy both naming standards and time format requirements simultaneously. Which of the following combinations are fully compliant?\n\nA. File name 20260325_api_trend.json, generated_at: \"2026-03-25T10:30:00+08:00\"\nB. File name 20260325_metrics.csv (CSV, no time fields)\nC. File name api_analysis_20260325.json, generated_at: \"2026-03-25T10:30:00+08:00\"\nD. File name 20260325_user_report.json, generated_at: \"2026/03/25 10:30\"\nE. File name 20260325_error_summary.json, generated_at: \"2026-03-25T00:00:00+08:00\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "Naming correct + time field ISO 8601",
+          "B": "Naming correct + no time fields (compliant)",
+          "C": "Naming violation (date not prefix) + time field correct",
+          "D": "Naming correct + time field format wrong",
+          "E": "Naming correct + time field ISO 8601 (midnight is valid)"
+        },
+        "answer": [
+          "A",
+          "B",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A fully compliant: correct naming and ISO 8601 timestamp with +08:00 timezone.",
+          "B": "B compliant: correct naming, P1 only applies when time fields exist.",
+          "C": "C naming violation: date should be a prefix, not a suffix.",
+          "D": "D time field violation: slash separator and missing timezone offset.",
+          "E": "E fully compliant: correct naming and ISO 8601 midnight format is valid."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please analyze today's error rate data — mark any hour where the error rate exceeds 5% as an alert, and generate an alert analysis report in JSON format, saved to the day08/ directory. Include analysis_at (current time, approximately 14:00), alert_threshold_pct, alerts (list of triggered time periods), and recommendation.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext json --min-count 5",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The alert analysis file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260325_error_rate_alert_analysis.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please integrate all the data analysis results from today and create a daily data summary in Markdown format, saved to the day08/ directory. The summary should include key findings from each analysis and recommended next steps.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext md --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The daily summary file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260325_daily_data_summary.md` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r12",
+      "type": "multi_choice",
+      "question": "At the end of today's data processing work, review the output file list. Which group of file names is fully compliant?\n\nGroup A: 20260325_api_request_trend.json, 20260325_user_activity_report.json, 20260325_metrics_export.csv\nGroup B: api_trend.json, user_activity_20260325.json, metrics_20260325.csv\nGroup C: 20260325_api_trend.json, 20260325_user_report.json, report_20260325.csv\nGroup D: 20260325_api_analysis.json, 20260325_user_metrics.json, 20260325_error_summary.csv\n\nAnswer using \\bbox{X} format to select the fully compliant group(s).",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "Group A all compliant",
+          "B": "Group B all compliant",
+          "C": "Group C all compliant",
+          "D": "Group D all compliant"
+        },
+        "answer": [
+          "A",
+          "D"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Both Group A and Group D are fully compliant.",
+        "options": {
+          "A": "A correct: all three files use proper YYYYMMDD_description.ext format.",
+          "B": "B wrong: api_trend.json missing date prefix; others have date at end not prefix.",
+          "C": "C wrong: report_20260325.csv has date at end instead of prefix.",
+          "D": "D correct: all three files use proper YYYYMMDD_description.ext format."
+        }
+      },
+      "update": []
+    }
+  ]
+}

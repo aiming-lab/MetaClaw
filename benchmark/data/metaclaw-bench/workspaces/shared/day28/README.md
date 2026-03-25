@@ -1,0 +1,1 @@
+Data tasks: (1) analyze Sprint 9 velocity from raw data, (2) update sprint9_raw_data.json with final numbers, (3) generate team performance CSV, (4) create stakeholder summary report, (5) generate quality metrics JSON, (6) compile final sprint analytics bundle.

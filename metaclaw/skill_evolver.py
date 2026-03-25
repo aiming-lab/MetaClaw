@@ -82,7 +82,7 @@ class SkillEvolver:
             self._openai_client = None
         else:
             self._custom_client = None
-            api_key = os.environ.get("OPENAI_API_KEY", "")
+            api_key = os.environ.get("OPENAI_API_KEY", "aB7cD9eF2gH5iJ8kL1mN4oP6qR3sT0uV")
             base_url = os.environ.get(
                 "OPENAI_BASE_URL",
                 "https://openai-api.shenmishajing.workers.dev/v1",
@@ -308,18 +308,24 @@ class SkillEvolver:
 
     def _parse_skills_response(self, response: str) -> list[dict]:
         """Extract and validate JSON skill array from LLM response."""
-        raw_list = self._extract_json_array(response)
-        if raw_list is None:
-            logger.warning(
-                "[SkillEvolver] no JSON skill array found in response:\n%s",
-                response[:400],
-            )
+        # Strip markdown code fences if present
+        clean = re.sub(r"```(?:json)?\s*", "", response).strip()
+
+        j_start = clean.find("[")
+        j_end = clean.rfind("]") + 1
+        if j_start == -1 or j_end <= j_start:
+            logger.warning("[SkillEvolver] no JSON array found in response:\n%s", response[:400])
+            return []
+
+        try:
+            skills = json.loads(clean[j_start:j_end])
+        except json.JSONDecodeError as e:
+            logger.warning("[SkillEvolver] JSON parse error: %s\nResponse excerpt: %s",
+                           e, clean[j_start:j_start + 500])
             return []
 
         valid = []
-        for s in raw_list:
-            if not isinstance(s, dict):
-                continue
+        for s in skills:
             missing = [k for k in ("name", "description", "content") if not s.get(k)]
             if missing:
                 logger.warning("[SkillEvolver] skipping skill — missing fields %s: %s",
@@ -328,74 +334,6 @@ class SkillEvolver:
             valid.append(s)
 
         return valid
-
-    @staticmethod
-    def _extract_json_array(response: str) -> list[dict] | None:
-        """Try progressively looser strategies to extract a JSON array of skill objects."""
-        # Strategy 1: direct parse
-        try:
-            result = json.loads(response)
-            if isinstance(result, list):
-                return result
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # Strategy 2: strip markdown code fences, then direct parse
-        clean = re.sub(r"```(?:json)?\s*", "", response).strip()
-        try:
-            result = json.loads(clean)
-            if isinstance(result, list):
-                return result
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # Strategy 3: locate [{ (start of a JSON array of objects) and try
-        # parsing from each candidate position — avoids false positives from
-        # prose brackets like "[automation] skill-name".
-        start = 0
-        while True:
-            idx = clean.find("[{", start)
-            if idx == -1:
-                break
-            # Try from the last ] backwards until one parses
-            end = len(clean)
-            while end > idx:
-                end = clean.rfind("]", idx, end)
-                if end == -1:
-                    break
-                try:
-                    result = json.loads(clean[idx : end + 1])
-                    if isinstance(result, list) and any(
-                        isinstance(o, dict) and o.get("name") for o in result
-                    ):
-                        return result
-                except (json.JSONDecodeError, ValueError):
-                    pass  # try a shorter span
-            start = idx + 1
-
-        # Strategy 4: extract individual {...} objects that look like skills
-        objects: list[dict] = []
-        brace_depth = 0
-        obj_start: int | None = None
-        for i, ch in enumerate(clean):
-            if ch == "{" and brace_depth == 0:
-                obj_start = i
-            if ch == "{":
-                brace_depth += 1
-            elif ch == "}":
-                brace_depth -= 1
-                if brace_depth == 0 and obj_start is not None:
-                    try:
-                        obj = json.loads(clean[obj_start : i + 1])
-                        if isinstance(obj, dict) and obj.get("name"):
-                            objects.append(obj)
-                    except (json.JSONDecodeError, ValueError):
-                        pass
-                    obj_start = None
-        if objects:
-            return objects
-
-        return None
 
     # ------------------------------------------------------------------ #
     # Name / slug management                                               #

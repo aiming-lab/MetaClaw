@@ -1,0 +1,224 @@
+{
+  "id": "day13",
+  "desc": "Day 13 — Code engineering, P3 in Python module docstring Meta section",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please write a log parsing utility script and save it to the day13/ directory (Python file). The script should read an API access log file, parse the request time, endpoint, and status code, and return a statistics dictionary.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day13/20260401_*.py')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day13/20260401_*.py'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Python script naming and module-level docstring Meta section are correct.",
+        "incorrect": "The Python script has the following issues: (1) the filename must follow P2 convention (20260401_desc.py), (2) the module-level docstring must include a Meta section in the following format:\n```python\n\"\"\"\nModule description...\n\nMeta:\n  created_at: 2026-04-01T<time>+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```"
+      }
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "Which of the following Python file headers contain a compliant module-level docstring Meta section?\n\nA.\n\"\"\"\nLog parser utility.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n\nB.\n# Meta: created_at=2026-04-01T09:00:00+08:00 author=metaclaw_agent status=done\n\"\"\"\nLog parser utility.\n\"\"\"\n\nC.\n\"\"\"\nLog parser utility.\n\nMeta:\n  author: metaclaw_agent\n  status: done\n\"\"\"\n\nD.\n\"\"\"\nLog parser utility.\n\nMeta:\n  created_at: 2026-04-01\n  author: metaclaw_agent\n  status: done\n\"\"\"\n\nE.\n\"\"\"Log parser utility. Meta: created_at=2026-04-01T09:00:00+08:00 author=metaclaw_agent status=done\"\"\"\n\nF.\n\"\"\"\nLog parser utility.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: in_progress\n  version: 1.0\n\"\"\"\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Complete and correct docstring Meta section",
+          "B": "Meta in a comment, not in the docstring",
+          "C": "Meta section missing created_at",
+          "D": "created_at is a plain date (P1 violation)",
+          "E": "Single-line docstring format (Meta format non-compliant)",
+          "F": "Complete Meta with version, status: in_progress"
+        },
+        "answer": ["A", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: multi-line docstring with a complete and correctly formatted Meta section.",
+          "B": "B is incorrect: the Meta information is in a `#` comment, not inside the docstring — this does not comply with the spec.",
+          "C": "C is incorrect: the Meta section is missing the required `created_at` field.",
+          "D": "D is incorrect: `created_at: 2026-04-01` is a plain date format, violating P1.",
+          "E": "E is incorrect: a single-line docstring using `=` separators (CSV-like format) does not conform to the required YAML-style key-value format (`key: value`).",
+          "F": "F is correct: the Meta section is complete, `status: in_progress` is valid, and `version: 1.0` is an allowed extra field."
+        }
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please write a data validation module and save it to the day13/ directory (Python file). The module should provide the function `validate_timestamp(ts_str)` to check whether a string is in ISO 8601 +08:00 format, and `validate_filename(name)` to check whether a filename follows the YYYYMMDD_snake_case.ext convention.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day13/20260401_*.py')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day13/20260401_*.py')); print([f for f in fs if 'valid' in f or 'check' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data validation module naming and docstring Meta section are correct.",
+        "incorrect": "The data validation module requires P2 naming (20260401_*.py) and a P3 module-level docstring (containing a Meta section)."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Based on day13/legacy_config_loader.py, please refactor it and save the result as a new file in the day13/ directory (Python format). Refactoring goals: add type annotations and improve error handling.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day13/20260401_*.py')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day13/20260401_*.py')); print([f for f in fs if 'config' in f or 'loader' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The refactored config loader has correct naming and docstring Meta section.",
+        "incorrect": "The refactored file requires: (1) saved as a new file (20260401_*.py), (2) a module-level docstring containing a Meta section. Note: this is a **new file creation** — no .bak file is needed for the original."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "Regarding Meta information in Python files, which of the following practices are correct?\n\nA. The Meta section is written inside the module-level docstring (the triple-quoted string at the top of the file)\nB. Meta information can be written in a # comment, such as # created_at: 2026-04-01T09:00:00+08:00\nC. Each function's docstring also needs a Meta section\nD. The module-level docstring can first describe the module, then include the Meta section (separated by a blank line)\nE. The created_at in the Meta section records the first creation time; it is not updated on subsequent modifications\nF. A Python file only needs one Meta section (module-level); it is not necessary to add one in every function\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Meta is in the module-level docstring",
+          "B": "Meta can be in a # comment",
+          "C": "Every function docstring also needs a Meta section",
+          "D": "Module description + blank line + Meta section",
+          "E": "created_at records the first creation time",
+          "F": "Only the module-level Meta section is needed"
+        },
+        "answer": ["A", "D", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: Meta information must be in the module-level docstring, not in ordinary comments.",
+          "B": "B is incorrect: `#` comments cannot be correctly parsed by check_metadata.py; Meta must be inside the docstring.",
+          "C": "C is incorrect: P3 only requires the module-level (file-level) docstring to contain a Meta section; it does not require every function to have one.",
+          "D": "D is correct: the module-level docstring can first describe the module's functionality, then include the Meta section after a blank line — this is the recommended format.",
+          "E": "E is incorrect: `created_at` records the file **generation** time; if the agent regenerates the file, it should be updated to the new time.",
+          "F": "F is correct: P3 only requires a file-level (module-level) Meta section; adding Meta to every function is unnecessary."
+        }
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please write a report generation script and save it to the day13/ directory (Python file). The script should accept a JSON data file path, generate a Markdown-formatted report, and print it as output.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day13/20260401_*.py')); sys.exit(0 if len(files)>=4 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day13/20260401_*.py')); print([f for f in fs if 'report' in f or 'generate' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Report generation script naming and docstring Meta section are correct.",
+        "incorrect": "The report generation script requires P2 naming and a P3 module-level docstring with a Meta section."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create a package initialization file for the utility scripts created today, saved to the day13/ directory (Python file; the filename must follow the naming convention, such as 20260401_tools_init.py). Export the main functions and describe the package's purpose.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day13/20260401_*.py')); sys.exit(0 if len(files)>=5 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day13/20260401_*.py')); print([f for f in fs if 'init' in f or 'package' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Package initialization file has correct naming and docstring Meta section.",
+        "incorrect": "The initialization file requires P2 naming (20260401_*.py) and a P3 module-level docstring with a Meta section."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "Which of the following Python code snippets simultaneously satisfy both P1 (time format) and P3 (meta docstring) requirements?\n\nA.\n\"\"\"\nUtils.\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\nDEFAULT_TIME = \"2026-04-01T00:00:00+08:00\"\n\nB.\n\"\"\"Utils. Meta: created_at=2026-04-01 author=metaclaw_agent\"\"\"\nDEFAULT_TIME = \"2026-04-01T00:00:00+08:00\"\n\nC.\n\"\"\"\nUtils.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\nDEADLINE = \"April 5, 2026\"\n\nD.\n\"\"\"\nUtils.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: in_progress\n\"\"\"\nCUTOFF = \"2026-04-01T18:00:00+08:00\"\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "P3 correct + DEFAULT_TIME uses ISO 8601",
+          "B": "P3 format non-compliant + DEFAULT_TIME correct",
+          "C": "P3 correct + DEADLINE is natural language (P1 violation)",
+          "D": "P3 correct (in_progress valid) + CUTOFF uses ISO 8601"
+        },
+        "answer": ["A", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is fully compliant: the P3 docstring Meta section is complete and correct, and the time constant in the code also uses ISO 8601 format.",
+          "B": "B violates P3: single-line docstring using `=` separators is not a valid Meta format.",
+          "C": "C violates P1: `DEADLINE = \"April 5, 2026\"` uses natural language, violating P1 (code-level time constants must also use ISO 8601).",
+          "D": "D is fully compliant: P3 docstring is correct (`in_progress` is a valid status), and `CUTOFF` uses the correct ISO 8601 format."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please write a time format utility library and save it to the day13/ directory (Python file). Include the following functions: `now_iso8601()` returns the current time as an ISO 8601 +08:00 string, and `is_valid_iso8601(s)` validates the string format.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day13/20260401_*.py')); sys.exit(0 if len(files)>=6 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day13/20260401_*.py')); print([f for f in fs if 'time' in f or 'datetime' in f or 'iso' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Time utility library naming and docstring Meta section are correct.",
+        "incorrect": "The time utility library requires P2 naming (20260401_*.py) and a P3 module-level docstring with a Meta section."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "The P3 spec uses different formats for different file types. Which of the following type-to-format mappings are correct?\n\nA. .md files → YAML frontmatter (--- ... --- at the beginning of the file)\nB. .json files → top-level \"meta\" object\nC. .py files → Meta section in the module-level docstring\nD. .csv files → # meta comment at the last line\nE. .txt files → YAML frontmatter (same as .md)\nF. .py files → # meta comment at the end of the file\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": ".md → YAML frontmatter",
+          "B": ".json → top-level meta object",
+          "C": ".py → module-level docstring Meta section",
+          "D": ".csv → last line # meta",
+          "E": ".txt → YAML frontmatter (same as .md)",
+          "F": ".py → end-of-file # meta comment"
+        },
+        "answer": ["A", "B", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: .md files use YAML frontmatter at the beginning of the file.",
+          "B": "B is correct: .json files use a top-level `meta` object as the P3 format.",
+          "C": "C is correct: .py files use a Meta section inside the module-level docstring.",
+          "D": "D is incorrect: .csv files must have the meta comment on the **first line** (`# meta: ...`), not the last line.",
+          "E": "E is correct: .txt files use the same YAML frontmatter format as .md files (the spec treats .md/.txt together).",
+          "F": "F is incorrect: .py files must have the meta inside the module-level docstring at the top of the file, not a comment at the end."
+        }
+      }
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please write a code documentation and commenting guide, in Markdown format, saved to the day13/ directory. Describe the format requirements and examples for Python file docstring content, including how to properly structure module-level documentation.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day13/20260401_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day13/20260401_*.md'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Code documentation guide has correct naming and YAML frontmatter.",
+        "incorrect": "The Markdown document requires P2 naming (20260401_*.md) and a P3 YAML frontmatter block."
+      }
+    },
+    {
+      "id": "r12",
+      "type": "multi_choice",
+      "question": "Several Python utility scripts were created today. Which of the following script descriptions simultaneously satisfy all three P1, P2, and P3 conventions?\n\nA. Filename 20260401_log_parser.py, module docstring Meta.created_at: \"2026-04-01T09:00:00+08:00\", code contains DEFAULT_LOG_START = \"2026-04-01T00:00:00+08:00\"\nB. Filename log_parser_20260401.py, module docstring Meta is complete and correct, code time constants use ISO 8601\nC. Filename 20260401_data_validator.py, module docstring has Meta but created_at: \"April 1, 2026\", code time constants use ISO 8601\nD. Filename 20260401_report_gen.py, no module docstring, code functionality is complete, code time constants use ISO 8601\n\nPlease answer in \\bbox{X} format to select the one fully compliant option.",
+      "eval": {
+        "options": {
+          "A": "P2 correct + P3 correct + P1 code time constant correct",
+          "B": "P2 violation (date at end) + P3 correct + P1 correct",
+          "C": "P2 correct + P3 created_at natural language (P1 violation)",
+          "D": "P2 correct + no docstring (P3 violation)"
+        },
+        "answer": ["A"]
+      },
+      "feedback": {
+        "correct": "Correct! Only A satisfies all three P1, P2, and P3 conventions.",
+        "options": {
+          "A": "A is fully compliant.",
+          "B": "B violates P2: the date is not at the front of the filename.",
+          "C": "C violates P1/P3: Meta.created_at uses natural language format.",
+          "D": "D violates P3: missing module-level docstring and Meta section."
+        }
+      }
+    }
+  ]
+}

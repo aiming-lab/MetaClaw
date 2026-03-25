@@ -1,0 +1,76 @@
+{
+  "test_id": "day11",
+  "group_id": "day11",
+  "round_id": "r3",
+  "qa_id": "r3",
+  "question_type": "multi_choice",
+  "question": "[Previous Feedback] The weekly plan document requires: (1) filename format `20260330_<desc>.md`, (2) YAML frontmatter at the beginning containing created_at, author, and status fields.\nKeep this in mind as you continue with the next task.\n\nWhich of the following Markdown file header formats are compliant?\n\nA.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nB.\n# Document Title\n---\ncreated_at: 2026-03-30T09:00:00+08:00\n---\n\nC.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: in_progress\n---\n\nD.\n---\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nE.\n---\ncreated_at: 2026-03-30\nauthor: metaclaw_agent\nstatus: done\n---\n\nF.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\nextra_field: allowed\n---\n\nPlease answer in \\bbox{X,Y,...} format (select all compliant options).",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773822149.6459491,
+    "finished_at": 1773822197.2172463,
+    "duration_ms": 47571,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T08:23:17.144Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day11_242507f8-7586-4298-a299-def88cbd1804",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day11_07f3f12b",
+    "success": true,
+    "durationMs": 44078,
+    "messageCount": 10,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 04:22 EDT] [Previous Feedback] The weekly plan document requires: (1) filename format `20260330_<desc>.md`, (2) YAML frontmatter at the beginning containing created_at, author, and status fields.\nKeep this in mind as you continue with the next task.\n\nWhich of the following Markdown file header formats are compliant?\n\nA.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nB.\n# Document Title\n---\ncreated_at: 2026-03-30T09:00:00+08:00\n---\n\nC.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: in_progress\n---\n\nD.\n---\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nE.\n---\ncreated_at: 2026-03-30\nauthor: metaclaw_agent\nstatus: done\n---\n\nF.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\nextra_field: allowed\n---\n\nPlease answer in \\bbox{X,Y,...} format (select all compliant options)."
+          }
+        ],
+        "timestamp": 1773822153067
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "The user is asking which Markdown file header formats are compliant based on the requirements. Let me analyze each option:\n\nRequirements:\n1. YAML frontmatter at the beginning\n2. Must contain: created_at, author, and status fields\n\nLet me check each option:\n\nA.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at ✓\n- Has author ✓\n- Has status ✓\n- COMPLIANT ✓\n\nB.\n# Document Title\n---\ncreated_at: 2026-03-30T09:00:00+08:00\n---\n\n- YAML frontmatter is NOT at the beginning (title comes first) ✗\n- Missing author ✗\n- Missing status ✗\n- NOT COMPLIANT ✗\n\nC.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: in_progress\n---\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at ✓\n- Has author ✓\n- Has status ✓ (in_progress is a valid status value)\n- COMPLIANT ✓\n\nD.\n---\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\n- Has YAML frontmatter at the beginning ✓\n- Missing created_at ✗\n- Has author ✓\n- Has status ✓\n- NOT COMPLIANT (missing required field) ✗\n\nE.\n---\ncreated_at: 2026-03-30\nauthor: metaclaw_agent\nstatus: done\n---\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at but format is incomplete (missing time and timezone) - but the field exists\n- Has author ✓\n- Has status ✓\n- The requirements say the frontmatter must CONTAIN these fields, and it does. The format of the date might be flexible.\n- Actually, looking at the example: `created_at: 2026-03-30T<time>+08:00` - this suggests a specific format is expected\n- But the question is about which headers are \"compliant\" - and E has all three required fields, just with a different date format\n- I need to decide if date format matters. The example shows ISO 8601 format with timezone, but E has just the date.\n- Given the strictness of the requirements, E might be considered non-compliant because the date format doesn't match the expected format.\n\nF.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\nextra_field: allowed\n---\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at ✓\n- Has author ✓\n- Has status ✓\n- Has extra field - the requirements don't say extra fields are prohibited\n- COMPLIANT ✓ (assuming extra fields are allowed)\n\nSo the compliant options are: A, C, F\n\nWait, let me reconsider E. The requirement says the frontmatter must contain created_at, author, and status fields. E has all three. The format of the value might not be strictly enforced for compliance, just the presence of the field. However, looking at the example format `2026-03-30T<time>+08:00`, it seems like a specific format is expected.\n\nActually, looking more carefully at the feedback: \"YAML frontmatter at the beginning containing created_at, author, and status fields\" - this suggests the fields must be present. It doesn't explicitly say the date format must match, but the example shows a specific format.\n\nGiven the context and that this is a compliance check, I think:\n- A: compliant (has all fields, correct format, at beginning)\n- B: not compliant (frontmatter not at beginning, missing fields)\n- C: compliant (has all fields, at beginning)\n- D: not compliant (missing created_at)\n- E: questionable - has all fields but date format is incomplete\n- F: compliant (has all required fields, extra fields don't hurt)\n\nFor E, if we're being strict about the format shown in the example (`2026-03-30T<time>+08:00`), then E is not compliant because it only has the date part.\n\nSo my answer is: A, C, FLooking at the requirements:\n1. YAML frontmatter must be **at the beginning**\n2. Must contain **created_at**, **author**, and **status** fields\n\nLet me analyze each option:\n\n**A** — Frontmatter at beginning, has all 3 required fields ✓  \n**B** — Frontmatter NOT at beginning (title comes first), missing author and status ✗  \n**C** — Frontmatter at beginning, has all 3 required fields ✓  \n**D** — Missing required field `created_at` ✗  \n**E** — Has all 3 fields but `created_at` format doesn't match the required ISO 8601 format with time and timezone (`2026-03-30T<time>+08:00`) ✗  \n**F** — Frontmatter at beginning, has all 3 required fields (extra fields are allowed) ✓\n\n\\bbox{A,C,F}"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773822153070
+      }
+    ]
+  },
+  "answer": "The user is asking which Markdown file header formats are compliant based on the requirements. Let me analyze each option:\n\nRequirements:\n1. YAML frontmatter at the beginning\n2. Must contain: created_at, author, and status fields\n\nLet me check each option:\n\nA.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at ✓\n- Has author ✓\n- Has status ✓\n- COMPLIANT ✓\n\nB.\n# Document Title\n---\ncreated_at: 2026-03-30T09:00:00+08:00\n---\n\n- YAML frontmatter is NOT at the beginning (title comes first) ✗\n- Missing author ✗\n- Missing status ✗\n- NOT COMPLIANT ✗\n\nC.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: in_progress\n---\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at ✓\n- Has author ✓\n- Has status ✓ (in_progress is a valid status value)\n- COMPLIANT ✓\n\nD.\n---\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\n- Has YAML frontmatter at the beginning ✓\n- Missing created_at ✗\n- Has author ✓\n- Has status ✓\n- NOT COMPLIANT (missing required field) ✗\n\nE.\n---\ncreated_at: 2026-03-30\nauthor: metaclaw_agent\nstatus: done\n---\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at but format is incomplete (missing time and timezone) - but the field exists\n- Has author ✓\n- Has status ✓\n- The requirements say the frontmatter must CONTAIN these fields, and it does. The format of the date might be flexible.\n- Actually, looking at the example: `created_at: 2026-03-30T<time>+08:00` - this suggests a specific format is expected\n- But the question is about which headers are \"compliant\" - and E has all three required fields, just with a different date format\n- I need to decide if date format matters. The example shows ISO 8601 format with timezone, but E has just the date.\n- Given the strictness of the requirements, E might be considered non-compliant because the date format doesn't match the expected format.\n\nF.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\nextra_field: allowed\n---\n\n- Has YAML frontmatter at the beginning ✓\n- Has created_at ✓\n- Has author ✓\n- Has status ✓\n- Has extra field - the requirements don't say extra fields are prohibited\n- COMPLIANT ✓ (assuming extra fields are allowed)\n\nSo the compliant options are: A, C, F\n\nWait, let me reconsider E. The requirement says the frontmatter must contain created_at, author, and status fields. E has all three. The format of the value might not be strictly enforced for compliance, just the presence of the field. However, looking at the example format `2026-03-30T<time>+08:00`, it seems like a specific format is expected.\n\nActually, looking more carefully at the feedback: \"YAML frontmatter at the beginning containing created_at, author, and status fields\" - this suggests the fields must be present. It doesn't explicitly say the date format must match, but the example shows a specific format.\n\nGiven the context and that this is a compliance check, I think:\n- A: compliant (has all fields, correct format, at beginning)\n- B: not compliant (frontmatter not at beginning, missing fields)\n- C: compliant (has all fields, at beginning)\n- D: not compliant (missing created_at)\n- E: questionable - has all fields but date format is incomplete\n- F: compliant (has all required fields, extra fields don't hurt)\n\nFor E, if we're being strict about the format shown in the example (`2026-03-30T<time>+08:00`), then E is not compliant because it only has the date part.\n\nSo my answer is: A, C, FLooking at the requirements:\n1. YAML frontmatter must be **at the beginning**\n2. Must contain **created_at**, **author**, and **status** fields\n\nLet me analyze each option:\n\n**A** — Frontmatter at beginning, has all 3 required fields ✓  \n**B** — Frontmatter NOT at beginning (title comes first), missing author and status ✗  \n**C** — Frontmatter at beginning, has all 3 required fields ✓  \n**D** — Missing required field `created_at` ✗  \n**E** — Has all 3 fields but `created_at` format doesn't match the required ISO 8601 format with time and timezone (`2026-03-30T<time>+08:00`) ✗  \n**F** — Frontmatter at beginning, has all 3 required fields (extra fields are allowed) ✓\n\n\\bbox{A,C,F}\n",
+  "inline_score": {
+    "passed": true,
+    "type": "multi_choice",
+    "format_valid": true,
+    "selected": [
+      "A",
+      "C",
+      "F"
+    ]
+  }
+}

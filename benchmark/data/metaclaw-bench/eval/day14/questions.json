@@ -1,0 +1,189 @@
+{
+  "id": "day14",
+  "desc": "Day 14 — Project management, P1+P2+P3 combined validation",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please generate a Sprint 8 current task status report based on day14/sprint8_tasks_raw.txt, in JSON format, saved to the day14/ directory. Each task should include id, title, assignee, status, progress_pct, and estimated_completion.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day14/20260402_*.json'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Task status report naming, meta object, and time fields are all correct.",
+        "incorrect": "The task status report has the following issues: (1) filename must follow P2 convention (20260402_*.json), (2) must include a top-level meta object (P3), (3) estimated_completion time fields must use ISO 8601 format (P1), e.g., \"2026-04-07T18:00:00+08:00\"."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please generate a Q1 (January–March 2026) quarterly summary report based on day14/q1_data_raw.json, in JSON format, saved to the day14/ directory. Include period_start (2026-01-01 00:00), period_end (2026-03-31 23:59), generated_at (current time), and key_metrics summary.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.json')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day14/20260402_*.json')); print([f for f in fs if 'q1' in f or 'quarter' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Q1 report naming, meta object, and time fields are all correct.",
+        "incorrect": "The Q1 report must satisfy: (1) P2 naming (20260402_*.json), (2) P3 meta object, (3) P1 time fields — period_start example: `2026-01-01T00:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "Which of the following JSON file descriptions simultaneously satisfy all three P1, P2, and P3 conventions?\n\nA. Filename 20260402_sprint8_status.json, complete meta, estimated_completion: \"2026-04-05T18:00:00+08:00\"\nB. Filename 20260402_q1_report.json, complete meta, period_start: \"2026-01-01\" (plain date)\nC. Filename sprint8_status_20260402.json, complete meta, time fields in ISO 8601 correct format\nD. Filename 20260402_team_matrix.json, no meta object, time fields in ISO 8601 correct format\nE. Filename 20260402_q2_plan.json, meta with correct created_at ISO 8601, but status: \"complete\"\n\nPlease answer in \\bbox{X,Y,...} format (select all fully compliant options).",
+      "eval": {
+        "options": {
+          "A": "P2 correct + P3 meta correct + P1 time correct",
+          "B": "P2 correct + P3 correct + period_start plain date (P1 violation)",
+          "C": "P2 violation (date at end) + P3 correct + P1 correct",
+          "D": "P2 correct + no meta (P3 violation) + P1 correct",
+          "E": "P2 correct + meta.status invalid value (P3 violation)"
+        },
+        "answer": ["A"]
+      },
+      "feedback": {
+        "correct": "Correct! Only A simultaneously satisfies all three conventions.",
+        "options": {
+          "A": "A is fully compliant.",
+          "B": "B violates P1: `period_start: \"2026-01-01\"` is a plain date format.",
+          "C": "C violates P2: the date is not at the front of the filename.",
+          "D": "D violates P3: missing the meta object.",
+          "E": "E violates P3: `status: \"complete\"` is not a valid status value."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please draft a Q2 (April–June 2026) work planning document, in Markdown format, saved to the day14/ directory. Include quarterly goals, key milestones (with dates), and resource requirements.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day14/20260402_*.md'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Q2 planning document has correct naming and frontmatter.",
+        "incorrect": "The Q2 planning document requires P2 naming (20260402_*.md) and a P3 YAML frontmatter block (containing created_at in ISO 8601, author, and status)."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create a team skills matrix in JSON format, saved to the day14/ directory. Record each team member's technical skill areas (frontend/backend/data/devops) and proficiency level (1–5), as well as last_updated (current time).",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.json')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day14/20260402_*.json')); print([f for f in fs if 'team' in f or 'skill' in f or 'matrix' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Team skills matrix has correct naming, meta object, and time fields.",
+        "incorrect": "The team skills matrix requires P2 naming, a P3 meta object, and P1 time field format — last_updated example: `2026-04-02T10:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please update the Sprint risk tracking records and create the latest version in JSON format, saved to the day14/ directory. Include for each risk: risk_id, description, probability, impact, status (open/mitigated/closed), and last_reviewed (current time).",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.json')); sys.exit(0 if len(files)>=4 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day14/20260402_*.json')); print([f for f in fs if 'risk' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Risk tracking file has correct naming, meta object, and time fields.",
+        "incorrect": "The risk tracking file requires P2 naming, a P3 meta object, and P1 time format — last_reviewed example: `2026-04-02T11:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "The Q1 quarterly report contains multiple time fields. Which of the following field values have the correct format?\n\nA. period_start: \"2026-01-01T00:00:00+08:00\"\nB. period_end: \"2026-03-31\"\nC. generated_at: \"2026-04-02T09:30:00+08:00\"\nD. report_date: \"Q1 2026\"\nE. last_milestone_achieved: \"2026-03-27T14:12:00+08:00\"\nF. next_review_date: \"2026-06-30T18:00:00+08:00\"\n\nPlease answer in \\bbox{X,Y,...} format (select all correctly formatted).",
+      "eval": {
+        "options": {
+          "A": "period_start: 2026-01-01T00:00:00+08:00",
+          "B": "period_end: 2026-03-31 (plain date)",
+          "C": "generated_at: 2026-04-02T09:30:00+08:00",
+          "D": "report_date: Q1 2026 (not a time format)",
+          "E": "last_milestone_achieved: 2026-03-27T14:12:00+08:00",
+          "F": "next_review_date: 2026-06-30T18:00:00+08:00"
+        },
+        "answer": ["A", "C", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: complete ISO 8601 format.",
+          "B": "B is incorrect: plain date format, missing time and timezone.",
+          "C": "C is correct: format is correct.",
+          "D": "D is incorrect: \"Q1 2026\" is not a time format and does not comply with P1; it should be converted to a specific time range.",
+          "E": "E is correct: format is correct.",
+          "F": "F is correct: format is correct (future dates also use ISO 8601)."
+        }
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please create a Sprint 8 Week 2 work summary, in Markdown format, saved to the day14/ directory. Include completed items this week, analysis of incomplete items, and next week's plan.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.md')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day14/20260402_*.md')); print([f for f in fs if 'week' in f or 'summary' in f or 'sprint' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Sprint summary document has correct naming and frontmatter.",
+        "incorrect": "The Sprint summary document requires P2 naming (20260402_*.md) and a P3 YAML frontmatter block."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please generate a team performance metrics report for this month (April Week 1), in JSON format, saved to the day14/ directory. Include report_period_start (Monday 09:00 of this week), report_period_end (today at 18:00), team_velocity (tasks completed), bug_count, deployment_count, and on_call_incidents.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.json')); sys.exit(0 if len(files)>=5 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day14/20260402_*.json')); print([f for f in fs if 'perf' in f or 'metric' in f or 'kpi' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Performance metrics report has correct naming, meta object, and time fields.",
+        "incorrect": "The performance metrics report must satisfy P1 (report_period_start format: `2026-03-30T09:00:00+08:00`), P2 (naming convention), and P3 (meta object)."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Before submitting today's work outputs, you perform a compliance self-check. Which of the following check items are necessary?\n\nA. Check whether all JSON files have a top-level meta object (P3)\nB. Check whether all filenames start with YYYYMMDD_ (P2)\nC. Check whether all Markdown files start with a YAML frontmatter block (P3)\nD. Check whether Python files have a sufficient number of functions (unrelated to P1–P3)\nE. Check whether all time fields use ISO 8601 +08:00 format (P1)\nF. Check whether the status field in the meta object is a valid value (P3)\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Check JSON files for top-level meta object",
+          "B": "Check filenames for YYYYMMDD_ prefix",
+          "C": "Check Markdown files for YAML frontmatter",
+          "D": "Check number of functions in Python files",
+          "E": "Check time fields for ISO 8601 format",
+          "F": "Check meta.status for valid value"
+        },
+        "answer": ["A", "B", "C", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is necessary: P3 requires JSON files to have a top-level meta object.",
+          "B": "B is necessary: P2 requires all output filenames to start with a date prefix.",
+          "C": "C is necessary: P3 requires Markdown files to have YAML frontmatter.",
+          "D": "D is not necessary: function count is unrelated to P1–P3 conventions.",
+          "E": "E is necessary: P1 requires all time fields to use ISO 8601 +08:00 format.",
+          "F": "F is necessary: P3 requires meta.status to be a valid value (pending/in_progress/done)."
+        }
+      }
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please create a compliance self-check report for today's work outputs, in Markdown format, saved to the day14/ directory. List all files created today and annotate each with whether P1/P2/P3 are compliant.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day14/20260402_*.md')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day14/20260402_*.md')); print([f for f in fs if 'compliance' in f or 'check' in f or 'audit' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Compliance check report has correct naming and frontmatter.",
+        "incorrect": "The compliance check report itself must also follow P2 (20260402_*.md) and P3 (YAML frontmatter) conventions."
+      }
+    }
+  ]
+}

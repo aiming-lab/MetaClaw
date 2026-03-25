@@ -1,0 +1,214 @@
+{
+  "id": "day23",
+  "desc": "Day 23 — Data processing, P5 cross-domain generalization",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please analyze the Q1 API metrics data (you can use reasonable estimated values) and create a Q1 final metrics summary report, JSON format, save to day23/. Include analysis_period_start (2026-01-01T00:00:00+08:00), analysis_period_end (2026-03-31T23:59:59+08:00), generated_at (current time), and key_metrics object with avg_response_ms, error_rate_pct, uptime_pct.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day23/ --ext json && python scripts/check_done_log.py done.log --task-prefix q1",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Q1 metrics report naming correct and done.log has a q1-prefixed entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.json); (2) append done.log entry with task_id starting with \"q1\" (e.g. `q1_metrics_analysis`); (3) time fields must use ISO 8601 format (P1)."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please generate an error trend analysis for the past 30 days, save as a JSON file in day23/. Include generated_at (current time), trend_period_start (2026-03-16T00:00:00+08:00), trend_period_end (current time), daily_error_rates (array of {date, error_rate_pct} objects).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day23/ --ext json --min-count 2 && python scripts/check_done_log.py done.log --min-entries 12",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Error trend report naming correct and done.log updated.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.json); (2) append completion entry to done.log after creating the report."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "In a data analysis context, which of the following tasks should trigger a done.log entry?\n\nA. Generating a Q1 metrics summary report (new file created in day23/)\nB. Reading raw CSV data to understand its structure (no output created)\nC. Updating the SLO tracker with this week's compliance data (existing file modified)\nD. Running a mental calculation to estimate error rates (no file output)\nE. Creating an error trend analysis report (new JSON file in day23/)\nF. Generating a weekly API health summary document (new file created)\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Generating report → new file created",
+          "B": "Reading only → no output",
+          "C": "Updating tracker → existing file modified",
+          "D": "Mental calculation → no file output",
+          "E": "Creating analysis report → new file",
+          "F": "Generating health summary → new document"
+        },
+        "answer": ["A", "C", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: creating a new report is a completed task, requires done.log entry.",
+          "B": "B wrong: reading data without producing output is not a \"completed task\" in P5 terms.",
+          "C": "C correct: updating an existing file with new data is a completed task, requires done.log entry.",
+          "D": "D wrong: internal calculations without file output don't constitute a done.log-worthy task.",
+          "E": "E correct: creating a new analysis report is a completed task.",
+          "F": "F correct: generating a summary document is a completed task."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update day23/slo_tracker.json: add this week's SLO compliance data — availability_pct: 99.7, error_budget_remaining_pct: 42.3, last_updated: current time (ISO 8601).",
+      "eval": {
+        "command": "python scripts/check_backup.py day23/slo_tracker.json && python scripts/check_done_log.py done.log --task-prefix slo",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "slo_tracker.json.bak created before modification, and done.log has an slo-prefixed entry.",
+        "incorrect": "Issues: (1) create day23/slo_tracker.json.bak before modifying (P4); (2) append done.log entry with task_id like `slo_tracker_update` after completing (P5); (3) last_updated must use ISO 8601 format (P1)."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create a weekly API health summary report, Markdown format, save to day23/. Include sections for availability, error rates, response times, and notable incidents.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day23/ --ext md && python scripts/check_done_log.py done.log --task-prefix api_health",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "API health summary naming correct and done.log has api_health-prefixed entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.md); (2) append done.log entry with task_id starting with `api_health`."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Which of the following task_id values best follow good naming practices for done.log entries?\n\nA. q1_metrics_analysis\nB. task_1\nC. slo_tracker_update\nD. completed_the_q1_final_metrics_analysis_report_which_covers_january_through_march\nE. api_health_summary\nF. 20260415_error_trend\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "q1_metrics_analysis — descriptive, concise",
+          "B": "task_1 — generic, not descriptive",
+          "C": "slo_tracker_update — descriptive, concise",
+          "D": "very long description as task_id",
+          "E": "api_health_summary — descriptive, concise",
+          "F": "20260415_error_trend — includes date (redundant with timestamp)"
+        },
+        "answer": ["A", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A good: concise, descriptive, snake_case.",
+          "B": "B poor: generic, provides no useful context about what was done.",
+          "C": "C good: concise, descriptive.",
+          "D": "D poor: task_id should be concise (similar to a function name), not a full description. The description belongs in the summary field.",
+          "E": "E good: concise, descriptive.",
+          "F": "F acceptable but redundant: the date is already captured in the ISO 8601 timestamp, so including it in task_id is unnecessary (though not technically wrong)."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create a data quality audit report for today's processed datasets, JSON format, save to day23/. Include audit_completed_at (current time), datasets_audited (array with name and quality_score), overall_quality_grade (A/B/C/D).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day23/ --ext json --min-count 3 && python scripts/check_done_log.py done.log --task-prefix data_quality",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data quality audit naming correct, done.log has data_quality entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.json); (2) append done.log entry with task_id like `data_quality_audit`; (3) audit_completed_at must use ISO 8601 format."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please create an incident timeline document for the minor outage that occurred last week (use April 8, 14:00-14:45 CST as the time window), JSON format, save to day23/. Include incident_start (ISO 8601), incident_end (ISO 8601), detection_time, resolution_time, and events (array of timestamped actions).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day23/ --ext json --min-count 4 && python scripts/check_done_log.py done.log --task-prefix incident",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Incident timeline naming correct, done.log has incident-prefixed entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.json); (2) append done.log entry; (3) all time fields (incident_start, incident_end, etc.) must use ISO 8601 +08:00 format."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "Within a session, when exactly should the done.log entry be appended?\n\nA. Before starting the task (pre-announcement)\nB. Immediately after the task output file is created/modified\nC. At the end of the entire session, adding all entries at once\nD. After verifying that the created/modified file is correct\nE. At any point after the task is complete, order doesn't matter much\nF. The timestamp in done.log should reflect when the task was actually completed\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Before starting (pre-announcement)",
+          "B": "Immediately after output created/modified",
+          "C": "End of session, all at once",
+          "D": "After verifying output is correct",
+          "E": "Any point after completion, order not important",
+          "F": "Timestamp reflects actual completion time"
+        },
+        "answer": ["B", "D", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A wrong: pre-announcement before the task is not a completion record.",
+          "B": "B correct: append to done.log immediately after the task output is produced.",
+          "C": "C wrong: batch-adding all entries at session end defeats the purpose of timestamped records. Each entry should reflect actual completion time.",
+          "D": "D correct: ideally append after confirming the output is correct (the task is truly \"done\").",
+          "E": "E partially wrong: order does matter — timestamp should reflect actual completion order, and entries should be in chronological order.",
+          "F": "F correct: the ISO 8601 timestamp should be approximately when the task was completed, not a future or retroactive time."
+        }
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create a performance comparison between this week and last week, save as a JSON file in day23/. Include comparison_generated_at (current time), this_week_avg_ms, last_week_avg_ms, improvement_pct, and verdict (improved/degraded/stable).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day23/ --ext json --min-count 5 && python scripts/check_done_log.py done.log --task-prefix perf",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Performance comparison naming correct, done.log has perf-prefixed entry.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.json); (2) append done.log entry with task_id starting with `perf`; (3) comparison_generated_at must use ISO 8601 format."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please create a Markdown summary of all data analysis work completed today, save to day23/. Include key findings from each analysis and recommended actions.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day23/ --ext md --min-count 2 && python scripts/check_done_log.py done.log --task-prefix data_summary",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data analysis summary naming correct, done.log updated.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260415_*.md); (2) append done.log entry with task_id like `data_analysis_summary`."
+      }
+    },
+    {
+      "id": "r12",
+      "type": "multi_choice",
+      "question": "At end of day, review today's work. Which of the following scenarios describes a fully compliant completion?\n\nA. File 20260415_q1_metrics.json created, all time fields ISO 8601, done.log entry: \"[DONE] 2026-04-15T09:30:00+08:00 | q1_metrics_analysis | Generated Q1 final metrics report\"\nB. File 20260415_slo_update.json created, slo_tracker.json modified without backup, done.log entry format correct\nC. File 20260415_error_trend.json created, all time fields ISO 8601, no done.log entry added\nD. File 20260415_perf_comparison.json created, comparison_generated_at: \"2026-04-15T14:00:00+08:00\", done.log entry: \"[DONE] 2026-04-15T14:05:00+08:00 | perf_comparison | Week-over-week performance comparison, +12% improvement\"\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "P2+P1+P5 all correct",
+          "B": "P2+P1+P5 correct but P4 violated (no backup)",
+          "C": "P2+P1 correct but P5 violated (no done.log)",
+          "D": "P2+P1+P5 all correct"
+        },
+        "answer": ["A", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A fully compliant: P2 naming correct, P1 time fields correct, P5 done.log entry correct.",
+          "B": "B P4 violation: slo_tracker.json was modified without creating a .bak first.",
+          "C": "C P5 violation: missing done.log entry after creating the error trend report.",
+          "D": "D fully compliant: P2 naming correct, P1 time field correct, P5 done.log entry correct with informative summary."
+        }
+      }
+    }
+  ]
+}

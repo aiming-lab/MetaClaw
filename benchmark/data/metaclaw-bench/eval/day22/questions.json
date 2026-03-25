@@ -1,0 +1,197 @@
+{
+  "id": "day22",
+  "desc": "Day 22 — Project management, P5 append-not-overwrite test, P1+P2+P5 combined",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day22/backlog_current.json: change T-412 priority from \"medium\" to \"high\", and update its last_modified field to current time.",
+      "eval": {
+        "command": "python scripts/check_backup.py day22/backlog_current.json && python scripts/check_done_log.py done.log --min-entries 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Backup created before modification and done.log updated with entry 4.",
+        "incorrect": "One or more issues: (1) backlog_current.json must be backed up before modification (P4) — create day22/backlog_current.json.bak first; (2) after completing this task, append a line to the root done.log (P5) — format: `[DONE] 2026-04-14T<time>+08:00 | backlog_update | <summary>`. The log already has 3 entries from yesterday; yours should be the 4th."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please generate a stakeholder status report for this week, save as a JSON file in day22/. Include report_generated_at (current time), sprint_week, overall_status (on_track/at_risk/blocked), key_achievements (array), and risks (array).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day22/ --ext json && python scripts/check_done_log.py done.log --min-entries 5",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Report file naming is correct and done.log has 5 entries.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260414_*.json, e.g. 20260414_stakeholder_status_report.json); (2) append a completion record to done.log after finishing."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "When done.log already has 3 existing entries from a previous day, what is the correct behavior?\n\nA. Append new entries to the end of the existing file, preserving all previous entries\nB. Overwrite the file with only today's entries (start fresh each day)\nC. Create a new file done_20260414.log for today's entries\nD. The existing entries from yesterday remain unchanged, only new entries are added\nE. The total number of entries should increase with each completed task\nF. If today's entries are more important, the old ones can be removed to save space\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Append new entries, preserve all previous",
+          "B": "Overwrite with only today's entries",
+          "C": "Create done_20260414.log for today",
+          "D": "Yesterday's entries unchanged, only new added",
+          "E": "Total count increases with each task",
+          "F": "Remove old entries to save space"
+        },
+        "answer": ["A", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: append-only, never overwrite existing content.",
+          "B": "B wrong: overwriting would destroy the historical record. done.log is a cumulative log.",
+          "C": "C wrong: the file name must be `done.log` (fixed), not date-prefixed variants.",
+          "D": "D correct: previous entries are immutable history.",
+          "E": "E correct: the entry count grows monotonically throughout the session.",
+          "F": "F wrong: entries must never be removed; done.log is an append-only audit trail."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update day22/risk_register.md (pre-existing file): add a new risk item — \"API rate limiting impact on Q2 launch\" with probability \"medium\" and impact \"high\".",
+      "eval": {
+        "command": "python scripts/check_backup.py day22/risk_register.md && python scripts/check_done_log.py done.log --min-entries 6",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "risk_register.md.bak created and done.log has 6 entries.",
+        "incorrect": "Issues: (1) create day22/risk_register.md.bak before modifying (P4); (2) append a completion entry to done.log after the task (P5)."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create a milestone plan for the next two weeks, save as a JSON file in day22/. Include milestone_name, target_date (ISO 8601), owner, and success_criteria for each milestone.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day22/ --ext json --min-count 2 && python scripts/check_done_log.py done.log --min-entries 7",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Milestone plan file naming correct, done.log has 7 entries.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260414_*.json); (2) append completion entry to done.log. Note: target_date fields must use ISO 8601 format (P1)."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Which of the following file/log combinations is fully compliant with P1, P2, and P5?\n\nA. File: 20260414_stakeholder_report.json, report_generated_at: \"2026-04-14T10:00:00+08:00\", done.log entry: \"[DONE] 2026-04-14T10:05:00+08:00 | stakeholder_report | Generated weekly stakeholder status report\"\nB. File: stakeholder_report_20260414.json, report_generated_at: \"2026-04-14T10:00:00+08:00\", done.log entry format correct\nC. File: 20260414_milestone_plan.json, target_date: \"2026-04-30\" (date only), done.log entry format correct\nD. File: 20260414_risk_update.json, all time fields ISO 8601, done.log entry: \"[DONE] 2026-04-14 10:30:00 | risk_update | Updated risk register\"\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "P2 correct + P1 correct + P5 correct",
+          "B": "P2 violation (date not first) + P1 correct + P5 correct",
+          "C": "P2 correct + target_date date-only (P1 violation) + P5 correct",
+          "D": "P2 correct + P1 correct + done.log timestamp no timezone (P5/P1 violation)"
+        },
+        "answer": ["A"]
+      },
+      "feedback": {
+        "correct": "Correct! Only A satisfies all three rules.",
+        "options": {
+          "A": "A fully compliant: P2 naming correct, P1 time field correct, P5 done.log format correct.",
+          "B": "B P2 violation: date not at the front of filename.",
+          "C": "C P1 violation: `target_date: \"2026-04-30\"` is date-only format, missing time and timezone.",
+          "D": "D P5/P1 violation: done.log timestamp `2026-04-14 10:30:00` is missing T separator and +08:00 timezone (violates P1 which also applies to done.log timestamps)."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create a sprint velocity tracking document in Markdown format, save to day22/. Track the velocity (story points completed) for the last 4 sprints and calculate the average.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day22/ --ext md && python scripts/check_done_log.py done.log --min-entries 8",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Velocity tracking document naming correct, done.log has 8 entries.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260414_*.md); (2) append completion entry to done.log."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please generate a team capacity report for next sprint planning, save as JSON in day22/. Include capacity_calculated_at (current time), each team member's available_hours_next_sprint, and total_team_capacity.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day22/ --ext json --min-count 3 && python scripts/check_done_log.py done.log --min-entries 9",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Team capacity report naming correct, done.log has 9 entries.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260414_*.json); (2) append completion entry to done.log; (3) capacity_calculated_at must use ISO 8601 format (P1)."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "Which of the following done.log entries has the best quality (correct format + informative summary)?\n\nA. [DONE] 2026-04-14T14:30:00+08:00 | velocity_tracking | Created sprint velocity chart for last 4 sprints, avg 34 pts\nB. [DONE] 2026-04-14T14:30:00+08:00 | task | done\nC. [DONE] 2026-04-14T14:30:00+08:00 | capacity_report | Generated team capacity report with per-member breakdown for Sprint 10\nD. [DONE] 2026-04-14T14:30:00+08:00 | milestone_plan_and_risk_register_and_stakeholder_report_combined_update | Multiple tasks completed\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Format correct + concise informative summary",
+          "B": "Format correct but summary too vague",
+          "C": "Format correct + clear informative summary",
+          "D": "task_id too long + combined tasks in one entry"
+        },
+        "answer": ["A", "C"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A good quality: format correct, task_id meaningful, summary includes key detail (4 sprints, avg 34 pts), within 80 chars.",
+          "B": "B format correct but poor quality: summary \"done\" is too vague, provides no useful information.",
+          "C": "C good quality: format correct, informative summary with context (per-member breakdown, Sprint 10 planning purpose).",
+          "D": "D poor quality: task_id is too long (ideally concise like `pm_daily_summary`), and combining multiple tasks in one entry violates the \"one entry per task\" rule."
+        }
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create today's PM work wrap-up, Markdown format, save to day22/. Summarize all PM tasks completed today and key decisions made.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day22/ --ext md --min-count 2 && python scripts/check_done_log.py done.log --min-entries 10",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "PM wrap-up naming correct, done.log has 10 entries.",
+        "incorrect": "Issues: (1) file must follow P2 naming (20260414_*.md); (2) append final completion entry to done.log."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "After today's work, done.log should have accumulated entries from both yesterday and today. Which of the following statements about the log are correct?\n\nA. The 3 entries from day21 should still be present in done.log\nB. Today's entries should all have timestamps with 2026-04-14 dates\nC. If done.log becomes too long, older entries can be archived to done_archive.log\nD. The total entry count at end of day22 should be greater than at end of day21\nE. done.log entries are immutable once written — no editing allowed\nF. A task that only reads files (no output created) does not need a done.log entry\n\nPlease answer with \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Day21 entries preserved in done.log",
+          "B": "Today's entries have 2026-04-14 timestamps",
+          "C": "Archive old entries to done_archive.log if too long",
+          "D": "Total count at end of day22 > end of day21",
+          "E": "Entries are immutable once written",
+          "F": "Read-only tasks don't need done.log entry"
+        },
+        "answer": ["A", "B", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: day21's entries are preserved; done.log is append-only.",
+          "B": "B correct: today's task completions happened on April 14, so timestamps should be 2026-04-14.",
+          "C": "C wrong: done.log should not be modified or restructured; entries accumulate in place.",
+          "D": "D correct: completing tasks today adds entries, so count increases.",
+          "E": "E correct: once appended, entries should not be edited or removed.",
+          "F": "F correct: P5 applies to task completions that produce output; read-only information gathering does not constitute a \"task completed\" in the P5 sense."
+        }
+      }
+    }
+  ]
+}

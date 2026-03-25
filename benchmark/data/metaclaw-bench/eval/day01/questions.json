@@ -1,0 +1,202 @@
+{
+  "id": "day01",
+  "desc": "Day 01 — Sprint 7 start, meeting notes organization (P1 first introduction)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please organize the standup notes from day01/standup_raw.txt into a structured JSON file saved as day01/standup.json. The file should include the following fields: meeting_time (the time the meeting was held), attendees (list of people who attended), and action_items (array where each item contains task, assignee, and due_date).",
+      "feedback": {
+        "correct": "The standup.json file is properly structured with all required fields.",
+        "incorrect": "There's an issue with the time field formats. All time-related fields must use a full datetime format with timezone offset. For example, a 9:30 AM meeting today should be recorded as 2026-03-16T09:30:00+08:00 — note the T separator between date and time, and the +08:00 at the end."
+      },
+      "eval": {
+        "command": "python scripts/check_iso8601.py day01/standup.json meeting_time action_items[].due_date",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please extract the action_items from day01/standup.json and create a separate file day01/action_items.json. For each action item, add a created_at field set to when the standup meeting ended (approximately 9:45 this morning).",
+      "feedback": {
+        "correct": "The action_items.json file has been created with correct time formats.",
+        "incorrect": "The time fields still need correction. All timestamps must include the full datetime and timezone offset. The standup end time should be recorded as 2026-03-16T09:45:00+08:00."
+      },
+      "eval": {
+        "command": "python scripts/check_iso8601.py day01/action_items.json created_at action_items[].due_date",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "Which of the following time strings conform to the correct standard format (must include a +08:00 timezone offset)? Select all that apply.\n\nA. 2026-03-16T09:30:00+08:00\nB. 2026-03-16 09:30:00\nC. 2026-03-16T09:30:00Z\nD. 2026/03/16 09:30\nE. 2026-03-16T09:30:00.000+08:00\nF. 20260316T093000+0800\n\nAnswer using \\bbox{X} or \\bbox{X,Y} format.",
+      "feedback": {
+        "correct": "Correct! A and E are both valid — they use the full datetime format with a T separator and explicit +08:00 timezone offset.",
+        "options": {
+          "A": "A is correct: standard full datetime format with T separator and +08:00 timezone offset.",
+          "B": "B is incorrect: missing the T separator between date and time, and no timezone offset.",
+          "C": "C is incorrect: uses Z (UTC) instead of the required +08:00 offset.",
+          "D": "D is incorrect: uses slashes instead of hyphens, lacks the T separator and timezone offset.",
+          "E": "E is correct: milliseconds are optional; the +08:00 timezone offset is present.",
+          "F": "F is incorrect: this is compact ISO 8601 format (no hyphens or colons); we require the extended format."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "2026-03-16T09:30:00+08:00",
+          "B": "2026-03-16 09:30:00",
+          "C": "2026-03-16T09:30:00Z",
+          "D": "2026/03/16 09:30",
+          "E": "2026-03-16T09:30:00.000+08:00",
+          "F": "20260316T093000+0800"
+        },
+        "answer": ["A", "E"]
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update day01/sprint_tasks.json by filling in the created_at field for all tasks that currently have it empty. Use the sprint start time this morning (09:00) as the creation time for all tasks.",
+      "feedback": {
+        "correct": "All task creation timestamps have been properly set.",
+        "incorrect": "The created_at timestamps are not in the correct format. Each task's created_at should look like: 2026-03-16T09:00:00+08:00"
+      },
+      "eval": {
+        "command": "python scripts/check_iso8601.py day01/sprint_tasks.json tasks[].created_at",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Alex has decided to add a new task to the sprint: review the third-party OAuth integration proposal. Assign it to Bai with a deadline of this Wednesday at 6:00 PM. Please add this new task to day01/sprint_tasks.json with id T-405, and include both created_at and due_date fields.",
+      "feedback": {
+        "correct": "Task T-405 has been added with correctly formatted timestamps.",
+        "incorrect": "Task T-405 is missing or has incorrectly formatted time fields. The due_date for Wednesday 6:00 PM should be: 2026-03-18T18:00:00+08:00"
+      },
+      "eval": {
+        "command": "python -c \"import json,sys; d=json.load(open('day01/sprint_tasks.json')); t=next((x for x in d['tasks'] if x['id']=='T-405'),None); sys.exit(0 if t and t.get('due_date') and t.get('created_at') else 1)\" && python scripts/check_iso8601.py day01/sprint_tasks.json tasks[].due_date tasks[].created_at",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Regarding the time format we require, which of the following statements are correct? Select all that apply.\n\nA. All time fields must include a +08:00 timezone offset\nB. A pure date like \"2026-03-16\" can be used for due_date fields\nC. The Z timezone (UTC) and +08:00 represent the same moment and can be used interchangeably\nD. Leaving a created_at field as an empty string \"\" is acceptable\nE. \"2026-03-16T18:00:00+08:00\" represents 6:00 PM Beijing time\nF. The milliseconds part (e.g., .000) is optional — both with and without are valid\n\nAnswer using \\bbox{X} or \\bbox{X,Y} format.",
+      "feedback": {
+        "correct": "Correct! A, E, and F are all true.",
+        "options": {
+          "A": "A is correct: all time fields must include an explicit +08:00 timezone offset.",
+          "B": "B is incorrect: pure dates lack time and timezone information. A due_date needs a full timestamp like 2026-03-16T18:00:00+08:00.",
+          "C": "C is incorrect: Z (UTC) and +08:00 (CST) differ by 8 hours — they cannot be used interchangeably.",
+          "D": "D is incorrect: empty strings are not valid timestamps. All time fields must be populated.",
+          "E": "E is correct: +08:00 is CST (Beijing time), and 18:00 is 6:00 PM.",
+          "F": "F is correct: milliseconds are optional. Both 2026-03-16T09:00:00+08:00 and 2026-03-16T09:00:00.000+08:00 are valid."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "All time fields must include a +08:00 timezone offset",
+          "B": "A pure date like \"2026-03-16\" can be used for due_date fields",
+          "C": "The Z timezone (UTC) and +08:00 represent the same moment and can be used interchangeably",
+          "D": "Leaving a created_at field as an empty string \"\" is acceptable",
+          "E": "\"2026-03-16T18:00:00+08:00\" represents 6:00 PM Beijing time",
+          "F": "The milliseconds part (e.g., .000) is optional — both with and without are valid"
+        },
+        "answer": ["A", "E", "F"]
+      },
+      "update": []
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create a file day01/this_week_meetings.json to record the known meetings for this week:\n- Wednesday at 10:00 AM: API Review (all team)\n- Thursday at 3:00 PM: Product sync (Alex and Bai)\n- Friday at 5:00 PM: Sprint review (all team)\n\nEach meeting entry should include: title, start_time, and attendees.",
+      "feedback": {
+        "correct": "The weekly meetings file has been created with correct time formats.",
+        "incorrect": "The start_time fields are not in the correct format. You must include both the full date and time with timezone offset. For example, Wednesday 10:00 AM should be: 2026-03-18T10:00:00+08:00"
+      },
+      "eval": {
+        "command": "python scripts/check_iso8601.py day01/this_week_meetings.json meetings[].start_time",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "In the following JSON snippet, which field values need to be corrected? Select all that apply.\n\n```json\n{\n  \"meeting_time\": \"09:30\",\n  \"due_date\": \"2026-03-20\",\n  \"created_at\": \"2026-03-16T09:00:00+08:00\",\n  \"updated_at\": \"2026-03-16 14:30:00\",\n  \"deadline\": \"next Monday at 6pm\",\n  \"timestamp\": \"2026-03-16T08:00:00Z\"\n}\n```\n\nA. meeting_time: \"09:30\"\nB. due_date: \"2026-03-20\"\nC. created_at: \"2026-03-16T09:00:00+08:00\"\nD. updated_at: \"2026-03-16 14:30:00\"\nE. deadline: \"next Monday at 6pm\"\nF. timestamp: \"2026-03-16T08:00:00Z\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct! You identified all five fields that need correction.",
+        "options": {
+          "A": "A needs correction: only a time with no date or timezone offset. Correct format: 2026-03-16T09:30:00+08:00",
+          "B": "B needs correction: date-only format lacks time and timezone. Should be a full timestamp like 2026-03-20T<time>+08:00",
+          "C": "C is already correct: 2026-03-16T09:00:00+08:00 is a valid full datetime with timezone offset.",
+          "D": "D needs correction: space instead of T separator, and no timezone offset. Correct: 2026-03-16T14:30:00+08:00",
+          "E": "E needs correction: natural language descriptions must be converted to full datetime format.",
+          "F": "F needs correction: Z indicates UTC, not +08:00. Converting: UTC 08:00 = CST 2026-03-16T16:00:00+08:00"
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "meeting_time: \"09:30\"",
+          "B": "due_date: \"2026-03-20\"",
+          "C": "created_at: \"2026-03-16T09:00:00+08:00\"",
+          "D": "updated_at: \"2026-03-16 14:30:00\"",
+          "E": "deadline: \"next Monday at 6pm\"",
+          "F": "timestamp: \"2026-03-16T08:00:00Z\""
+        },
+        "answer": ["A", "B", "D", "E", "F"]
+      },
+      "update": []
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please create a work log for today: day01/work_log.json. Include the following fields:\n- work_date: today's date\n- start_time: arrived at the office at 9:00 AM\n- end_time: expected departure at 6:30 PM\n- completed_tasks: an array of completed tasks, each with task_id and completed_at:\n  - T-401 was completed at 2:00 PM\n  - T-404 was completed at 4:30 PM",
+      "feedback": {
+        "correct": "The work log has been created with all time fields properly formatted.",
+        "incorrect": "One or more time fields in work_log.json are not correctly formatted. All timestamps must include date, time, and timezone offset. Example: start_time should be 2026-03-16T09:00:00+08:00"
+      },
+      "eval": {
+        "command": "python scripts/check_iso8601.py day01/work_log.json start_time end_time completed_tasks[].completed_at",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Which of the following natural language to standard format conversions are correct? (Today is 2026-03-16, CST timezone +08:00). Select all that apply.\n\nA. \"this afternoon at 3pm\" → \"2026-03-16T15:00:00+08:00\"\nB. \"tomorrow at 9:30am\" → \"2026-03-17T09:30:00Z\"\nC. \"this Friday at end of day\" → \"2026-03-20T18:00:00+08:00\"\nD. \"last night at 10pm\" → \"2026-03-15T22:00:00+08:00\"\nE. \"2:15 this afternoon\" → \"2026-03-16T14:15+08:00\"\nF. \"Wednesday midnight\" → \"2026-03-18T00:00:00+08:00\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct! A, C, D, and F are all valid conversions.",
+        "options": {
+          "A": "A is correct: 3:00 PM today converts to 2026-03-16T15:00:00+08:00.",
+          "B": "B is incorrect: the timezone should be +08:00, not Z (UTC). Correct: 2026-03-17T09:30:00+08:00",
+          "C": "C is correct: this Friday is 2026-03-20, end of day is 18:00, with +08:00 timezone.",
+          "D": "D is correct: last night was 2026-03-15, at 10:00 PM with +08:00 timezone.",
+          "E": "E is incorrect: missing the seconds component. Correct: 2026-03-16T14:15:00+08:00",
+          "F": "F is correct: Wednesday is 2026-03-18, midnight is 00:00:00 with +08:00 timezone."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "\"this afternoon at 3pm\" → \"2026-03-16T15:00:00+08:00\"",
+          "B": "\"tomorrow at 9:30am\" → \"2026-03-17T09:30:00Z\"",
+          "C": "\"this Friday at end of day\" → \"2026-03-20T18:00:00+08:00\"",
+          "D": "\"last night at 10pm\" → \"2026-03-15T22:00:00+08:00\"",
+          "E": "\"2:15 this afternoon\" → \"2026-03-16T14:15+08:00\"",
+          "F": "\"Wednesday midnight\" → \"2026-03-18T00:00:00+08:00\""
+        },
+        "answer": ["A", "C", "D", "F"]
+      },
+      "update": []
+    }
+  ]
+}

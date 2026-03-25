@@ -1,0 +1,274 @@
+{
+  "test_id": "day21",
+  "group_id": "day21",
+  "round_id": "r9",
+  "qa_id": "r9",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease create an API security configuration review document in Markdown format and save it to the day21/ directory. Include authentication mechanism findings, encryption configuration review, and access control recommendations.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773761376.6421304,
+    "finished_at": 1773761421.552688,
+    "duration_ms": 44910,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T15:30:21.461Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day21_5f0f9db4-c575-438d-8140-045658d6676b",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9",
+    "success": true,
+    "durationMs": 40835,
+    "messageCount": 79,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 11:29 EDT] [Previous Feedback] Correct!\n\nPlease create an API security configuration review document in Markdown format and save it to the day21/ directory. Include authentication mechanism findings, encryption configuration review, and access control recommendations."
+          }
+        ],
+        "timestamp": 1773761380626
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_IbLcovOWUsOWa6HiPRPYc8p1",
+            "name": "exec",
+            "arguments": {
+              "command": "TZ=Asia/Shanghai date '+%Y-%m-%dT%H:%M:%S+08:00'"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761380629
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_IbLcovOWUsOWa6HiPRPYc8p1",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "2026-03-17T23:29:44+08:00"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 9,
+          "aggregated": "2026-03-17T23:29:44+08:00",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9"
+        },
+        "isError": false,
+        "timestamp": 1773761384179
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_NUIKMVaW3k8DZIPkdysN0DDY",
+            "name": "write",
+            "arguments": {
+              "path": "day21/20260413_api_security_configuration_review.md",
+              "content": "---\ndate: 2026-04-13\ndocument: API Security Configuration Review\nscope: Orion API\nversion: v2.3.x\n---\n\n# API Security Configuration Review — Orion API (v2.3.x)\n\n## 1) Scope & Assumptions\n\nThis document reviews security-relevant configuration and integration patterns for **Orion API v2.3.x**, focusing on:\n\n- Authentication mechanisms and token handling\n- Encryption configuration (in transit and at rest)\n- Access control enforcement and recommended improvements\n\n**Assumptions**\n- Orion API is accessed over HTTPS behind an API gateway / reverse proxy.\n- Clients authenticate using OAuth 2.0 bearer tokens (JWT or opaque tokens).\n- Backend services are deployed in a controlled VPC/network segment with managed secrets.\n\n## 2) Authentication Mechanism Findings\n\n### 2.1 OAuth 2.0 / Bearer Token Usage\n**Findings**\n- Bearer-token auth is appropriate for API integrations; however, the most common risks are token leakage and over-broad scopes.\n- If access tokens are JWTs, ensure claim validation is strict (issuer/audience/expiry/nbf), and signing keys are rotated.\n\n**Recommendations**\n- Enforce token validation at the gateway and again at the API layer (defense in depth).\n- Require and validate:\n  - `iss` (issuer)\n  - `aud` (audience)\n  - `exp` and `nbf`\n  - signature algorithm allowlist (e.g., RS256/ES256; disallow `none`)\n- Keep access tokens short-lived (≤ 60 minutes) and use refresh tokens for long sessions.\n- Use scopes/permissions that map to least-privilege operations (read vs write; workspace/project-specific where possible).\n\n### 2.2 Refresh Tokens & Session Handling\n**Findings**\n- Refresh tokens are high-value secrets and are frequently mishandled in client apps.\n\n**Recommendations**\n- Prefer server-side token storage for integrations.\n- If refresh tokens are used in user-facing clients:\n  - store in secure OS storage (Keychain/Keystore)\n  - avoid localStorage/sessionStorage for browser apps\n- Implement refresh token rotation and revoke-on-reuse behavior.\n\n### 2.3 Client Credentials and Service-to-Service Auth\n**Findings**\n- Service integrations often rely on client secrets, increasing blast radius if leaked.\n\n**Recommendations**\n- For internal service-to-service calls, consider mTLS and/or workload identity (where supported) to avoid long-lived static secrets.\n- Store secrets only in a secrets manager; prohibit secrets in config files or logs.\n- Add automated secret scanning in CI.\n\n## 3) Encryption Configuration Review\n\n### 3.1 Encryption In Transit (TLS)\n**Findings**\n- TLS misconfiguration is a common cause of downgrade vulnerabilities and weak ciphers.\n\n**Recommendations**\n- Enforce HTTPS everywhere; redirect HTTP → HTTPS at the edge.\n- Minimum TLS version: **TLS 1.2**, preferably **TLS 1.3**.\n- Disable weak ciphers and insecure renegotiation.\n- Enable HSTS (for browser-facing domains):\n  - `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`\n- Ensure certificates are automatically rotated and monitored for expiry.\n\n### 3.2 Encryption At Rest\n**Findings**\n- Data-at-rest encryption depends on storage layers (DB, object store, backups).\n\n**Recommendations**\n- Use managed encryption at rest for:\n  - primary databases\n  - backups/snapshots\n  - object storage (attachments/exports)\n- Use KMS-managed keys; define key rotation policy (e.g., annual) and access control for key usage.\n- Ensure sensitive fields (tokens, webhook secrets) are encrypted or hashed appropriately:\n  - webhook secrets: store encrypted and never return plaintext after creation\n  - API keys: store salted hashes if possible, or encrypted values with strict access controls\n\n### 3.3 Sensitive Data in Logs and Telemetry\n**Findings**\n- Tokens and PII in logs are frequent real-world leakage vectors.\n\n**Recommendations**\n- Redact/denylist:\n  - `Authorization` header\n  - cookies/session identifiers\n  - password fields\n  - refresh tokens\n- Apply consistent structured logging with a redaction middleware.\n- Limit log retention and restrict access by role.\n\n## 4) Access Control Recommendations\n\n### 4.1 Authorization Enforcement\n**Findings**\n- Even with strong auth, authorization failures are a primary source of data exposure.\n\n**Recommendations**\n- Centralize authorization checks (middleware or policy layer) to avoid per-endpoint drift.\n- Adopt a consistent policy model:\n  - workspace → project → task hierarchy\n  - roles (Owner/Admin/Member/Guest)\n  - resource-based checks (`can_read_task`, `can_update_project`, etc.)\n- Add automated tests for permissions (matrix tests across roles and actions).\n\n### 4.2 Multi-Tenancy and Data Partitioning\n**Findings**\n- Cross-tenant leakage can occur via missing tenant filters.\n\n**Recommendations**\n- Enforce tenant/workspace scoping at query boundaries.\n- Consider DB-level protections where feasible:\n  - row-level security (RLS) (if supported)\n  - mandatory `workspace_id` filters\n- Ensure object IDs are non-guessable (UUID/ULID) when exposed externally.\n\n### 4.3 Administrative Endpoints and Break-Glass Access\n**Recommendations**\n- Gate admin-only endpoints behind separate auth scopes and network controls.\n- Require elevated audit logging for admin actions.\n- Implement break-glass procedures with time-bound access and mandatory justification.\n\n## 5) Action Items Checklist\n\n- [ ] Confirm gateway enforces TLS 1.2+ (prefer 1.3) and strong cipher suite policy\n- [ ] Validate JWT verification settings (iss/aud/exp/nbf + alg allowlist)\n- [ ] Enable refresh token rotation and revoke-on-reuse\n- [ ] Add log redaction middleware for auth headers and token-like fields\n- [ ] Centralize authorization checks and add role/permission matrix tests\n- [ ] Audit secrets storage (KMS + secrets manager) and enable secret scanning in CI\n\n## 6) Appendix — Suggested Security Headers (If Applicable)\n\nFor browser-accessible API domains (or a web frontend):\n\n- `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`\n- `X-Content-Type-Options: nosniff`\n- `X-Frame-Options: DENY`\n- `Content-Security-Policy: default-src 'none'` (tune for actual web usage)\n- `Referrer-Policy: no-referrer`\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761384184
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_NUIKMVaW3k8DZIPkdysN0DDY",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 6093 bytes to day21/20260413_api_security_configuration_review.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773761414735
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_BeWGOHziEB3NgsFto29YVWXL",
+            "name": "exec",
+            "arguments": {
+              "command": "python - <<'PY'\nline='[DONE] 2026-03-17T23:29:44+08:00 | day21_api_security_review | Wrote API security config review (auth, encryption, access control).'\nsummary=line.split(' | ',2)[2]\nprint('summary_len',len(summary))\nPY"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761414741
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_BeWGOHziEB3NgsFto29YVWXL",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "summary_len 68"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 50,
+          "aggregated": "summary_len 68",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9"
+        },
+        "isError": false,
+        "timestamp": 1773761417271
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_7wwKB48GJcF9y8620XbYfYcK",
+            "name": "exec",
+            "arguments": {
+              "command": "printf '%s\n' \"[DONE] 2026-03-17T23:29:44+08:00 | day21_api_security_review | Wrote API security config review (auth, encryption, access control).\" >> done.log"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761417275
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_7wwKB48GJcF9y8620XbYfYcK",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "(no output)"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 9,
+          "aggregated": "",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9"
+        },
+        "isError": false,
+        "timestamp": 1773761419341
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Created the API security configuration review document:\n- `day21/20260413_api_security_configuration_review.md`\n\nAppended to `done.log`:\n- `[DONE] 2026-03-17T23:29:44+08:00 | day21_api_security_review | Wrote API security config review (auth, encryption, access control).`"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773761419346
+      }
+    ]
+  },
+  "answer": "Created the API security configuration review document:\n- `day21/20260413_api_security_configuration_review.md`\n\nAppended to `done.log`:\n- `[DONE] 2026-03-17T23:29:44+08:00 | day21_api_security_review | Wrote API security config review (auth, encryption, access control).`\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: expected >= 4 P2-compliant .md file(s) in day21/, found 2\n",
+    "stderr": ""
+  }
+}

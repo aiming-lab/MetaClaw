@@ -1,0 +1,250 @@
+{
+  "id": "day03",
+  "desc": "Day 03 - API service log analysis and data consolidation with time format standardization (P1 practice)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please parse the day03/api_access.log file and generate statistics for today's requests. Save the results as day03/log_summary.json. Include the following fields: generated_at (current time around 09:30), analysis_start (today at 00:00), analysis_end (current time), total_requests, and status_counts (count for each status code).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day03/log_summary.json generated_at analysis_start analysis_end",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Log summary created with all time fields correctly formatted.",
+        "incorrect": "The time format in log_summary.json does not conform to the required standard. All time fields must include date, time, and timezone offset. For example, generated_at should be '2026-03-18T09:30:00+08:00', analysis_start should be '2026-03-18T00:00:00+08:00'."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please organize the anomaly events from day03/error_events_raw.txt into structured data and save as day03/error_events.json. Each event should include: event_type, occurred_at, detected_at, affected_users, handler, and resolved_at (use null if not yet resolved).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import json,sys; d=json.load(open('day03/error_events.json')); events=[e for e in d.get('events',d if isinstance(d,list) else []) if e.get('occurred_at') and e['occurred_at']!='null']; sys.exit(0)\" && python scripts/check_iso8601.py day03/error_events.json events[].occurred_at events[].detected_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Error events structured with all time fields correctly formatted.",
+        "incorrect": "The time fields in error_events.json need correction. Natural language times like 'around nine in the morning' must be converted to a full datetime with timezone offset. For example: 2026-03-18T09:00:00+08:00"
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "When processing server logs, various raw time formats need to be standardized. Which of the following conversions are correct?\n\nA. Apache format '18/Mar/2026:09:12:34 +0800' → '2026-03-18T09:12:34+08:00'\nB. Unix timestamp 1742265154 (UTC ~01:12:34) → '2026-03-18T09:12:34+08:00'\nC. '2026-03-18 09:12:34' (no timezone, known CST) → '2026-03-18T09:12:34+08:00'\nD. '2026-03-18T01:12:34Z' (UTC) → '2026-03-18T09:12:34+08:00'\nE. '18-03-2026 09:12:34 CST' → '2026-03-18T09:12:34+08:00'\nF. '2026/03/18 09:12' → '2026-03-18T09:12:00+08:00'\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "Apache format '18/Mar/2026:09:12:34 +0800' → '2026-03-18T09:12:34+08:00'",
+          "B": "Unix timestamp 1742265154 (UTC ~01:12:34) → '2026-03-18T09:12:34+08:00'",
+          "C": "'2026-03-18 09:12:34' (no timezone, known CST) → '2026-03-18T09:12:34+08:00'",
+          "D": "'2026-03-18T01:12:34Z' (UTC) → '2026-03-18T09:12:34+08:00'",
+          "E": "'18-03-2026 09:12:34 CST' → '2026-03-18T09:12:34+08:00'",
+          "F": "'2026/03/18 09:12' → '2026-03-18T09:12:00+08:00'"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, D, E, and F are all valid conversions. Option A correctly converts Apache log format to ISO 8601. Option C properly adds the T separator and timezone. Option D correctly converts UTC to CST by adding 8 hours (01:12:34 UTC + 8 = 09:12:34 CST). Option E reformats the date order and adds the T separator. Option F handles missing seconds by defaulting to :00. Option B is incorrect because the Unix timestamp conversion requires precise calculation and the result may not match exactly.",
+        "options": {
+          "A": "Correct. Apache log format [DD/Mon/YYYY:HH:MM:SS +ZZZZ] is converted by reformatting the date to YYYY-MM-DD and adding the T separator between date and time.",
+          "B": "Incorrect. Unix timestamp 1742265154 represents a specific moment in UTC. Converting to CST requires adding 8 hours, but the exact result depends on precise calculation. Without verification, we cannot confirm this timestamp equals 01:12:34 UTC.",
+          "C": "Correct. When the source format lacks timezone but is known to be CST, we add the T separator and append +08:00 to complete the ISO 8601 format.",
+          "D": "Correct. The Z suffix indicates UTC time. Converting to CST requires adding 8 hours: 01:12:34 + 8 hours = 09:12:34, then replacing Z with +08:00.",
+          "E": "Correct. This converts DD-MM-YYYY format to YYYY-MM-DD, adds the T separator, and replaces CST with the numeric timezone +08:00.",
+          "F": "Correct. When seconds are missing from the source time, we default to :00 seconds in the ISO 8601 output, and replace / separators with - in the date portion."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Based on the analysis results from previous steps, please fill in the day03/report_template.json and generate the formal report as day03/daily_report.json. Set generated_at to the current time (around 10:15), analysis_period.start to today at 00:00, and analysis_period.end to the current time.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day03/daily_report.json generated_at analysis_period.start analysis_period.end",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Daily report generated with all time fields correctly formatted.",
+        "incorrect": "The time fields in daily_report.json are not correctly formatted. For example: generated_at should be '2026-03-18T10:15:00+08:00', analysis_period.start should be '2026-03-18T00:00:00+08:00'."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create day03/event_timeline.json to arrange today's anomaly events in chronological order. Each event should include event_id, occurred_at, severity (low/medium/high/critical), and status (open/resolved). Add a final 'report generated' event at the end of the array with occurred_at set to the current time (around 10:30).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day03/event_timeline.json events[].occurred_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Event timeline created with all occurred_at fields correctly formatted.",
+        "incorrect": "The occurred_at fields in event_timeline.json need correction. All timestamps must include date, time, and +08:00 timezone offset. For example: 2026-03-18T09:00:00+08:00"
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "When designing a JSON structure for data analysis reports, which of the following practices are correct?\n\nA. Using standard datetime format for analysis_start/end makes it easy to calculate duration programmatically\nB. In the report, keep all original log timestamps in their raw format without normalizing\nC. The generated_at field should use a full datetime format to record the exact report generation time\nD. It's acceptable to mix multiple time formats in a report, as long as each field is internally consistent\nE. UTC 09:00 corresponds to CST 17:00 (UTC+8 is 8 hours ahead of UTC)\nF. For multi-day analysis periods, period_end does not need a time component — just a date is sufficient\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "Using standard datetime format for analysis_start/end makes it easy to calculate duration programmatically",
+          "B": "In the report, keep all original log timestamps in their raw format without normalizing",
+          "C": "The generated_at field should use a full datetime format to record the exact report generation time",
+          "D": "It's acceptable to mix multiple time formats in a report, as long as each field is internally consistent",
+          "E": "UTC 09:00 corresponds to CST 17:00 (UTC+8 is 8 hours ahead of UTC)",
+          "F": "For multi-day analysis periods, period_end does not need a time component — just a date is sufficient"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, and E are the right practices. Option A is correct because standardized datetime formats enable programmatic duration calculations. Option C is correct because generated_at should capture the precise generation moment including date, time, and timezone. Option E correctly states that UTC+8 means adding 8 hours, so UTC 09:00 = CST 17:00. Options B, D, and F represent poor practices that should be avoided.",
+        "options": {
+          "A": "Correct. Using ISO 8601 or other standard formats allows programs to easily parse and calculate time differences, enabling automated duration analysis.",
+          "B": "Incorrect. Keeping raw formats makes cross-field comparisons and time calculations difficult. Best practice is to normalize all timestamps to a consistent format.",
+          "C": "Correct. The generated_at field should use complete datetime format (including date, time, and timezone) to precisely record when the report was created.",
+          "D": "Incorrect. Even if each field is internally consistent, mixing formats makes data processing complex and error-prone. All time fields should use a unified standard.",
+          "E": "Correct. UTC+8 means China Standard Time (CST) is 8 hours ahead of UTC. Therefore UTC 09:00 + 8 hours = CST 17:00.",
+          "F": "Incorrect. For analysis periods, even multi-day ranges should include specific start and end times (not just dates) to accurately define the time window and support precise calculations."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create day03/perf_metrics.json to record this morning's API performance metrics (09:00-10:45). Include: collection_start, collection_end, avg_response_ms (number), p99_response_ms (number), error_rate (number), and sampled_at (a top-level array with 8 sampling time points at 15-minute intervals from 09:00 to 10:45).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import json,re,sys; d=json.load(open('day03/perf_metrics.json')); pat=re.compile(r'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?\\+08:00$'); bad=[v for v in d.get('sampled_at',[]) if not pat.match(str(v))]; sys.exit(0 if not bad else 1)\" && python scripts/check_iso8601.py day03/perf_metrics.json collection_start collection_end",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Performance metrics recorded with all time fields correctly formatted.",
+        "incorrect": "Time fields in perf_metrics.json are not correctly formatted. collection_start should be '2026-03-18T09:00:00+08:00', collection_end '2026-03-18T10:45:00+08:00', and each sampled_at entry should follow the same format, e.g. '2026-03-18T09:15:00+08:00'."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please add a version_history array to day03/daily_report.json to track report iterations: v1.0 (09:30 initial draft), v1.1 (10:15 added event timeline data), and v1.2 (current time around 11:00 final review version). Each entry should include version, created_at, and changes fields.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day03/daily_report.json version_history[].created_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Version history added with all created_at fields correctly formatted.",
+        "incorrect": "The created_at timestamps in version_history need correction. v1.0 should be '2026-03-18T09:30:00+08:00', v1.1 should be '2026-03-18T10:15:00+08:00', v1.2 should be '2026-03-18T11:00:00+08:00'."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "An API access log entry on the Orion platform shows '2026-03-18T01:30:00Z' (UTC time). Which of the following statements are correct?\n\nA. This request occurred at CST time 2026-03-18T09:30:00+08:00\nB. This request occurred at CST time 2026-03-17T17:30:00+08:00\nC. For internal reports, this timestamp should be converted to '2026-03-18T09:30:00+08:00'\nD. Converting UTC to CST requires subtracting 8 hours\nE. Simply replacing Z with +08:00 without changing the numbers gives an incorrect result\nF. Storing timestamps in UTC and converting to local time for display is a valid engineering practice\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "This request occurred at CST time 2026-03-18T09:30:00+08:00",
+          "B": "This request occurred at CST time 2026-03-17T17:30:00+08:00",
+          "C": "For internal reports, this timestamp should be converted to '2026-03-18T09:30:00+08:00'",
+          "D": "Converting UTC to CST requires subtracting 8 hours",
+          "E": "Simply replacing Z with +08:00 without changing the numbers gives an incorrect result",
+          "F": "Storing timestamps in UTC and converting to local time for display is a valid engineering practice"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, E, and F are accurate. Option A correctly converts UTC 01:30 to CST 09:30 by adding 8 hours. Option C confirms this is the proper format for internal reports. Option E correctly notes that naive string replacement without time adjustment produces wrong results. Option F describes a common best practice in distributed systems. Options B and D contain errors in timezone arithmetic.",
+        "options": {
+          "A": "Correct. UTC 01:30:00 + 8 hours = CST 09:30:00. CST (China Standard Time) is UTC+8, so we add 8 hours when converting from UTC.",
+          "B": "Incorrect. This would be subtracting 8 hours, which goes backward in time. The correct conversion adds 8 hours: 01:30 UTC → 09:30 CST on the same date.",
+          "C": "Correct. For internal reports in a CST timezone environment, UTC timestamps should be converted to the local timezone format YYYY-MM-DDTHH:MM:SS+08:00.",
+          "D": "Incorrect. Converting UTC to CST (UTC+8) requires adding 8 hours, not subtracting. Subtracting would give UTC-8 (Pacific Time), not CST.",
+          "E": "Correct. Simply replacing 'Z' with '+08:00' would give '2026-03-18T01:30:00+08:00', which represents a completely different moment in time. The hour value must also be adjusted (+8).",
+          "F": "Correct. Storing data in UTC and converting to local timezones for display is a standard engineering practice that simplifies handling data from multiple geographic regions."
+        }
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create day03/error_trend.json to record API error rate changes at hourly intervals for today from 00:00 to 10:00 (10 data points total). Each data point should include: interval_start, interval_end, error_rate (number between 0-1), and request_count (number).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day03/error_trend.json datapoints[].interval_start datapoints[].interval_end",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Error trend data created with all interval timestamps correctly formatted.",
+        "incorrect": "The time fields in error_trend.json are not correctly formatted. Each interval needs full datetime with timezone. For example: interval_start '2026-03-18T00:00:00+08:00', interval_end '2026-03-18T01:00:00+08:00'."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "When processing cross-system log data, which of the following practices help maintain consistency in time fields?\n\nA. Normalize all timestamps to a consistent format as the first step in the ETL process\nB. Allow databases to store multiple time formats and handle normalization only at query time\nC. Add timezone annotations (+08:00) to all time fields in analysis reports\nD. When the timezone of raw log timestamps is unclear, assume UTC and document the assumption\nE. In JSON reports, use numeric epoch timestamps instead of strings for greater precision\nF. Maintain a time field specification document for all data processing scripts to reference\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "Normalize all timestamps to a consistent format as the first step in the ETL process",
+          "B": "Allow databases to store multiple time formats and handle normalization only at query time",
+          "C": "Add timezone annotations (+08:00) to all time fields in analysis reports",
+          "D": "When the timezone of raw log timestamps is unclear, assume UTC and document the assumption",
+          "E": "In JSON reports, use numeric epoch timestamps instead of strings for greater precision",
+          "F": "Maintain a time field specification document for all data processing scripts to reference"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, D, and F are best practices for maintaining time field consistency. Option A ensures data cleanliness early in the pipeline. Option C provides clarity about which timezone each timestamp represents. Option D documents assumptions to prevent ambiguity. Option F establishes a shared standard across the team. Options B and E represent approaches that can lead to problems.",
+        "options": {
+          "A": "Correct. Normalizing timestamps early in the ETL (Extract, Transform, Load) pipeline ensures all downstream processing works with consistent data, reducing errors.",
+          "B": "Incorrect. Storing multiple formats increases complexity and error risk. Best practice is to normalize at ingestion time, not defer to query time.",
+          "C": "Correct. Explicitly including timezone information (+08:00, +00:00, etc.) eliminates ambiguity about which timezone each timestamp represents.",
+          "D": "Correct. When timezone information is missing, making and documenting a clear assumption (e.g., 'treat as UTC') is better than leaving it undefined.",
+          "E": "Incorrect. While epoch timestamps have precision advantages, they sacrifice human readability. For JSON reports intended for humans and machines, ISO 8601 strings are generally preferred.",
+          "F": "Correct. A shared specification document ensures all team members and scripts follow the same standards, maintaining consistency across the entire data pipeline."
+        }
+      }
+    },
+    {
+      "id": "r12",
+      "type": "file_check",
+      "question": "Please create day03/review_package.json as the consolidated index for this afternoon's review meeting. Include: package_created_at (current time around 11:30), review_scheduled_at (today at 14:00), files (references to the files created today), and prepared_by ('metaclaw_agent').",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day03/review_package.json package_created_at review_scheduled_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Review package index created with all time fields correctly formatted.",
+        "incorrect": "Time fields in review_package.json need correction. package_created_at should be '2026-03-18T11:30:00+08:00' and review_scheduled_at should be '2026-03-18T14:00:00+08:00'."
+      }
+    }
+  ]
+}

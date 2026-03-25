@@ -1,0 +1,118 @@
+{
+  "test_id": "day11",
+  "group_id": "day11",
+  "round_id": "r9",
+  "qa_id": "r9",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease write an onboarding guide for new team members, Markdown format, saved to the day11/ directory. Include environment setup steps, key code conventions, and commonly used commands.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773757423.7280998,
+    "finished_at": 1773757449.41978,
+    "duration_ms": 25691,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T14:24:09.332Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day11_242507f8-7586-4298-a299-def88cbd1804",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day11_45c1b8db",
+    "success": true,
+    "durationMs": 21482,
+    "messageCount": 38,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 10:23 EDT] [Previous Feedback] Correct!\n\nPlease write an onboarding guide for new team members, Markdown format, saved to the day11/ directory. Include environment setup steps, key code conventions, and commonly used commands."
+          }
+        ],
+        "timestamp": 1773757427851
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_U7pbWH7KywU2zzu7mLD5dCCK",
+            "name": "write",
+            "arguments": {
+              "path": "day11/20260330_onboarding_guide.md",
+              "content": "---\ncreated_at: 2026-03-30T09:35:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n\n# ProjectX — New Team Member Onboarding Guide\n\nWelcome to ProjectX. This guide helps you get productive quickly with local development, conventions, and the commands you’ll use most often.\n\n## 1) Prerequisites\n\nInstall (or verify) the following:\n\n- **Git** (latest)\n- **Node.js 18+** (recommend using `nvm`)\n- **PostgreSQL 14+**\n- **Redis 6+**\n- **Docker + Docker Compose** (optional but recommended)\n\nRecommended tools:\n\n- **VS Code** (or your preferred IDE)\n- **Postman / Insomnia** (API testing)\n\n## 2) Repository Setup\n\n### 2.1 Clone and install dependencies\n\n```bash\ngit clone https://github.com/company/projectx.git\ncd projectx\nnpm install\n```\n\n### 2.2 Environment variables\n\n```bash\ncp .env.example .env\n# Edit .env with your local settings\n```\n\nTypical `.env` values to confirm:\n\n- Database connection (host, port, user, password, db name)\n- Redis connection\n- Authentication provider settings (if applicable)\n- Stripe sandbox keys (for local payment testing)\n- Rate limit thresholds (dev-friendly values)\n\n## 3) Local Development Options\n\n### Option A — Run services locally (Postgres + Redis installed)\n\n1) Start PostgreSQL and Redis on your machine.\n\n2) Initialize and seed the database:\n\n```bash\nnpm run db:migrate\nnpm run db:seed\n```\n\n3) Start the dev server:\n\n```bash\nnpm run dev\n```\n\nApp should be available at:\n\n- Web: `http://localhost:3000`\n\n### Option B — Docker-based services (recommended)\n\nUse Docker for database/services, and run the app locally:\n\n```bash\ndocker-compose up -d\nnpm run db:migrate\nnpm run db:seed\nnpm run dev\n```\n\nIf the repo provides a fully containerized workflow, follow the project’s Docker instructions (see README or `docker-compose.yml`).\n\n## 4) Testing & Quality Gates\n\n### Unit / Integration / E2E\n\n```bash\nnpm test                  # Unit tests (Jest)\nnpm run test:integration  # Integration tests\nnpm run test:e2e          # End-to-end tests (Cypress)\n```\n\n### Coverage expectations\n\n- New code should maintain **>= 80% coverage**.\n- API endpoints must include **integration tests**.\n- Critical user flows must include **E2E tests**.\n\n## 5) Key Code Conventions (Team Standards)\n\n### 5.1 General\n\n- Prefer **readability over cleverness**.\n- Keep changes **small and reviewable**.\n- Write tests alongside feature changes.\n\n### 5.2 API & Backend (Node.js / Express)\n\n- **Validate input at boundaries** (request body, query params, headers).\n- Use **parameterized SQL** (never string interpolation).\n- Use consistent error responses:\n  - Stable error codes\n  - Clear error messages for clients\n  - Avoid leaking sensitive internal details\n- Log meaningful events (request id / user id / error context), avoid logging secrets.\n\n### 5.3 API Versioning & Documentation\n\n- API follows **semantic versioning** (current: **v2.3.0**).\n- Breaking changes require a **major version** bump.\n- Deprecations require **3 months notice**.\n- For any API change, update:\n  - **OpenAPI spec**\n  - Changelog / change note (when applicable)\n  - Examples for request/response (for new endpoints)\n\n### 5.4 Frontend (React + TypeScript)\n\n- Keep components focused; extract shared logic into hooks/utilities.\n- Prefer explicit types for public component props.\n- Avoid “any” unless justified.\n\n### 5.5 Git & Pull Requests\n\n- Use feature branches: `feature/<short-desc>` or `fix/<short-desc>`.\n- Keep commits logically grouped.\n- PRs should include:\n  - Clear summary and testing notes\n  - Screenshots or short clips for UI changes\n  - Documentation updates (\"docs before merge\")\n\n## 6) Commonly Used Commands\n\n### Development\n\n```bash\nnpm run dev\nnpm run build\nnpm run start\n```\n\n### Database\n\n```bash\nnpm run db:migrate\nnpm run db:seed\nnpm run db:reset     # if available in repo\n```\n\n### Lint / Format (if configured)\n\n```bash\nnpm run lint\nnpm run format\n```\n\n### Tests\n\n```bash\nnpm test\nnpm run test:integration\nnpm run test:e2e\n```\n\n### Docker\n\n```bash\ndocker-compose up -d\ndocker-compose logs -f\ndocker-compose down\n```\n\n## 7) First-Week Checklist\n\n- [ ] Able to run the app locally and log in (including 2FA flow if enabled)\n- [ ] Able to run unit + integration tests\n- [ ] Read the API versioning ADR (ADR-001)\n- [ ] Locate OpenAPI spec and understand how API docs are generated\n- [ ] Pick a starter task and open a PR with tests + docs\n\n## 8) Where to Ask Questions\n\n- Engineering chat channel for quick questions\n- Tag the relevant feature owner in the PR\n- If you’re blocked > 30 minutes, ask early (include logs + repro steps)\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773757427852
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_U7pbWH7KywU2zzu7mLD5dCCK",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 4545 bytes to day11/20260330_onboarding_guide.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773757446264
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Created the onboarding guide (with required YAML frontmatter):\n\n- `day11/20260330_onboarding_guide.md`\n\nIncludes:\n- Environment setup steps (local + Docker options)\n- Key code conventions (backend/API versioning/docs, frontend, PR workflow)\n- Commonly used commands (dev, DB, tests, lint/format, Docker)"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773757446268
+      }
+    ]
+  },
+  "answer": "Created the onboarding guide (with required YAML frontmatter):\n\n- `day11/20260330_onboarding_guide.md`\n\nIncludes:\n- Environment setup steps (local + Docker options)\n- Key code conventions (backend/API versioning/docs, frontend, PR workflow)\n- Commonly used commands (dev, DB, tests, lint/format, Docker)\n",
+  "inline_score": {
+    "passed": true,
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+}

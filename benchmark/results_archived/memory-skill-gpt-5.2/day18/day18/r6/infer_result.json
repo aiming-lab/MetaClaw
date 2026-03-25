@@ -1,0 +1,77 @@
+{
+  "test_id": "day18",
+  "group_id": "day18",
+  "round_id": "r6",
+  "qa_id": "r6",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] requirements.txt.bak was correctly created before updating dependencies.\n\nPlease write unit tests for the refactored log_handler.py. Create a new test file in the day18/ directory (Python format).",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773760495.910568,
+    "finished_at": 1773760524.7041256,
+    "duration_ms": 28793,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T15:15:19.002Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day18_5ce33e57-fc8d-43c2-beb3-0b5a85f8b070",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day18_fbd4afa9",
+    "success": true,
+    "durationMs": 19241,
+    "messageCount": 48,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 11:14 EDT] [Previous Feedback] requirements.txt.bak was correctly created before updating dependencies.\n\nPlease write unit tests for the refactored log_handler.py. Create a new test file in the day18/ directory (Python format)."
+          }
+        ],
+        "timestamp": 1773760499762
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_faOsqly8977vNyyDl1YImLCh",
+            "name": "write",
+            "arguments": {
+              "path": "day18/test_log_handler.py",
+              "content": "\"\"\"Unit tests for day18/log_handler.py.\n\nThese tests validate the async queue-based logging behavior:\n- log entries are written to disk\n- close() flushes pending entries\n- drop_when_full=True avoids blocking by dropping excess entries\n\nRun:\n    python -m unittest day18.test_log_handler\n\"\"\"\n\nimport os\nimport sys\nimport tempfile\nimport time\nimport unittest\n\n\n# Allow importing log_handler.py from the day18 directory without requiring a package.\n_THIS_DIR = os.path.dirname(__file__)\nif _THIS_DIR not in sys.path:\n    sys.path.insert(0, _THIS_DIR)\n\nfrom log_handler import AsyncLogHandler  # noqa: E402\n\n\nclass TestAsyncLogHandler(unittest.TestCase):\n    def test_writes_log_entries_to_disk(self):\n        with tempfile.TemporaryDirectory() as tmpdir:\n            log_path = os.path.join(tmpdir, \"api.log\")\n\n            handler = AsyncLogHandler(\n                log_path,\n                flush_interval_seconds=0.01,\n                max_queue_size=100,\n                drop_when_full=False,\n            )\n            try:\n                handler.info(\"hello\")\n                handler.warning(\"warn\")\n                handler.error(\"boom\")\n                handler.close(timeout=2.0)\n\n                with open(log_path, \"r\") as f:\n                    content = f.read()\n\n                self.assertIn(\"INFO: hello\", content)\n                self.assertIn(\"WARNING: warn\", content)\n                self.assertIn(\"ERROR: boom\", content)\n            finally:\n                # close is idempotent-ish, but keep defensive in case of exceptions above.\n                try:\n                    handler.close(timeout=2.0)\n                except Exception:\n                    pass\n\n    def test_close_flushes_pending_entries(self):\n        with tempfile.TemporaryDirectory() as tmpdir:\n            log_path = os.path.join(tmpdir, \"api.log\")\n\n            handler = AsyncLogHandler(\n                log_path,\n                flush_interval_seconds=1.0,  # long interval so close() flush matters\n                max_queue_size=1000,\n            )\n            try:\n                for i in range(50):\n                    handler.info(f\"msg-{i}\")\n\n                handler.close(timeout=2.0)\n\n                with open(log_path, \"r\") as f:\n                    lines = f.readlines()\n\n                # Expect all entries to have been flushed.\n                self.assertGreaterEqual(len(lines), 50)\n                self.assertTrue(any(\"INFO: msg-0\" in ln for ln in lines))\n                self.assertTrue(any(\"INFO: msg-49\" in ln for ln in lines))\n            finally:\n                try:\n                    handler.close(timeout=2.0)\n                except Exception:\n                    pass\n\n    def test_drop_when_full_drops_excess_entries(self):\n        with tempfile.TemporaryDirectory() as tmpdir:\n            log_path = os.path.join(tmpdir, \"api.log\")\n\n            # Tiny queue size; drop_when_full means writes won't block.\n            handler = AsyncLogHandler(\n                log_path,\n                flush_interval_seconds=0.05,\n                max_queue_size=1,\n                drop_when_full=True,\n            )\n            try:\n                for i in range(200):\n                    handler.info(f\"spam-{i}\")\n\n                handler.close(timeout=2.0)\n\n                with open(log_path, \"r\") as f:\n                    lines = f.readlines()\n\n                # We should not reliably get all 200 due to dropping.\n                self.assertLess(len(lines), 200)\n                # But we should get at least one entry.\n                self.assertGreater(len(lines), 0)\n            finally:\n                try:\n                    handler.close(timeout=2.0)\n                except Exception:\n                    pass\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773760503804
+      }
+    ]
+  },
+  "answer": "completed\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: expected >= 1 P2-compliant .py file(s) in day18/, found 0\n",
+    "stderr": ""
+  }
+}

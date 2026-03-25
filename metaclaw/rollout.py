@@ -26,6 +26,7 @@ def get_global_worker(
     config: MetaClawConfig,
     sampling_client=None,
     skill_manager=None,
+    memory_manager=None,
     prm_scorer=None,
     skill_evolver=None,
 ):
@@ -33,7 +34,7 @@ def get_global_worker(
     with _worker_lock:
         if _global_worker is None or not _global_worker.worker_thread.is_alive():
             _global_worker = AsyncRolloutWorker(
-                config, sampling_client, skill_manager, prm_scorer, skill_evolver
+                config, sampling_client, skill_manager, memory_manager, prm_scorer, skill_evolver
             )
             _global_worker.start()
         return _global_worker
@@ -53,6 +54,7 @@ class AsyncRolloutWorker:
         config: MetaClawConfig,
         sampling_client=None,
         skill_manager=None,
+        memory_manager=None,
         prm_scorer=None,
         skill_evolver=None,
         last_request_tracker=None,
@@ -71,6 +73,7 @@ class AsyncRolloutWorker:
             prm_scorer=prm_scorer,
             skill_evolver=skill_evolver,
             last_request_tracker=last_request_tracker,
+            memory_manager=memory_manager,
         )
 
     async def continuous_worker_loop(self):

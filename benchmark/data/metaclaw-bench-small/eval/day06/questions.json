@@ -1,0 +1,103 @@
+{
+  "id": "day06",
+  "desc": "Day 06 — P1-P3 comprehensive — all file types",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please create a summary report of this week's work outputs in JSON format, saved to the day06/ directory. Include week, generated_at (current time), total_files (number of files created this week), and file_list (filename and type for each file).",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day06/20260403_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day06/20260403_*.json'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Weekly output summary JSON file has correct naming, meta object, and time fields.",
+        "incorrect": "The weekly output summary requires: (1) P2 naming (20260403_*.json), (2) P3 meta object, (3) P1 time field format — generated_at example: `2026-04-03T09:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please generate a team weekly summary CSV file, saved to the day06/ directory. Columns: member_name, tasks_completed, code_commits, docs_written, incidents.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day06/20260403_*.csv')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day06/20260403_*.csv'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Team weekly report CSV file has correct naming and first-line comment.",
+        "incorrect": "The CSV file requires: (1) P2 naming (20260403_*.csv), (2) P3 first-line comment format: `# meta: created_at=2026-04-03T<time>+08:00 author=metaclaw_agent status=done`."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "For the four file types created today, which of the following P3 format descriptions are correct?\n\nA. JSON files: the top-level JSON must have a \"meta\" key containing created_at, author, and status\nB. Markdown files: include a ## Metadata section in the body with the fields listed\nC. Python files: module-level docstring contains a \"Meta:\" section with key-value pairs\nD. CSV files: the last line is a # meta: key=value comment\nE. Markdown files: a YAML frontmatter block surrounded by --- at the beginning of the file\nF. JSON files: the meta object can be nested inside any sub-object, not necessarily at the top level\n\nPlease answer in \\bbox{X,Y,...} format (select all correct ones).",
+      "eval": {
+        "options": {
+          "A": "JSON → top-level meta object",
+          "B": "Markdown → ## Metadata section in body",
+          "C": "Python → module docstring Meta section",
+          "D": "CSV → last line # meta comment",
+          "E": "Markdown → YAML frontmatter at file beginning",
+          "F": "JSON → meta can be nested in sub-objects"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: JSON files must have the meta object at the root level (top-level field).",
+          "B": "B is incorrect: Markdown files do not use a `## Metadata` section; instead they use YAML frontmatter at the beginning of the file.",
+          "C": "C is correct: Python files use a `Meta:` section inside the module-level docstring with key-value pairs.",
+          "D": "D is incorrect: CSV files must have the meta comment on the **first line** (not the last line).",
+          "E": "E is correct: Markdown files use YAML frontmatter (surrounded by `---`) at the start of the file.",
+          "F": "F is incorrect: JSON files must have the meta at the **top level**; it cannot be nested inside sub-objects."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please write a weekly summary generator Python script, saved to the day06/ directory. The script should read JSON files in a specified directory, count the number of files and the overall compliance rate of structured headers, and print a summary.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day06/20260403_*.py')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day06/20260403_*.py'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Python script has correct naming and module-level docstring Meta section.",
+        "incorrect": "The Python script requires P2 naming (20260403_*.py) and a P3 module-level docstring containing a Meta section (with created_at, author, status)."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "Which of the following JSON file descriptions simultaneously satisfy all three P1, P2, and P3 conventions?\n\nA. Filename 20260402_sprint8_status.json, complete meta, estimated_completion: \"2026-04-05T18:00:00+08:00\"\nB. Filename 20260402_q1_report.json, complete meta, period_start: \"2026-01-01\" (plain date)\nC. Filename sprint8_status_20260402.json, complete meta, time fields in ISO 8601 correct format\nD. Filename 20260402_team_matrix.json, no meta object, time fields in ISO 8601 correct format\nE. Filename 20260402_q2_plan.json, meta with correct created_at ISO 8601, but status: \"complete\"\n\nPlease answer in \\bbox{X,Y,...} format (select all fully compliant options).",
+      "eval": {
+        "options": {
+          "A": "P2 correct + P3 meta correct + P1 time correct",
+          "B": "P2 correct + P3 correct + period_start plain date (P1 violation)",
+          "C": "P2 violation (date at end) + P3 correct + P1 correct",
+          "D": "P2 correct + no meta (P3 violation) + P1 correct",
+          "E": "P2 correct + meta.status invalid value (P3 violation)"
+        },
+        "answer": [
+          "A"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Only A simultaneously satisfies all three conventions.",
+        "options": {
+          "A": "A is fully compliant.",
+          "B": "B violates P1: `period_start: \"2026-01-01\"` is a plain date format.",
+          "C": "C violates P2: the date is not at the front of the filename.",
+          "D": "D violates P3: missing the meta object.",
+          "E": "E violates P3: `status: \"complete\"` is not a valid status value."
+        }
+      }
+    }
+  ]
+}

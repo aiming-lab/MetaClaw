@@ -31,9 +31,12 @@ from typing import Any, Optional
 import uvicorn
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from openai import OpenAI
+
 from .config import MetaClawConfig
+from .data_formatter import ConversationSample
+from .memory.scope import base_scope, derive_memory_scope
 from .prm_scorer import PRMScorer
-from .sdk_backend import resolve_sdk_backend
 from .skill_manager import SkillManager
 from .utils import run_llm
 
@@ -45,12 +48,42 @@ _RED = "\033[31m"
 _CYAN = "\033[36m"
 _RESET = "\033[0m"
 
-_NON_STANDARD_BODY_KEYS = {"session_id", "session_done", "turn_type"}
+_NON_STANDARD_BODY_KEYS = {
+    "session_id",
+    "session_done",
+    "turn_type",
+    "memory_scope",
+    "user_id",
+    "workspace_id",
+}
 
 
 # ------------------------------------------------------------------ #
 # Helper utilities                                                     #
 # ------------------------------------------------------------------ #
+
+def _ensure_reasoning_content(messages: list[dict]) -> list[dict]:
+    """Ensure every assistant message carries a ``reasoning_content`` field.
+
+    Models that support extended thinking expect *all* assistant turns
+    (including tool-call turns) to include ``reasoning_content``.  If the
+    original conversation history omits it for a given assistant turn, we
+    fill it in with an empty string so the downstream API does not reject
+    the request.
+    """
+    out: list[dict] = []
+    for msg in messages:
+        if msg.get("role") == "assistant":
+            if "reasoning_content" in msg and msg["reasoning_content"]:
+                msg["reasoning"] = msg["reasoning_content"]
+            elif "reasoning" in msg and msg["reasoning"]:
+                msg["reasoning_content"] = msg["reasoning"]
+            else:
+                msg["reasoning_content"] = ""
+                msg["reasoning"] = ""
+        out.append(msg)
+    return out
+
 
 def _flatten_message_content(content) -> str:
     if isinstance(content, str):
@@ -100,7 +133,9 @@ def _normalize_assistant_content_parts(content: list[dict]) -> tuple[str, list[d
 
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
-_TOOL_HANDLE_RE = re.compile(r"^call_(?:kimi|xml)_\d+$")
+_TOOL_HANDLE_RE = re.compile(r"^call_?(?:kimi|xml)_?\d?+$")
+_TRAILING_DIGITS_RE = re.compile(r"\d+$")
+_FUNCTIONS_PREFIX_RE = re.compile(r"^functions[._]?")
 _KIMI_TOOL_CALL_RE = re.compile(
     r"<\|tool_call_begin\|>\s*([a-zA-Z0-9_.-]+)(?::\d+)?\s*"
     r"<\|tool_call_argument_begin\|>\s*(\{.*?\})\s*"
@@ -112,33 +147,60 @@ _QWEN_TOOL_CALL_RE = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>", re.DOTALL
 def _normalize_tool_name(raw_name: str, args_raw: str) -> str:
     """
     Normalize tool names from model output.
-    Fixes common drift where a call handle (e.g. call_kimi_0) is emitted as
-    function name instead of the actual tool name.
     """
+
     name = (raw_name or "").strip()
-    if name.startswith("functions."):
-        name = name.split(".", 1)[1]
-    if not _TOOL_HANDLE_RE.fullmatch(name):
-        return name or "unknown_tool"
+
+    if not name:
+        return "unknown_tool"
+
+    name = _FUNCTIONS_PREFIX_RE.sub("", name)
+
+    parts = name.split(".")
+    parts = [p for p in parts if not p.isdigit()]
+    if not parts:
+        return ""
+
+    name = parts[-1]
+    name = _TRAILING_DIGITS_RE.sub("", name)
+    name = name.strip("_-.")
+
+    if name and not _TOOL_HANDLE_RE.fullmatch(name):
+        return name
 
     try:
         args_obj = json.loads(args_raw or "{}")
     except Exception:
         args_obj = {}
+
     if isinstance(args_obj, dict):
         if isinstance(args_obj.get("command"), str) and args_obj.get("command"):
             return "exec"
-        if isinstance(args_obj.get("sessionId"), str) and args_obj.get("sessionId"):
+        elif isinstance(args_obj.get("sessionId"), str) and args_obj.get("sessionId"):
             return "process"
+        elif isinstance(args_obj.get("file_path"), str) and args_obj.get("file_path"):
+            if isinstance(args_obj.get("content"), str) and args_obj.get("content"):
+                return "write"
+            else:
+                return "read"
+
+    if "read" in raw_name:
+        return "read"
+    elif "write" in raw_name:
+        return "write"
+
     return "unknown_tool"
 
-def _extract_tool_calls_from_text(text: str) -> tuple[str, list[dict]]:
+def _extract_tool_calls_from_text(text: str) -> tuple[str, list[dict], str]:
     """
     Parse tool-call tags embedded in assistant text into OpenAI-style tool_calls.
     Supports Kimi markers and Qwen <tool_call> wrappers.
+
+    Returns:
+        (cleaned_text, tool_calls, reasoning_content)
     """
     if not text:
-        return "", []
+        return "", [], ""
 
     tool_calls: list[dict] = []
 
@@ -186,15 +248,41 @@ def _extract_tool_calls_from_text(text: str) -> tuple[str, list[dict]]:
             }
         )
 
+    # Extract reasoning content from <think> blocks before stripping them.
+    # Covers all cases:
+    #   a) matched <think>X</think>  b) orphan leading: X</think> (no <think>)
+    #   c) orphan trailing: <think>X (no </think>)
+    reasoning_parts: list[str] = []
+    # a) Matched pairs: <think>...</think>
+    for m in re.finditer(r"<think>(.*?)</think>", text, re.DOTALL):
+        reasoning_parts.append(m.group(1))
+    # b) Orphan leading </think> with no preceding <think> — content before it is reasoning
+    if "</think>" in text:
+        first_close = text.index("</think>")
+        prefix = text[:first_close]
+        if "<think>" not in prefix:
+            reasoning_parts.insert(0, prefix)
+    # c) Trailing unclosed <think>...EOF
+    _trailing = re.search(r"<think>((?:(?!</think>).)*)\Z", text, re.DOTALL)
+    if _trailing:
+        reasoning_parts.append(_trailing.group(1))
+    reasoning_content = "\n".join(p.strip() for p in reasoning_parts if p.strip())
+
+    # Strip all think-related markup from the clean text.
     clean = text
+    # Remove matched <think>...</think> pairs first.
     clean = _THINK_RE.sub("", clean)
+    # Remove orphan </think> (its content before it was already captured above).
+    clean = re.sub(r"^[^<]*</think>", "", clean, count=1, flags=re.DOTALL)
     clean = clean.replace("</think>", "")
+    # Remove trailing unclosed <think>...
+    clean = re.sub(r"<think>(?:(?!</think>).)*\Z", "", clean, flags=re.DOTALL)
     # Keep tool call data only in structured field; strip markup from plain text.
     clean = re.sub(r"<\|tool_call_begin\|>.*?<\|tool_call_end\|>", "", clean, flags=re.DOTALL)
     clean = re.sub(r"<\|tool_calls_section_begin\|>.*?<\|tool_calls_section_end\|>", "", clean, flags=re.DOTALL)
     clean = _QWEN_TOOL_CALL_RE.sub("", clean)
     clean = clean.strip()
-    return clean, tool_calls
+    return clean, tool_calls, reasoning_content
 
 
 def _normalize_messages_for_template(messages: list[dict]) -> list[dict]:
@@ -292,229 +380,14 @@ def _rewrite_new_session_bootstrap_prompt(messages: list[dict]) -> tuple[list[di
 
 
 # ------------------------------------------------------------------ #
-# Anthropic ↔ OpenAI format helpers (for NanoClaw /v1/messages)      #
-# ------------------------------------------------------------------ #
-
-def _anthropic_to_openai_body(body: dict[str, Any]) -> dict[str, Any]:
-    """Convert an Anthropic /v1/messages request body to OpenAI chat format.
-
-    Handles:
-    - Top-level ``system`` field → ``messages[0]`` with role ``system``
-    - Assistant messages with ``tool_use`` content blocks → OpenAI ``tool_calls``
-    - User messages with ``tool_result`` content blocks → OpenAI ``tool`` role messages
-    - Anthropic tool definitions → OpenAI ``tools`` array
-    """
-    messages: list[dict] = list(body.get("messages", []))
-
-    # Anthropic puts the system prompt at top level; move it into messages[0].
-    system = body.get("system")
-    if system:
-        if isinstance(system, str):
-            system_text = system
-        elif isinstance(system, list):
-            system_text = " ".join(
-                blk.get("text", "")
-                for blk in system
-                if isinstance(blk, dict) and blk.get("type") == "text"
-            )
-        else:
-            system_text = str(system)
-        messages = [{"role": "system", "content": system_text}] + messages
-
-    # Convert Anthropic messages to OpenAI format.
-    normalized: list[dict] = []
-    for msg in messages:
-        role = msg.get("role")
-        content = msg.get("content")
-
-        if not isinstance(content, list):
-            normalized.append(msg)
-            continue
-
-        if role == "assistant":
-            # Extract text parts and tool_use blocks.
-            text_parts: list[str] = []
-            tool_calls: list[dict] = []
-            for i, blk in enumerate(content):
-                if not isinstance(blk, dict):
-                    continue
-                blk_type = blk.get("type")
-                if blk_type == "text":
-                    t = blk.get("text", "")
-                    if t:
-                        text_parts.append(t)
-                elif blk_type == "tool_use":
-                    args = blk.get("input", {})
-                    if not isinstance(args, str):
-                        try:
-                            args = json.dumps(args, ensure_ascii=False)
-                        except Exception:
-                            args = "{}"
-                    tool_calls.append({
-                        "id": blk.get("id") or f"call_{i}",
-                        "type": "function",
-                        "function": {
-                            "name": blk.get("name") or "unknown_tool",
-                            "arguments": args,
-                        },
-                    })
-            out: dict[str, Any] = {
-                "role": "assistant",
-                "content": " ".join(text_parts).strip() or "",
-            }
-            if tool_calls:
-                out["tool_calls"] = tool_calls
-            normalized.append(out)
-
-        elif role == "user":
-            # Separate tool_result blocks from regular text blocks.
-            tool_results = [
-                blk for blk in content
-                if isinstance(blk, dict) and blk.get("type") == "tool_result"
-            ]
-            other_blocks = [
-                blk for blk in content
-                if isinstance(blk, dict) and blk.get("type") != "tool_result"
-            ]
-
-            # Each tool_result becomes an OpenAI tool-role message.
-            for blk in tool_results:
-                result_content = blk.get("content", "")
-                if isinstance(result_content, list):
-                    result_content = " ".join(
-                        b.get("text", "")
-                        for b in result_content
-                        if isinstance(b, dict) and b.get("type") == "text"
-                    )
-                elif not isinstance(result_content, str):
-                    result_content = str(result_content) if result_content is not None else ""
-                tool_msg: dict[str, Any] = {
-                    "role": "tool",
-                    "tool_call_id": blk.get("tool_use_id") or "",
-                    "content": result_content,
-                }
-                if blk.get("name"):
-                    tool_msg["name"] = blk["name"]
-                normalized.append(tool_msg)
-
-            # Remaining text blocks stay as a user message.
-            if other_blocks:
-                text = " ".join(
-                    blk.get("text", "")
-                    for blk in other_blocks
-                    if blk.get("type") == "text"
-                ).strip()
-                if text:
-                    normalized.append({"role": "user", "content": text})
-
-        else:
-            # system or other roles — flatten to plain text.
-            text = " ".join(
-                blk.get("text", "")
-                for blk in content
-                if isinstance(blk, dict) and blk.get("type") == "text"
-            )
-            normalized.append({**msg, "content": text})
-
-    openai_body: dict[str, Any] = {
-        "model": body.get("model", ""),
-        "messages": normalized,
-        "max_tokens": body.get("max_tokens", 2048),
-    }
-    for opt in ("temperature", "top_p", "stop_sequences", "stream"):
-        if opt in body:
-            key = "stop" if opt == "stop_sequences" else opt
-            openai_body[key] = body[opt]
-
-    # Convert Anthropic tool definitions to OpenAI tools format.
-    if "tools" in body and isinstance(body["tools"], list):
-        openai_tools = []
-        for tool in body["tools"]:
-            if not isinstance(tool, dict):
-                continue
-            openai_tools.append({
-                "type": "function",
-                "function": {
-                    "name": tool.get("name", ""),
-                    "description": tool.get("description", ""),
-                    "parameters": tool.get("input_schema", {}),
-                },
-            })
-        if openai_tools:
-            openai_body["tools"] = openai_tools
-
-    return openai_body
-
-
-def _openai_to_anthropic_response(openai_resp: dict[str, Any], model: str) -> dict[str, Any]:
-    """Convert an OpenAI chat completion response to Anthropic /v1/messages format.
-
-    Handles plain text responses and tool_calls, producing the appropriate
-    Anthropic content block types (``text`` and ``tool_use``).
-    """
-    choice = openai_resp.get("choices", [{}])[0]
-    message = choice.get("message", {})
-    content_text = message.get("content") or ""
-    tool_calls = message.get("tool_calls") or []
-    finish_reason = choice.get("finish_reason", "stop")
-
-    # Build Anthropic content blocks.
-    content_blocks: list[dict[str, Any]] = []
-    if content_text:
-        content_blocks.append({"type": "text", "text": content_text})
-    for tc in tool_calls:
-        func = tc.get("function", {})
-        args_raw = func.get("arguments", "{}")
-        try:
-            args_obj = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
-        except Exception:
-            args_obj = {}
-        content_blocks.append({
-            "type": "tool_use",
-            "id": tc.get("id") or f"toolu_{abs(hash(str(tc))) % 10**8:08d}",
-            "name": func.get("name") or "unknown_tool",
-            "input": args_obj,
-        })
-
-    if not content_blocks:
-        content_blocks = [{"type": "text", "text": ""}]
-
-    stop_reason_map = {
-        "stop": "end_turn",
-        "length": "max_tokens",
-        "tool_calls": "tool_use",
-        "content_filter": "stop_sequence",
-    }
-    stop_reason = stop_reason_map.get(finish_reason, "end_turn")
-    # If the model returned tool calls but finish_reason was "stop", correct it.
-    if tool_calls and stop_reason == "end_turn":
-        stop_reason = "tool_use"
-
-    usage = openai_resp.get("usage", {})
-    return {
-        "id": openai_resp.get("id", "msg_metaclaw"),
-        "type": "message",
-        "role": "assistant",
-        "model": model,
-        "content": content_blocks,
-        "stop_reason": stop_reason,
-        "stop_sequence": None,
-        "usage": {
-            "input_tokens": usage.get("prompt_tokens", 0),
-            "output_tokens": usage.get("completion_tokens", 0),
-        },
-    }
-
-
-# ------------------------------------------------------------------ #
 # MetaClawAPIServer                                                    #
 # ------------------------------------------------------------------ #
 
 class MetaClawAPIServer:
-    """Proxy between OpenClaw and the active RL backend for data collection.
+    """Proxy between OpenClaw and Tinker for RL training data collection.
 
     OpenClaw sends ``X-Session-Id`` and ``X-Turn-Type`` headers with every
-    request.  The proxy forwards to the active sampling client, and when
+    request.  The proxy forwards to Tinker SamplingClient, and when
     ``turn_type`` is ``"main"`` it tokenises the full prompt+response and
     submits a training sample.  Side tasks (``turn_type != "main"``) are
     forwarded but produce no training data.
@@ -530,7 +403,7 @@ class MetaClawAPIServer:
         threading.Event that gates sample submission.
         Set = accepting samples; clear = paused for weight update.
     sampling_client:
-        Tinker/MinT-compatible SamplingClient. Can be None and set later via
+        Tinker SamplingClient. Can be None and set later via
         update_sampling_client().
     skill_manager:
         Optional SkillManager for injecting skills into system prompts.
@@ -548,30 +421,24 @@ class MetaClawAPIServer:
         prm_scorer: Optional[PRMScorer] = None,
         skill_evolver=None,
         last_request_tracker=None,
+        memory_manager=None,
     ):
         self.config = config
-        self.backend = resolve_sdk_backend(config) if config.mode in ("rl", "madmax") else None
-        self._sdk = self.backend.module if self.backend is not None else None
         self.output_queue = output_queue
         self.submission_enabled = submission_enabled
         self._sampling_client = sampling_client
         self.skill_manager = skill_manager
         self.prm_scorer = prm_scorer
         self.skill_evolver = skill_evolver
+        self.memory_manager = memory_manager
         # Optional LastRequestTracker for scheduler idle detection
         self._last_request_tracker = last_request_tracker
 
         self._served_model = config.served_model_name
-        self._expected_api_key = config.proxy_api_key
+        self._expected_api_key = config.api_key
         os.makedirs(config.record_dir, exist_ok=True)
-        # System prompt compression is only used for OpenClaw (whose verbose
-        # system prompt benefits from compression).  Non-OpenClaw agents send
-        # short/no system prompts, and the compressed OpenClaw text can trigger
-        # content filters on strict providers (e.g. Azure).
-        self._compress_system_prompt = (config.claw_type == "openclaw")
-        cache_suffix = f"{config.claw_type}_{config.llm_provider}"
         self._system_prompt_cache_file = os.path.join(
-            config.record_dir, f"system_prompt_cache_{cache_suffix}.json"
+            config.record_dir, "system_prompt_cache.json"
         )
 
         # State machines
@@ -583,25 +450,15 @@ class MetaClawAPIServer:
         self._teacher_tasks: dict[str, dict[int, asyncio.Task]] = {}  # session → {turn → task} (OPD)
         self._pending_records: dict[str, dict] = {}               # for record logging
         self._session_effective: dict[str, int] = {}              # at-least-one guarantee
-        # skills_only: buffer turns per session for skill evolution
+        # Buffer turns per session for skill evolution (cleared on evolution trigger)
         self._session_turns: dict[str, list] = {}
-
-        # Session boundary detection for non-OpenClaw agents (CoPaw, IronClaw, etc.)
-        # Maps pseudo-session key (e.g. "tui-model") to tracking metadata.
-        self._tui_session_meta: dict[str, dict] = {}
-        _INACTIVITY_TIMEOUT = 300  # seconds — treat as new session after 5 min idle
-        self._tui_inactivity_timeout = _INACTIVITY_TIMEOUT
+        # Buffer turns per session for memory ingestion (only cleared on session_done)
+        self._session_memory_turns: dict[str, list] = {}
+        self._session_memory_scopes: dict[str, str] = {}
 
         # OPD teacher model client
-        self._teacher_client: Optional[Any] = None
+        self._teacher_client: Optional[OpenAI] = None
         if config.use_opd and config.teacher_url:
-            try:
-                from openai import OpenAI  # optional dep — install with: pip install metaclaw[evolve]
-            except ImportError as e:
-                raise ImportError(
-                    "OPD teacher mode requires the 'openai' package. "
-                    "Install it with: pip install metaclaw[evolve]"
-                ) from e
             self._teacher_client = OpenAI(
                 base_url=config.teacher_url,
                 api_key=config.teacher_api_key or "unused",
@@ -632,6 +489,11 @@ class MetaClawAPIServer:
         self._server: Optional[uvicorn.Server] = None
         self._thread: Optional[threading.Thread] = None
 
+        # External trainer reference + event loop for admin train-step endpoint.
+        # Set via set_trainer() after the trainer is constructed.
+        self._trainer = None
+        self._main_loop = None
+
     # ------------------------------------------------------------------ #
     # Tokenizer                                                            #
     # ------------------------------------------------------------------ #
@@ -650,6 +512,13 @@ class MetaClawAPIServer:
     # FastAPI app                                                          #
     # ------------------------------------------------------------------ #
 
+    def set_trainer(self, trainer, main_loop) -> None:
+        """Inject the trainer reference and its event loop for the admin
+        ``/v1/admin/train_step`` endpoint.  Called by the launcher after
+        the trainer is constructed."""
+        self._trainer = trainer
+        self._main_loop = main_loop
+
     def _build_app(self) -> FastAPI:
         app = FastAPI(title="MetaClaw Proxy")
         app.state.owner = self
@@ -658,26 +527,6 @@ class MetaClawAPIServer:
         async def healthz():
             return {"ok": True}
 
-        @app.get("/v1/models")
-        async def list_models(
-            request: Request,
-            authorization: Optional[str] = Header(default=None),
-        ):
-            owner: MetaClawAPIServer = request.app.state.owner
-            await owner._check_auth(authorization)
-            model_id = owner._served_model
-            return JSONResponse(content={
-                "object": "list",
-                "data": [
-                    {
-                        "id": model_id,
-                        "object": "model",
-                        "created": 0,
-                        "owned_by": "metaclaw",
-                    }
-                ],
-            })
-
         @app.post("/v1/chat/completions")
         async def chat_completions(
             request: Request,
@@ -685,6 +534,9 @@ class MetaClawAPIServer:
             x_session_id: Optional[str] = Header(default=None),
             x_turn_type: Optional[str] = Header(default=None),
             x_session_done: Optional[str] = Header(default=None),
+            x_memory_scope: Optional[str] = Header(default=None),
+            x_user_id: Optional[str] = Header(default=None),
+            x_workspace_id: Optional[str] = Header(default=None),
         ):
             owner: MetaClawAPIServer = request.app.state.owner
             # Update idle tracker so the scheduler knows the user is active
@@ -711,18 +563,14 @@ class MetaClawAPIServer:
             else:
                 rewritten = 0
             _raw_sid = x_session_id or body.get("session_id") or ""
-            # OpenClaw sends X-Session-Id/X-Turn-Type on every request.
-            # Non-OpenClaw agents (CoPaw, IronClaw, etc.) don't — detect
-            # session boundaries heuristically so skill evolution and state
-            # cleanup still work correctly.
+            # TUI mode: OpenClaw does not send X-Session-Id/X-Turn-Type.
+            # Fall back to a model-derived session ID and treat as "main" so
+            # TUI conversations are collected as training data.
             if _raw_sid:
                 session_id = _raw_sid
                 turn_type = (x_turn_type or body.get("turn_type") or "side").strip().lower()
             else:
-                msg_count = len(body.get("messages") or [])
-                session_id = await owner._resolve_tui_session(
-                    body.get("model", "default"), msg_count,
-                )
+                session_id = f"tui-{body.get('model', 'default')}"
                 turn_type = (x_turn_type or body.get("turn_type") or "main").strip().lower()
             session_done = (
                 (x_session_done and x_session_done.strip().lower() in {"1", "true", "yes", "on"})
@@ -730,12 +578,30 @@ class MetaClawAPIServer:
             )
             # Do not infer session_done from bootstrap text — only explicit X-Session-Done or body session_done trigger evolution.
 
+            # Reuse cached scope for the session to avoid re-deriving
+            # (which would nest |session:X repeatedly).
+            _explicit_scope = (x_memory_scope or "") or str(body.get("memory_scope", "") or "")
+            _explicit_user = (x_user_id or "") or str(body.get("user_id", "") or "")
+            _explicit_workspace = (x_workspace_id or "") or str(body.get("workspace_id", "") or "")
+            _cached = owner._session_memory_scopes.get(session_id, "")
+            if _cached and not _explicit_scope and not _explicit_user and not _explicit_workspace:
+                memory_scope = _cached
+            else:
+                memory_scope = derive_memory_scope(
+                    default_scope=owner.memory_manager.scope_id if owner.memory_manager else "default",
+                    session_id=session_id,
+                    memory_scope=_explicit_scope,
+                    user_id=_explicit_user,
+                    workspace_id=_explicit_workspace,
+                )
+
             stream = bool(body.get("stream", False))
             result = await owner._handle_request(
                 body,
                 session_id=session_id,
                 turn_type=turn_type,
                 session_done=session_done,
+                memory_scope=memory_scope,
             )
             if stream:
                 return StreamingResponse(
@@ -743,69 +609,258 @@ class MetaClawAPIServer:
                 )
             return JSONResponse(content=result["response"])
 
-        # ---------------------------------------------------------------- #
-        # Anthropic-compatible endpoint — used by NanoClaw (credential proxy
-        # forwards container Anthropic SDK calls to ANTHROPIC_BASE_URL).
-        # ---------------------------------------------------------------- #
+        @app.post("/v1/admin/train_step")
+        async def admin_train_step(request: Request):
+            """Trigger a single RL training step using queued samples.
 
-        @app.post("/v1/messages")
-        async def anthropic_messages(
+            Intended to be called by ``metaclaw train-step`` CLI or any
+            external orchestrator (e.g. benchmark scripts).
+
+            The trainer runs on the main event loop while this server runs
+            on a separate uvicorn thread.  We schedule the coroutine onto
+            the main loop via run_coroutine_threadsafe, then wait for the
+            result in a thread-pool worker (asyncio.to_thread) so that the
+            uvicorn event loop stays free to process inference requests
+            during training.
+            """
+            owner: MetaClawAPIServer = request.app.state.owner
+            if owner._trainer is None or owner._main_loop is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="trainer not available (not in RL mode or not yet initialised)",
+                )
+            import concurrent.futures
+
+            future = asyncio.run_coroutine_threadsafe(
+                owner._trainer.train_step_external(),
+                owner._main_loop,
+            )
+
+            def _wait():
+                try:
+                    return future.result(timeout=600)
+                except concurrent.futures.TimeoutError:
+                    raise RuntimeError("train step timed out (600s)")
+
+            try:
+                result = await asyncio.to_thread(_wait)
+            except RuntimeError as exc:
+                raise HTTPException(status_code=504, detail=str(exc))
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=f"train step failed: {exc}")
+            return JSONResponse(content=result)
+
+        # ---------------------------------------------------------- #
+        # Memory management REST API                                  #
+        # ---------------------------------------------------------- #
+
+        @app.get("/v1/memory/stats")
+        async def memory_stats(
             request: Request,
+            scope: str = "",
             authorization: Optional[str] = Header(default=None),
-            x_api_key: Optional[str] = Header(default=None, alias="x-api-key"),
-            x_session_id: Optional[str] = Header(default=None),
-            x_turn_type: Optional[str] = Header(default=None),
-            x_session_done: Optional[str] = Header(default=None),
         ):
             owner: MetaClawAPIServer = request.app.state.owner
-            if owner._last_request_tracker is not None:
-                owner._last_request_tracker.touch()
-            # Accept Anthropic-style x-api-key as well as Bearer token.
-            auth_header = authorization or (f"Bearer {x_api_key}" if x_api_key else None)
-            await owner._check_auth(auth_header)
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            stats = await asyncio.to_thread(
+                owner.memory_manager.get_scope_stats, scope or None
+            )
+            return JSONResponse(content=stats)
 
-            if not owner.submission_enabled.is_set():
-                resumed = await asyncio.to_thread(owner.submission_enabled.wait, 300.0)
-                if not resumed:
-                    raise HTTPException(
-                        status_code=503,
-                        detail="submission paused for weight update (wait timeout)",
-                    )
+        @app.get("/v1/memory/search")
+        async def memory_search(
+            request: Request,
+            q: str = "",
+            scope: str = "",
+            limit: int = 20,
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            results = await asyncio.to_thread(
+                owner.memory_manager.search_memories, q, scope or None, limit
+            )
+            return JSONResponse(content=results)
 
-            raw_body = await request.json()
-            stream = bool(raw_body.get("stream", False))
-            openai_body = _anthropic_to_openai_body(raw_body)
-            model = raw_body.get("model") or owner._served_model
+        @app.get("/v1/memory/health")
+        async def memory_health(
+            request: Request,
+            scope: str = "",
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            health = await asyncio.to_thread(
+                owner.memory_manager.run_system_health_check, scope or None
+            )
+            return JSONResponse(content=health)
 
-            incoming_messages = openai_body.get("messages", [])
-            if isinstance(incoming_messages, list):
-                rewritten_messages, _ = _rewrite_new_session_bootstrap_prompt(incoming_messages)
-                openai_body["messages"] = rewritten_messages
+        @app.get("/v1/memory/summary")
+        async def memory_summary(
+            request: Request,
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            summary = await asyncio.to_thread(
+                owner.memory_manager.get_system_summary
+            )
+            return JSONResponse(content=summary)
 
-            _raw_sid = x_session_id or ""
-            if _raw_sid:
-                session_id = _raw_sid
-                turn_type = (x_turn_type or "side").strip().lower()
+        @app.get("/v1/memory/{memory_id}")
+        async def memory_get(
+            request: Request,
+            memory_id: str,
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            mem = await asyncio.to_thread(
+                owner.memory_manager.get_memory, memory_id
+            )
+            if not mem:
+                raise HTTPException(status_code=404, detail="memory not found")
+            return JSONResponse(content={
+                "memory_id": mem.memory_id,
+                "scope_id": mem.scope_id,
+                "type": mem.memory_type.value,
+                "content": mem.content,
+                "summary": mem.summary,
+                "importance": mem.importance,
+                "entities": mem.entities,
+                "topics": mem.topics,
+                "tags": mem.tags,
+                "pinned": mem.importance >= 0.99,
+                "created_at": mem.created_at,
+                "updated_at": mem.updated_at,
+                "expires_at": mem.expires_at,
+            })
+
+        @app.post("/v1/memory/action-plan")
+        async def memory_action_plan(
+            request: Request,
+            scope: str = "",
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            plan = await asyncio.to_thread(
+                owner.memory_manager.generate_action_plan, scope or None
+            )
+            return JSONResponse(content=plan)
+
+        @app.post("/v1/memory/maintenance")
+        async def memory_maintenance(
+            request: Request,
+            scope: str = "",
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            result = await asyncio.to_thread(
+                owner.memory_manager.run_maintenance, scope or None
+            )
+            return JSONResponse(content=result)
+
+        @app.get("/v1/memory/feedback-analysis")
+        async def memory_feedback_analysis(
+            request: Request,
+            scope: str = "",
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            result = await asyncio.to_thread(
+                owner.memory_manager.analyze_feedback_patterns, scope or None
+            )
+            return JSONResponse(content=result)
+
+        @app.get("/v1/memory/operator-report")
+        async def memory_operator_report(
+            request: Request,
+            scope: str = "",
+            authorization: Optional[str] = Header(default=None),
+        ):
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            report = await asyncio.to_thread(
+                owner.memory_manager.generate_operator_report, scope or None
+            )
+            return JSONResponse(content=report)
+
+        @app.post("/v1/memory/ingest")
+        async def memory_ingest(
+            request: Request,
+            authorization: Optional[str] = Header(default=None),
+        ):
+            """Manually trigger memory ingestion for buffered sessions.
+
+            Request body: {"session_id": "...", "scope": "..."}
+            If session_id is provided, ingest that specific session.
+            If session_id is empty or omitted, ingest ALL buffered sessions.
+            """
+            owner: MetaClawAPIServer = request.app.state.owner
+            await owner._check_auth(authorization)
+            if not owner.memory_manager:
+                raise HTTPException(status_code=503, detail="memory not enabled")
+            body = await request.json()
+            sid = str(body.get("session_id", "")).strip()
+            explicit_scope = str(body.get("scope", "")).strip()
+
+            if sid:
+                # Ingest a specific session.
+                sessions_to_ingest = {sid: owner._session_memory_turns.pop(sid, [])}
             else:
-                msg_count = len(openai_body.get("messages") or [])
-                session_id = await owner._resolve_tui_session(model, msg_count)
-                turn_type = (x_turn_type or "main").strip().lower()
-            session_done = bool(
-                x_session_done and x_session_done.strip().lower() in {"1", "true", "yes", "on"}
-            )
+                # Ingest ALL buffered sessions.
+                sessions_to_ingest = dict(owner._session_memory_turns)
+                owner._session_memory_turns.clear()
 
-            result = await owner._handle_request(
-                openai_body,
-                session_id=session_id,
-                turn_type=turn_type,
-                session_done=session_done,
-            )
-            if stream:
-                return StreamingResponse(
-                    owner._stream_anthropic_response(result, model),
-                    media_type="text/event-stream",
+            total_added = 0
+            total_turns = 0
+            results = []
+            for s_id, turns in sessions_to_ingest.items():
+                if not turns:
+                    continue
+                raw_scope = explicit_scope or owner._session_memory_scopes.pop(s_id, "")
+                scope = base_scope(raw_scope) if raw_scope else None
+                logger.info("[Memory] manual ingest session=%s scope=%s → %d buffered turns", s_id, scope, len(turns))
+                added = await asyncio.to_thread(
+                    owner.memory_manager.ingest_session_turns, s_id, turns, scope,
                 )
-            return JSONResponse(content=_openai_to_anthropic_response(result["response"], model))
+                total_added += added
+                total_turns += len(turns)
+                results.append({"session_id": s_id, "added": added, "turns": len(turns)})
+
+            if not results:
+                buffered_keys = list(owner._session_memory_turns.keys())
+                logger.info("[Memory] manual ingest → no buffered turns (buffered_sessions=%s)", buffered_keys)
+                return JSONResponse(content={"added": 0, "buffered_turns": 0, "sessions": []})
+
+            logger.info("[Memory] manual ingest complete: %d sessions, %d turns, %d units added",
+                        len(results), total_turns, total_added)
+            return JSONResponse(content={
+                "added": total_added,
+                "buffered_turns": total_turns,
+                "sessions": results,
+            })
 
         return app
 
@@ -817,86 +872,6 @@ class MetaClawAPIServer:
         token = authorization.split(" ", 1)[1].strip()
         if token != self._expected_api_key:
             raise HTTPException(status_code=401, detail="invalid api key")
-
-    # ------------------------------------------------------------------ #
-    # TUI session boundary detection (CoPaw / IronClaw / generic clients)  #
-    # ------------------------------------------------------------------ #
-
-    async def _resolve_tui_session(self, model: str, msg_count: int) -> str:
-        """Return a session_id for agents that don't send X-Session-Id.
-
-        Detects new-conversation boundaries by two heuristics:
-          1. Message count dropped — the client started a fresh conversation.
-          2. Inactivity timeout — the user was idle for >N seconds.
-
-        When a boundary is detected the old session is flushed (skill evolution
-        triggered, state dicts cleaned up) and a new unique id is assigned.
-        """
-        import uuid
-
-        tui_key = f"tui-{model}"
-        now = time.time()
-        meta = self._tui_session_meta.get(tui_key)
-
-        if meta is None:
-            # First request for this model — start a fresh session.
-            sid = f"tui-{model}-{uuid.uuid4().hex[:8]}"
-            self._tui_session_meta[tui_key] = {
-                "session_id": sid,
-                "last_msg_count": msg_count,
-                "last_request_time": now,
-            }
-            logger.info("[SessionDetect] new TUI session %s (first request)", sid)
-            return sid
-
-        new_session = False
-        if msg_count < meta["last_msg_count"]:
-            # Message count dropped → client started a new conversation.
-            new_session = True
-            logger.info(
-                "[SessionDetect] msg count dropped %d → %d — new session",
-                meta["last_msg_count"], msg_count,
-            )
-        elif (now - meta["last_request_time"]) > self._tui_inactivity_timeout:
-            new_session = True
-            idle_sec = int(now - meta["last_request_time"])
-            logger.info(
-                "[SessionDetect] inactivity %ds > %ds — new session",
-                idle_sec, self._tui_inactivity_timeout,
-            )
-
-        if new_session:
-            old_sid = meta["session_id"]
-            await self._close_session(old_sid)
-            sid = f"tui-{model}-{uuid.uuid4().hex[:8]}"
-            self._tui_session_meta[tui_key] = {
-                "session_id": sid,
-                "last_msg_count": msg_count,
-                "last_request_time": now,
-            }
-            logger.info("[SessionDetect] new TUI session %s (replacing %s)", sid, old_sid)
-            return sid
-
-        # Same session — update tracking.
-        meta["last_msg_count"] = msg_count
-        meta["last_request_time"] = now
-        return meta["session_id"]
-
-    async def _close_session(self, session_id: str) -> None:
-        """Flush a session: submit remaining samples, trigger skill evolution, clean up state."""
-        self._flush_pending_record(session_id, None)
-        self._maybe_submit_ready_samples(session_id, force_no_prm=True)
-        eff = self._session_effective.pop(session_id, 0)
-        self._turn_counts.pop(session_id, None)
-        self._teacher_tasks.pop(session_id, None)
-        self._pending_turn_data.pop(session_id, None)
-        self._prm_tasks.pop(session_id, None)
-        logger.info(
-            "[SessionDetect] closed session=%s (effective_samples=%d)", session_id, eff,
-        )
-        turns = self._session_turns.pop(session_id, [])
-        if turns and self.skill_evolver and self.config.enable_skill_evolution:
-            self._safe_create_task(self._evolve_skills_for_session(turns))
 
     # ------------------------------------------------------------------ #
     # Record helpers                                                       #
@@ -1083,6 +1058,7 @@ class MetaClawAPIServer:
         session_id: str,
         turn_type: str,
         session_done: bool,
+        memory_scope: str = "",
     ) -> dict[str, Any]:
         messages = body.get("messages")
         if not isinstance(messages, list) or not messages:
@@ -1109,49 +1085,50 @@ class MetaClawAPIServer:
             except Exception:
                 return 0
 
-        # Compress verbose system prompts (OpenClaw only).  Non-OpenClaw
-        # agents send short or no system prompts; compressing them wastes an
-        # LLM call and the cached OpenClaw prompt can trigger content filters.
-        cached_system = ""
-        if self._compress_system_prompt:
-            cached_system = self._read_cached_system_prompt()
-            if not cached_system:
-                raw_system = ""
-                for m in messages:
-                    if isinstance(m, dict) and m.get("role") == "system":
-                        raw_system = _flatten_message_content(m.get("content"))
-                        break
-                if raw_system:
-                    try:
-                        cached_system = await asyncio.to_thread(
-                            run_llm,
-                            [{"role": "user", "content": raw_system}],
-                            self.config,
-                        )
-                        cached_system = (cached_system or raw_system).strip()
-                    except Exception as e:
-                        logger.warning(
-                            "[OpenClaw] system prompt compression failed: %s — using raw system prompt",
-                            e,
-                        )
-                        cached_system = raw_system.strip()
-                    self._write_cached_system_prompt(cached_system)
+        cached_system = self._read_cached_system_prompt()
+        if not cached_system:
+            raw_system = ""
+            for m in messages:
+                if isinstance(m, dict) and m.get("role") == "system":
+                    raw_system = _flatten_message_content(m.get("content"))
+                    break
+            if raw_system:
+                cached_system = await asyncio.to_thread(
+                    run_llm,
+                    [{"role": "user", "content": raw_system}],
+                )
+                cached_system = (cached_system or raw_system).strip()
+                self._write_cached_system_prompt(cached_system)
 
-            if cached_system:
-                for m in messages:
-                    if isinstance(m, dict) and m.get("role") == "system":
-                        m["content"] = cached_system
+        if cached_system:
+            for m in messages:
+                if isinstance(m, dict) and m.get("role") == "system":
+                    m["content"] = cached_system
 
         tools = body.get("tools")
 
-        # Inject skills into system message for main turns
-        if self.skill_manager and turn_type == "main":
-            messages = self._inject_skills(messages)
-        if self._compress_system_prompt and cached_system:
-            logger.info(
-                "[OpenClaw] system prompt cached len=%d",
-                _prompt_len([{"role": "system", "content": cached_system}]),
-            )
+        effective_memory_scope = memory_scope or self._get_memory_scope(session_id)
+        if effective_memory_scope:
+            self._session_memory_scopes[session_id] = effective_memory_scope
+
+        # Inject memory and skills into system message for main turns
+        if turn_type == "main":
+            if (
+                self.memory_manager
+                and self.skill_manager
+                and self.config.synergy_enabled
+            ):
+                messages = await self._inject_augmentation(
+                    messages, scope_id=effective_memory_scope,
+                )
+            elif self.memory_manager:
+                messages = await self._inject_memory(messages, scope_id=effective_memory_scope)
+            elif self.skill_manager:
+                messages = self._inject_skills(messages)
+        logger.info(
+            "[OpenClaw] system prompt cached len=%d",
+            _prompt_len([{"role": "system", "content": cached_system}]),
+        )
 
         # Truncate to fit within max_context_tokens (keep system + most-recent messages)
         max_prompt = self.config.max_context_tokens - int(body.get("max_tokens") or 2048)
@@ -1165,18 +1142,18 @@ class MetaClawAPIServer:
         forward_body["top_logprobs"] = 1
         if "model" not in forward_body:
             forward_body["model"] = self._served_model
-        forward_body["messages"] = messages  # potentially skill-injected
+        forward_body["messages"] = _ensure_reasoning_content(messages)
 
         if self.config.mode == "skills_only":
             output = await self._forward_to_llm(forward_body)
         else:
-            output = await self._forward_to_backend(forward_body)
+            output = await self._forward_to_tinker(forward_body)
 
         choice = output.get("choices", [{}])[0]
         assistant_msg = choice.get("message", {})
         tool_calls = assistant_msg.get("tool_calls") or []
         content = assistant_msg.get("content") or ""
-        reasoning = assistant_msg.get("reasoning_content") or ""
+        reasoning = assistant_msg.get("reasoning_content") or assistant_msg.get("reasoning") or ""
 
         logger.info(
             f"{_YELLOW}[OpenClaw] [{turn_type}] session={session_id} "
@@ -1216,11 +1193,52 @@ class MetaClawAPIServer:
                     session_id, turn_num, messages,
                     prompt_text_simple, response_text_simple, tool_calls,
                 )
-                if self.skill_evolver and self.config.enable_skill_evolution:
-                    self._session_turns.setdefault(session_id, []).append({
-                        "prompt_text": prompt_text_simple,
-                        "response_text": response_text_simple,
-                    })
+                turn_entry = {
+                    "prompt_text": prompt_text_simple,
+                    "response_text": response_text_simple,
+                }
+                evolution_every_n = getattr(self.config, "skill_evolution_every_n_turns", 10)
+                _want_evolution = self.skill_evolver and self.config.enable_skill_evolution and evolution_every_n > 0
+                _want_memory = self.memory_manager is not None
+                if _want_evolution:
+                    self._session_turns.setdefault(session_id, []).append(turn_entry)
+                    buf = self._session_turns.get(session_id, [])
+                    if len(buf) >= evolution_every_n:
+                        evolution_turns = list(buf)
+                        self._session_turns[session_id] = []
+                        self._safe_create_task(self._evolve_skills_for_session(evolution_turns))
+                if _want_memory:
+                    self._session_memory_turns.setdefault(session_id, []).append(turn_entry)
+                # session_done handling for skills_only path (tokenizer unavailable)
+                if session_done and not self.config.memory_manual_trigger:
+                    self._flush_pending_record(session_id, None)
+                    self._maybe_submit_ready_samples(session_id, force_no_prm=True)
+                    eff = self._session_effective.pop(session_id, 0)
+                    self._turn_counts.pop(session_id, None)
+                    self._teacher_tasks.pop(session_id, None)
+                    logger.info("[OpenClaw] session=%s done → cleaned up (effective_samples=%d)", session_id, eff)
+                    memory_turns = self._session_memory_turns.pop(session_id, [])
+                    if memory_turns and self.memory_manager is not None and self.config.memory_auto_extract:
+                        self._safe_create_task(
+                            self._ingest_memory_for_session(
+                                session_id,
+                                memory_turns,
+                                self._session_memory_scopes.pop(session_id, ""),
+                            )
+                        )
+                    else:
+                        self._session_memory_scopes.pop(session_id, None)
+                    evolution_turns = self._session_turns.pop(session_id, [])
+                    if evolution_turns and self.skill_evolver and self.config.enable_skill_evolution:
+                        self._safe_create_task(self._evolve_skills_for_session(evolution_turns))
+                elif session_done and self.config.memory_manual_trigger:
+                    self._flush_pending_record(session_id, None)
+                    self._maybe_submit_ready_samples(session_id, force_no_prm=True)
+                    self._session_effective.pop(session_id, 0)
+                    self._turn_counts.pop(session_id, None)
+                    self._teacher_tasks.pop(session_id, None)
+                    logger.info("[OpenClaw] session=%s done (manual_trigger: memory buffer preserved, %d turns)",
+                                session_id, len(self._session_memory_turns.get(session_id, [])))
                 output["session_id"] = session_id
                 return {"response": output}
 
@@ -1267,18 +1285,20 @@ class MetaClawAPIServer:
                 session_id, turn_num, len(prompt_ids), len(response_ids),
             )
             self._buffer_record(session_id, turn_num, messages, prompt_text, response_text, tool_calls)
-            # Keep skills_only auto-summarization working even when tokenizer is loaded.
-            if (
-                self.config.mode == "skills_only"
-                and self.skill_evolver
-                and self.config.enable_skill_evolution
-            ):
-                self._session_turns.setdefault(session_id, []).append(
-                    {
-                        "prompt_text": prompt_text,
-                        "response_text": response_text,
-                    }
-                )
+            # Skill evolution + memory: buffer turns for all modes (RL and skills_only).
+            turn_entry = {"prompt_text": prompt_text, "response_text": response_text}
+            evolution_every_n = getattr(self.config, "skill_evolution_every_n_turns", 10)
+            _want_evolution = self.skill_evolver and self.config.enable_skill_evolution and evolution_every_n > 0
+            _want_memory = self.memory_manager is not None
+            if _want_evolution:
+                self._session_turns.setdefault(session_id, []).append(turn_entry)
+                buf = self._session_turns.get(session_id, [])
+                if len(buf) >= evolution_every_n:
+                    evolution_turns = list(buf)
+                    self._session_turns[session_id] = []
+                    self._safe_create_task(self._evolve_skills_for_session(evolution_turns))
+            if _want_memory:
+                self._session_memory_turns.setdefault(session_id, []).append(turn_entry)
             self._pending_turn_data.setdefault(session_id, {})[turn_num] = turn_data
             if self.config.use_opd and self._teacher_client:
                 self._fire_teacher_query(
@@ -1287,26 +1307,66 @@ class MetaClawAPIServer:
             self._maybe_submit_ready_samples(session_id)
         else:
             logger.info("[OpenClaw] SIDE session=%s → skipped (no training data)", session_id)
+            # When ignore_turn_type is enabled, buffer side turns for memory too.
+            if self.config.memory_ignore_turn_type and self.memory_manager is not None:
+                prompt_text_side = "\n".join(
+                    f"{m.get('role', '?')}: {_flatten_message_content(m.get('content', ''))}"
+                    for m in messages
+                )
+                response_text_side = content or (
+                    json.dumps(tool_calls, ensure_ascii=False) if tool_calls else ""
+                )
+                self._session_memory_turns.setdefault(session_id, []).append({
+                    "prompt_text": prompt_text_side,
+                    "response_text": response_text_side,
+                })
 
-        if session_done:
-            await self._close_session(session_id)
+        if session_done and not self.config.memory_manual_trigger:
+            self._flush_pending_record(session_id, None)
+            self._maybe_submit_ready_samples(session_id, force_no_prm=True)
+            eff = self._session_effective.pop(session_id, 0)
+            self._turn_counts.pop(session_id, None)
+            self._teacher_tasks.pop(session_id, None)
+            logger.info("[OpenClaw] session=%s done → cleaned up (effective_samples=%d)", session_id, eff)
+            # session done: trigger memory ingestion from dedicated memory buffer
+            memory_turns = self._session_memory_turns.pop(session_id, [])
+            if memory_turns and self.memory_manager is not None and self.config.memory_auto_extract:
+                self._safe_create_task(
+                    self._ingest_memory_for_session(
+                        session_id,
+                        memory_turns,
+                        self._session_memory_scopes.pop(session_id, ""),
+                    )
+                )
+            else:
+                self._session_memory_scopes.pop(session_id, None)
+            # session done: trigger skill evolution from skill buffer
+            evolution_turns = self._session_turns.pop(session_id, [])
+            if evolution_turns and self.skill_evolver and self.config.enable_skill_evolution:
+                self._safe_create_task(self._evolve_skills_for_session(evolution_turns))
+        elif session_done and self.config.memory_manual_trigger:
+            # manual_trigger mode: clean up non-memory state, keep memory buffer for manual ingest
+            self._flush_pending_record(session_id, None)
+            self._maybe_submit_ready_samples(session_id, force_no_prm=True)
+            self._session_effective.pop(session_id, 0)
+            self._turn_counts.pop(session_id, None)
+            self._teacher_tasks.pop(session_id, None)
+            logger.info("[OpenClaw] session=%s done (manual_trigger: memory buffer preserved, %d turns)",
+                        session_id, len(self._session_memory_turns.get(session_id, [])))
 
         output["session_id"] = session_id
         return {"response": output}
 
     # ------------------------------------------------------------------ #
-    # RL backend forwarding                                                #
+    # Tinker forwarding                                                    #
     # ------------------------------------------------------------------ #
 
-    async def _forward_to_backend(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Forward the request to the active RL backend via SamplingClient.sample_async."""
-        if self.backend is None or self._sdk is None:
-            raise HTTPException(status_code=503, detail="no RL backend configured")
+    async def _forward_to_tinker(self, body: dict[str, Any]) -> dict[str, Any]:
+        """Forward the request to Tinker via SamplingClient.sample_async."""
+        import tinker
+
         if self._sampling_client is None:
-            raise HTTPException(
-                status_code=503,
-                detail=f"no {self.backend.label} sampling client available",
-            )
+            raise HTTPException(status_code=503, detail="no Tinker sampling client available")
         if self._tokenizer is None:
             raise HTTPException(status_code=503, detail="no tokenizer available")
 
@@ -1317,15 +1377,8 @@ class MetaClawAPIServer:
             temperature = float(body.get("temperature", 0.7))
             max_tokens = int(body.get("max_tokens") or 2048)
             stop = body.get("stop")
-            backend_key = self.backend.key
-            backend_label = self.backend.label
 
-            logger.info(
-                "[OpenClaw] _forward_to_backend backend=%s msgs=%d max_tokens=%d",
-                backend_key,
-                len(norm_msgs),
-                max_tokens,
-            )
+            logger.info("[OpenClaw] _forward_to_tinker msgs=%d max_tokens=%d", len(norm_msgs), max_tokens)
 
             # Apply chat template using the full conversation history.
             # Use tokenize=False then encode() to always get a plain list of ints.
@@ -1337,9 +1390,9 @@ class MetaClawAPIServer:
             )
             prompt_ids = self._tokenizer.encode(prompt_text, add_special_tokens=False)
 
-            # Build backend ModelInput
-            chunk = self._sdk.EncodedTextChunk(tokens=list(prompt_ids), type="encoded_text")
-            model_input = self._sdk.ModelInput(chunks=[chunk])
+            # Build Tinker ModelInput
+            chunk = tinker.EncodedTextChunk(tokens=list(prompt_ids), type="encoded_text")
+            model_input = tinker.ModelInput(chunks=[chunk])
 
             # Build SamplingParams
             sp_kwargs: dict[str, Any] = dict(
@@ -1350,9 +1403,9 @@ class MetaClawAPIServer:
             )
             if stop is not None:
                 sp_kwargs["stop"] = stop
-            sampling_params = self._sdk.SamplingParams(**sp_kwargs)
+            sampling_params = tinker.SamplingParams(**sp_kwargs)
 
-            # Call active backend
+            # Call Tinker
             response = await self._sampling_client.sample_async(
                 prompt=model_input,
                 num_samples=1,
@@ -1364,7 +1417,7 @@ class MetaClawAPIServer:
             # Decode response tokens → text
             seq = response.sequences[0]
             response_text = self._tokenizer.decode(seq.tokens, skip_special_tokens=True)
-            normalized_text, parsed_tool_calls = _extract_tool_calls_from_text(response_text)
+            normalized_text, parsed_tool_calls, reasoning = _extract_tool_calls_from_text(response_text)
             logprobs_list = seq.logprobs or []
             if parsed_tool_calls:
                 logger.info(
@@ -1372,8 +1425,7 @@ class MetaClawAPIServer:
                     json.dumps(parsed_tool_calls, ensure_ascii=False)[:800],
                 )
             logger.info(
-                "[OpenClaw] %s tokens=%d stop=%s decoded=%r",
-                backend_label,
+                "[OpenClaw] Tinker tokens=%d stop=%s decoded=%r",
                 len(seq.tokens), seq.stop_reason, response_text[:200],
             )
 
@@ -1383,10 +1435,12 @@ class MetaClawAPIServer:
                 for lp in logprobs_list
             ]
             assistant_message: dict[str, Any] = {"role": "assistant", "content": normalized_text}
+            if reasoning:
+                assistant_message["reasoning_content"] = reasoning
             if parsed_tool_calls:
                 assistant_message["tool_calls"] = parsed_tool_calls
             return {
-                "id": f"chatcmpl-{backend_key}-{int(time.time())}",
+                "id": f"chatcmpl-tinker-{int(time.time())}",
                 "object": "chat.completion",
                 "created": int(time.time()),
                 "model": body.get("model", self._served_model),
@@ -1405,28 +1459,15 @@ class MetaClawAPIServer:
         except HTTPException:
             raise
         except Exception as e:
-            backend_label = self.backend.label if self.backend is not None else "RL backend"
-            logger.error("[OpenClaw] %s sample_async failed: %s", backend_label, e, exc_info=True)
-            raise HTTPException(status_code=502, detail=f"{backend_label} inference error: {e}") from e
+            logger.error("[OpenClaw] Tinker sample_async failed: %s", e, exc_info=True)
+            raise HTTPException(status_code=502, detail=f"Tinker inference error: {e}") from e
 
     # ------------------------------------------------------------------ #
     # LLM forwarding (skills_only mode)                                   #
     # ------------------------------------------------------------------ #
 
     async def _forward_to_llm(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Forward to a real LLM API (skills_only mode).
-
-        Supports providers:
-          - ``"openai"`` (default) — any OpenAI-compatible ``/v1/chat/completions`` endpoint.
-          - ``"openrouter"`` — OpenRouter gateway (OpenAI-compatible + routing extensions).
-          - ``"bedrock"`` — AWS Bedrock Converse API via :class:`BedrockChatClient`.
-        """
-        if self.config.llm_provider == "bedrock":
-            return await self._forward_to_llm_bedrock(body)
-        return await self._forward_to_llm_openai(body)
-
-    async def _forward_to_llm_openai(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Forward to an OpenAI-compatible API."""
+        """Forward to a real OpenAI-compatible API (skills_only mode)."""
         import httpx
 
         api_base = self.config.llm_api_base.rstrip("/")
@@ -1448,97 +1489,44 @@ class MetaClawAPIServer:
         if self.config.llm_api_key:
             headers["Authorization"] = f"Bearer {self.config.llm_api_key}"
 
-        # OpenRouter-specific headers and body extensions
-        if self.config.llm_provider == "openrouter":
-            if self.config.openrouter_app_name:
-                headers["X-Title"] = self.config.openrouter_app_name
-            if self.config.openrouter_app_url:
-                headers["HTTP-Referer"] = self.config.openrouter_app_url
-            # Routing strategy
-            route = self.config.openrouter_route
-            if route and route != "fallback":
-                send_body["provider"] = {"sort": route}
-            # Fallback model list
-            fallback = self.config.openrouter_fallback_models
-            if fallback:
-                models = [m.strip() for m in fallback.split(",") if m.strip()]
-                if models:
-                    send_body["models"] = [send_body.get("model", "")] + models
-            # Data collection policy
-            if self.config.openrouter_data_policy == "deny":
-                send_body.setdefault("provider", {})
-                send_body["provider"]["data_collection"] = "deny"
-
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=600.0) as client:
                 resp = await client.post(
                     f"{api_base}/chat/completions",
                     json=send_body,
                     headers=headers,
                 )
                 resp.raise_for_status()
-                return resp.json()
+                result = resp.json()
+
+            # Robustness: if the upstream API returns tool calls / reasoning
+            # inlined in content text instead of structured fields, parse them.
+            for choice in result.get("choices", []):
+                msg = choice.get("message")
+                if not msg or msg.get("role") != "assistant":
+                    continue
+                content = msg.get("content") or ""
+                has_tool_calls = bool(msg.get("tool_calls"))
+                has_reasoning = bool(msg.get("reasoning_content"))
+                if not content or (has_tool_calls and has_reasoning):
+                    continue  # already fully structured
+                cleaned, parsed_tools, parsed_reasoning = _extract_tool_calls_from_text(content)
+                if parsed_tools or parsed_reasoning:
+                    msg["content"] = cleaned
+                    if parsed_reasoning and not has_reasoning:
+                        msg["reasoning_content"] = parsed_reasoning
+                    if parsed_tools and not has_tool_calls:
+                        msg["tool_calls"] = parsed_tools
+                        choice["finish_reason"] = "tool_calls"
+
+            return result
         except httpx.HTTPStatusError as e:
             logger.error("[OpenClaw] upstream LLM error: %s %s", e.response.status_code, e.response.text[:200])
+            logger.debug("[send_body] upstream HTTP error, status=%s", e.response.status_code if hasattr(e, 'response') else 'unknown')
             raise HTTPException(status_code=502, detail=f"Upstream LLM error: {e}") from e
         except Exception as e:
             logger.error("[OpenClaw] LLM forward failed: %s", e, exc_info=True)
             raise HTTPException(status_code=502, detail=f"LLM forward error: {e}") from e
-
-    async def _forward_to_llm_bedrock(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Forward to AWS Bedrock via BedrockChatClient."""
-        from .bedrock_client import BedrockChatClient
-
-        model_id = self.config.llm_model_id
-        if not model_id:
-            raise HTTPException(
-                status_code=503,
-                detail="llm.model_id (Bedrock inference profile) is not configured.",
-            )
-
-        messages = body.get("messages", [])
-        temperature = body.get("temperature", 0.6)
-        max_tokens = (
-            body.get("max_completion_tokens")
-            or body.get("max_tokens")
-            or 8192
-        )
-
-        try:
-            client = BedrockChatClient(
-                model_id=model_id,
-                region=self.config.bedrock_region,
-            )
-            resp = await asyncio.to_thread(
-                client.chat.completions.create,
-                model=model_id,
-                messages=messages,
-                temperature=temperature,
-                max_completion_tokens=max_tokens,
-            )
-            # Convert BedrockChatClient dataclass response to OpenAI-compatible dict
-            choice = resp.choices[0] if resp.choices else None
-            return {
-                "id": f"chatcmpl-bedrock-{int(time.time())}",
-                "object": "chat.completion",
-                "model": model_id,
-                "choices": [{
-                    "index": 0,
-                    "message": {
-                        "role": choice.message.role if choice else "assistant",
-                        "content": choice.message.content if choice else "",
-                    },
-                    "finish_reason": choice.finish_reason if choice else "stop",
-                }],
-                "usage": {
-                    "prompt_tokens": resp.usage.prompt_tokens,
-                    "completion_tokens": resp.usage.completion_tokens,
-                    "total_tokens": resp.usage.total_tokens,
-                },
-            }
-        except Exception as e:
-            logger.error("[OpenClaw] Bedrock forward failed: %s", e, exc_info=True)
-            raise HTTPException(status_code=502, detail=f"Bedrock forward error: {e}") from e
 
     # ------------------------------------------------------------------ #
     # Skill evolution (skills_only mode)                                  #
@@ -1629,28 +1617,13 @@ class MetaClawAPIServer:
             )
         return result
 
-    _AGENT_METADATA_RE = re.compile(
-        r"\["
-        r"(?:Queued message|Conversation info|Sender"
-        r"|Forwarded message context|Replied message context)"
-        r":.*?\]",
-        re.DOTALL,
-    )
-
-    @staticmethod
-    def _extract_task_description(raw_content: str) -> str:
-        """Strip agent metadata so embedding queries reflect actual task content."""
-        cleaned = MetaClawAPIServer._AGENT_METADATA_RE.sub("", raw_content)
-        return cleaned.strip()
-
     def _inject_skills(self, messages: list[dict]) -> list[dict]:
         """Prepend skill guidance to the system message."""
         if not self.skill_manager:
             return messages
 
         user_msgs = [m for m in messages if m.get("role") == "user"]
-        raw_content = _flatten_message_content(user_msgs[-1].get("content", "")) if user_msgs else ""
-        task_desc = self._extract_task_description(raw_content)
+        task_desc = _flatten_message_content(user_msgs[-1].get("content", "")) if user_msgs else ""
         if not task_desc:
             return messages
 
@@ -1758,7 +1731,6 @@ class MetaClawAPIServer:
             )
 
         loss_mask = [0] * len(response_ids) if exclude else [1] * len(response_ids)
-        from .data_formatter import ConversationSample  # optional dep (RL path only)
         sample = ConversationSample(
             session_id=session_id,
             turn_num=self._turn_counts.get(session_id, 0),
@@ -1822,100 +1794,6 @@ class MetaClawAPIServer:
         yield f"data: {json.dumps(final, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
-    async def _stream_anthropic_response(self, result: dict[str, Any], model: str):
-        """Yield Anthropic-format SSE events from an internal result dict.
-
-        Emits text and tool_use content blocks so OpenClaw tool calls work
-        correctly when streamed through the /v1/messages endpoint.
-        """
-        payload = result["response"]
-        choice = payload.get("choices", [{}])[0]
-        message = choice.get("message", {})
-        content_text = message.get("content", "") or ""
-        tool_calls = message.get("tool_calls") or []
-        finish_reason = choice.get("finish_reason", "stop")
-        stop_reason_map = {
-            "stop": "end_turn", "length": "max_tokens",
-            "tool_calls": "tool_use", "content_filter": "stop_sequence",
-        }
-        stop_reason = stop_reason_map.get(finish_reason, "end_turn")
-        if tool_calls and stop_reason == "end_turn":
-            stop_reason = "tool_use"
-        usage = payload.get("usage", {})
-        msg_id = payload.get("id", "msg_metaclaw")
-
-        def _sse(event: str, data: dict) -> str:
-            return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-
-        yield _sse("message_start", {
-            "type": "message_start",
-            "message": {
-                "id": msg_id, "type": "message", "role": "assistant",
-                "content": [], "model": model, "stop_reason": None,
-                "stop_sequence": None,
-                "usage": {"input_tokens": usage.get("prompt_tokens", 0), "output_tokens": 0},
-            },
-        })
-        yield _sse("ping", {"type": "ping"})
-
-        block_index = 0
-
-        # Emit text block if present.
-        if content_text:
-            yield _sse("content_block_start", {
-                "type": "content_block_start", "index": block_index,
-                "content_block": {"type": "text", "text": ""},
-            })
-            yield _sse("content_block_delta", {
-                "type": "content_block_delta", "index": block_index,
-                "delta": {"type": "text_delta", "text": content_text},
-            })
-            yield _sse("content_block_stop", {"type": "content_block_stop", "index": block_index})
-            block_index += 1
-
-        # Emit tool_use blocks for each tool call.
-        for tc in tool_calls:
-            func = tc.get("function", {})
-            args_raw = func.get("arguments", "{}")
-            try:
-                args_obj = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
-            except Exception:
-                args_obj = {}
-            tc_id = tc.get("id") or f"toolu_{abs(hash(str(tc))) % 10**8:08d}"
-            yield _sse("content_block_start", {
-                "type": "content_block_start", "index": block_index,
-                "content_block": {
-                    "type": "tool_use",
-                    "id": tc_id,
-                    "name": func.get("name") or "unknown_tool",
-                    "input": {},
-                },
-            })
-            yield _sse("content_block_delta", {
-                "type": "content_block_delta", "index": block_index,
-                "delta": {
-                    "type": "input_json_delta",
-                    "partial_json": json.dumps(args_obj, ensure_ascii=False),
-                },
-            })
-            yield _sse("content_block_stop", {"type": "content_block_stop", "index": block_index})
-            block_index += 1
-
-        # If nothing was emitted, send an empty text block.
-        if block_index == 0:
-            yield _sse("content_block_start", {
-                "type": "content_block_start", "index": 0,
-                "content_block": {"type": "text", "text": ""},
-            })
-            yield _sse("content_block_stop", {"type": "content_block_stop", "index": 0})
-
-        yield _sse("message_delta", {
-            "type": "message_delta",
-            "delta": {"stop_reason": stop_reason, "stop_sequence": None},
-            "usage": {"output_tokens": usage.get("completion_tokens", 0)},
-        })
-        yield _sse("message_stop", {"type": "message_stop"})
-
     # ------------------------------------------------------------------ #
     # Lifecycle                                                            #
     # ------------------------------------------------------------------ #
@@ -1936,11 +1814,7 @@ class MetaClawAPIServer:
 
     def _print_ready_banner(self):
         time.sleep(3)
-        backend = (
-            self.backend.banner
-            if self.backend is not None
-            else f"LLM ({self.config.llm_model_id or 'upstream'})"
-        )
+        backend = "Tinker cloud RL" if self.config.mode in ("rl", "auto") else f"LLM ({self.config.llm_model_id or 'upstream'})"
         banner = (
             f"\n{'=' * 70}\n"
             f"  MetaClaw proxy ready  [mode={self.config.mode}]\n"
@@ -1957,11 +1831,11 @@ class MetaClawAPIServer:
             self._thread.join(timeout=5)
 
     # ------------------------------------------------------------------ #
-    # RL backend interface                                                 #
+    # Tinker-specific interface                                            #
     # ------------------------------------------------------------------ #
 
     def update_sampling_client(self, new_client):
-        """Hot-swap the active sampling client after a weight update."""
+        """Hot-swap the Tinker sampling client after a weight update."""
         self._sampling_client = new_client
         logger.info("[OpenClaw] sampling client updated")
 
@@ -1980,3 +1854,266 @@ class MetaClawAPIServer:
         exc = task.exception()
         if exc is not None:
             logger.error("[OpenClaw] background task failed: %s", exc, exc_info=exc)
+
+    # ------------------------------------------------------------------ #
+    # Memory injection & ingestion                                         #
+    # ------------------------------------------------------------------ #
+
+    async def _ingest_memory_for_session(
+        self,
+        session_id: str,
+        turns: list[dict],
+        scope_id: str = "",
+    ):
+        """Persist simple phase-1 memory units from the completed session.
+
+        Memories are stored under the *base* scope (session suffix stripped)
+        so they are retrievable across sessions.
+        """
+        if self.memory_manager is None:
+            return
+        # Strip session suffix so memories are shared across sessions.
+        ingest_scope = base_scope(scope_id) if scope_id else None
+        try:
+            added = await asyncio.to_thread(
+                self.memory_manager.ingest_session_turns,
+                session_id,
+                turns,
+                ingest_scope,
+            )
+            stats = self.memory_manager.get_scope_stats(ingest_scope)
+            logger.info(
+                "[Memory] session=%s scope=%s added %d memory units active=%d by_type=%s",
+                session_id,
+                ingest_scope or self.memory_manager.scope_id,
+                added,
+                stats.get("active", 0),
+                stats.get("active_by_type", {}),
+            )
+        except Exception as e:
+            logger.error("[Memory] ingest failed for session=%s: %s", session_id, e, exc_info=True)
+
+    async def _inject_memory(self, messages: list[dict], scope_id: str = "") -> list[dict]:
+        """Prepend relevant long-term memory to the system message.
+
+        Retrieves from the base scope (session suffix stripped) so memories
+        from previous sessions are visible.  Runs blocking SQLite queries in
+        a thread to avoid blocking the async event loop.
+        """
+        if not self.memory_manager:
+            return messages
+
+        user_msgs = [m for m in messages if m.get("role") == "user"]
+        task_desc = _flatten_message_content(user_msgs[-1].get("content", "")) if user_msgs else ""
+        if not task_desc:
+            return messages
+
+        # Use base scope for retrieval so memories are shared across sessions
+        retrieval_scope = base_scope(scope_id) if scope_id else None
+        memories = await asyncio.to_thread(
+            self.memory_manager.retrieve_for_prompt, task_desc, scope_id=retrieval_scope,
+        )
+        if not memories:
+            logger.info("[Memory] no memories retrieved, skipping injection for task=%s", task_desc[:80])
+            return messages
+
+        memory_text = self.memory_manager.render_for_prompt(memories)
+        logger.info(
+            "[Memory] injecting %d memories (~%d tokens) for task=%s",
+            len(memories),
+            len(memory_text.split()),
+            task_desc[:120],
+        )
+        messages = list(messages)
+
+        sys_indices = [i for i, m in enumerate(messages) if m.get("role") == "system"]
+        if sys_indices:
+            idx = sys_indices[0]
+            existing = _flatten_message_content(messages[idx].get("content", ""))
+            messages[idx] = {**messages[idx], "content": existing + "\n\n" + memory_text}
+        else:
+            messages.insert(0, {"role": "system", "content": memory_text})
+
+        return messages
+
+    def _get_memory_scope(self, session_id: str) -> str:
+        if not self.memory_manager:
+            return ""
+        scope = self._session_memory_scopes.get(session_id, "").strip()
+        if scope:
+            return scope
+        return self.memory_manager.scope_id
+
+    # ------------------------------------------------------------------ #
+    # Skill-Memory Synergy                                                #
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _synergy_tokenize(text: str) -> set[str]:
+        """Lightweight tokenizer for Jaccard overlap computation."""
+        tokens: list[str] = []
+        buf: list[str] = []
+        for ch in text.lower():
+            if ch.isalnum() or ch in {"_", "-"}:
+                buf.append(ch)
+            elif buf:
+                tok = "".join(buf)
+                if len(tok) >= 2:
+                    tokens.append(tok)
+                buf = []
+        if buf:
+            tok = "".join(buf)
+            if len(tok) >= 2:
+                tokens.append(tok)
+        return set(tokens)
+
+    def _dedup_memory_against_skills(
+        self,
+        memories: list,
+        skills: list[dict],
+        threshold: float = 0.5,
+    ) -> list:
+        """Remove PROCEDURAL_OBSERVATION memories that overlap heavily with skills.
+
+        Uses Jaccard keyword overlap so it works without any embedding model.
+        """
+        if not skills or not memories:
+            return memories
+
+        # Build a combined term set from all active skills.
+        skill_terms: set[str] = set()
+        for s in skills:
+            skill_terms |= self._synergy_tokenize(
+                s.get("content", "") + " " + s.get("description", "")
+            )
+        if not skill_terms:
+            return memories
+
+        filtered: list = []
+        dedup_count = 0
+        for mem in memories:
+            if mem.memory_type.value == "procedural_observation":
+                mem_terms = self._synergy_tokenize(mem.content + " " + mem.summary)
+                union = mem_terms | skill_terms
+                overlap = len(mem_terms & skill_terms) / max(len(union), 1)
+                if overlap > threshold:
+                    dedup_count += 1
+                    logger.info(
+                        "[Synergy] dedup procedural memory (overlap=%.2f): %s",
+                        overlap,
+                        mem.content[:80],
+                    )
+                    continue
+            filtered.append(mem)
+
+        if dedup_count:
+            logger.info(
+                "[Synergy] deduped %d procedural memories against %d skills",
+                dedup_count,
+                len(skills),
+            )
+        return filtered
+
+    async def _inject_augmentation(
+        self,
+        messages: list[dict],
+        scope_id: str = "",
+    ) -> list[dict]:
+        """Coordinated injection of both Memory and Skill.
+
+        Replaces the separate _inject_memory + _inject_skills calls when both
+        modules are enabled.  Key differences vs independent injection:
+
+        1. Shared token budget (config.synergy_token_budget)
+        2. Content dedup — procedural observations that overlap with skills are dropped
+        3. Role-separated prompt template — LLM gets clear guidance on how to use each
+        """
+        if not self.memory_manager or not self.skill_manager:
+            return messages
+
+        user_msgs = [m for m in messages if m.get("role") == "user"]
+        task_desc = (
+            _flatten_message_content(user_msgs[-1].get("content", ""))
+            if user_msgs
+            else ""
+        )
+        if not task_desc:
+            return messages
+
+        # --- 1. Retrieve relevant skills (for template customization, not injection)
+        skills = self.skill_manager.retrieve_relevant(
+            task_desc, top_k=min(self.config.skill_top_k, 5),
+        )
+
+        # Need >= 2 relevant skills for synergy template; otherwise plain memory.
+        if len(skills) < 2:
+            return await self._inject_memory(messages, scope_id=scope_id)
+
+        # --- 2. Retrieve memories -------------------------------------------------
+        retrieval_scope = base_scope(scope_id) if scope_id else None
+        memories = await asyncio.to_thread(
+            self.memory_manager.retrieve_for_prompt,
+            task_desc,
+            scope_id=retrieval_scope,
+        )
+
+        if not memories:
+            return self._inject_skills(messages)
+
+        # Dedup procedural memories that overlap with matched skills.
+        memories = self._dedup_memory_against_skills(
+            memories, skills, threshold=self.config.synergy_dedup_threshold,
+        )
+
+        memory_text = self.memory_manager.render_for_prompt(memories)
+        if not memory_text:
+            return self._inject_skills(messages)
+
+        # --- 3. Build skill-aware structured template (no full skill injection) ---
+        # Extract compact process steps from matched skills.
+        import re as _re
+        skill_steps = []
+        for s in skills[:3]:
+            content = s.get("content", "")
+            bold_actions = _re.findall(r'\d+\.\s+\*\*([^*]+)\*\*', content)
+            name = s.get("name", "").replace("-", " ")
+            if bold_actions:
+                steps = " → ".join(a.strip() for a in bold_actions[:5])
+                skill_steps.append(f"{steps}")
+            else:
+                skill_steps.append(name)
+        methodology = "; ".join(skill_steps)
+
+        parts = [
+            "## Augmented Context",
+            "",
+            f"Recommended approach: {methodology}.",
+            "Use the project-specific experience below to inform your response.",
+            "",
+            "### Memories (Project-Specific Experience — WHAT worked/failed before)",
+            "",
+            memory_text,
+        ]
+
+        augmented_text = "\n".join(parts)
+
+        # Log summary.
+        logger.info(
+            "[Synergy] injecting %d memories + %d skill hints (~%d tokens) for task=%s",
+            len(memories),
+            len(skills),
+            len(augmented_text.split()),
+            task_desc[:120],
+        )
+
+        # --- 4. Inject into system message ----------------------------------------
+        messages = list(messages)
+        sys_indices = [i for i, m in enumerate(messages) if m.get("role") == "system"]
+        if sys_indices:
+            idx = sys_indices[0]
+            existing = _flatten_message_content(messages[idx].get("content", ""))
+            messages[idx] = {**messages[idx], "content": existing + "\n\n" + augmented_text}
+        else:
+            messages.insert(0, {"role": "system", "content": augmented_text})
+
+        return messages

@@ -1,0 +1,44 @@
+llm:
+  api_base: ${BENCHMARK_BASE_URL}
+  api_key: ${BENCHMARK_API_KEY}
+  model_id: ${TINKER_MODEL}
+  provider: custom
+mode: rl
+proxy:
+  host: 0.0.0.0
+  port: 30000
+rl:
+  enabled: true
+  model: ${TINKER_MODEL}
+  tinker_api_key: ${TINKER_KEY}
+  prm_url: ${BENCHMARK_BASE_URL}
+  prm_model: ${PRM_MODEL}
+  prm_api_key: ${BENCHMARK_API_KEY}
+  manual_train_trigger: true
+  batch_size: 4
+  lora_rank: 32
+  evolver_model: ${PRM_MODEL}
+scheduler:
+  calendar:
+    enabled: false
+  enabled: false
+skills:
+  auto_evolve: true
+  dir: ${METACLAW_ROOT}/memory_data/skills
+  enabled: true
+  retrieval_mode: template
+  task_specific_top_k: 10
+  top_k: 6
+memory:
+  enabled: true
+  scope: default
+  retrieval_mode: hybrid
+  embedding_mode: semantic
+  embedding_model: all-MiniLM-L6-v2
+  auto_extract: true
+  auto_consolidate: true
+  max_injected_units: 10
+  max_injected_tokens: 1500
+  ignore_turn_type: true
+  manual_trigger: true
+max_context_tokens: 50000

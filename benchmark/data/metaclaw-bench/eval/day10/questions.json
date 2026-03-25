@@ -1,0 +1,273 @@
+{
+  "id": "day10",
+  "desc": "Day 10 — Sprint 8 Week 1 wrap-up, comprehensive review (P1+P2 full generalization)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please generate the main Sprint Review report for this week in JSON format, saved to the day10/ directory. Include review_date (today), sprint_week (week 1: 2026-03-23 to 2026-03-27), generated_at (current time), completed_tasks (array), key_metrics (summary metrics), and blockers (obstacles encountered this week).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The Sprint Review main report is correctly named.",
+        "incorrect": "File naming does not meet our standards. Should use `20260327_<description>.json`, e.g. `20260327_sprint8_week1_review.json`."
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please create an outline for the Sprint Review presentation in Markdown format, saved to the day10/ directory. Include the agenda, each team member's presentation module, and Q&A time slots.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The presentation outline file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260327_sprint_review_agenda.md` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "Looking back at the files generated this week (from day10/this_week_outputs.txt), which of the following file names need to be renamed?\n\nA. 20260323_ci_build_report.json\nB. test_coverage_20260323.json\nC. 20260324_weekly_tech_report.md\nD. SprintMeetingNotes.json\nE. 20260325_api_request_trend.json\nF. user_activity_report.json\nG. 20260326_sprint8_midpoint_report.json\nH. risk_assessment_v2.md\n\nAnswer using \\bbox{X,Y,...} format (select those that need renaming).",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "20260323_ci_build_report.json",
+          "B": "test_coverage_20260323.json",
+          "C": "20260324_weekly_tech_report.md",
+          "D": "SprintMeetingNotes.json",
+          "E": "20260325_api_request_trend.json",
+          "F": "user_activity_report.json",
+          "G": "20260326_sprint8_midpoint_report.json",
+          "H": "risk_assessment_v2.md"
+        },
+        "answer": [
+          "B",
+          "D",
+          "F",
+          "H"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! You identified all files that need renaming.",
+        "options": {
+          "A": "A compliant: no renaming needed.",
+          "B": "B needs renaming: date is not the prefix — should be 20260323_test_coverage.json.",
+          "C": "C compliant: no renaming needed.",
+          "D": "D needs renaming: no date prefix and CamelCase — should be 20260324_sprint_meeting_notes.json.",
+          "E": "E compliant: no renaming needed.",
+          "F": "F needs renaming: no date prefix — should be 20260325_user_activity_report.json.",
+          "G": "G compliant: no renaming needed.",
+          "H": "H needs renaming: no date prefix — should be 20260326_risk_assessment_v2.md."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please create an archive index of this week's output files in JSON format, saved to the day10/ directory. List all output files from this week (day06-day09) with their file name, type, and creation time (use archived_at as today at 5:00 PM).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The archive index file is correctly named.",
+        "incorrect": "Archive index file naming does not meet standards. Should be `20260327_week1_archive_index.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please draft the Sprint 8 Week 2 work plan in JSON format, saved to the day10/ directory. Include plan_week (next week's date range: 2026-03-30 to 2026-04-03), plan_created_at (current time), goals (array), and tasks (with task_id, assignee, and due_date for each).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext json --min-count 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The next week plan file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260327_sprint8_week2_plan.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please check the Sprint Review main report in day10/, verify that the generated_at and review_date fields are in the correct format, and correct them if there are any errors (overwrite the original file).",
+      "eval": {
+        "command": "python -c \"import json,re,glob,sys; files=sorted(glob.glob('day10/[0-9]*_*review*.json')); f=files[0] if files else sys.exit(1); d=json.load(open(f)); pat=re.compile(r'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.[0-9]+)?\\+08:00$'); ok=pat.match(str(d.get('generated_at',''))); sys.exit(0 if ok else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The time fields in the Sprint Review report are in the correct format.",
+        "incorrect": "The generated_at or review_date format in the Sprint Review report does not meet ISO 8601 requirements (must include +08:00 timezone offset)."
+      },
+      "update": []
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "After this week's work, which of the following summaries about file naming conventions are correct?\n\nA. All agent-generated output files, regardless of format (JSON/MD/CSV), need a date prefix\nB. The date in the file name reflects the file generation date, not the date of the events described in the content\nC. Pre-populated reference files (e.g. standup_raw.txt) also need to follow the naming convention\nD. The date format must be YYYYMMDD (8 digits), not YYYY-MM-DD (10 digits with hyphens)\nE. The description part can include numbers (e.g. sprint8, v2) as long as they are all lowercase\nF. Multiple files of the same type on the same day share the same date prefix, differentiated by the description part\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "All output files (any format) need date prefix",
+          "B": "Date reflects file generation date",
+          "C": "Pre-populated reference files also need convention",
+          "D": "Date must be 8-digit YYYYMMDD format",
+          "E": "Description can include numbers (lowercase)",
+          "F": "Same-day same-type files share date prefix, differ in description"
+        },
+        "answer": [
+          "A",
+          "B",
+          "D",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P2 applies to all output file types (JSON/MD/CSV).",
+          "B": "B correct: date prefix = file generation date, not the date of events described.",
+          "C": "C wrong: pre-populated workspace reference files don't need P2, only agent-generated outputs do.",
+          "D": "D correct: must be compact YYYYMMDD (8 digits), not YYYY-MM-DD (10 digits with hyphens).",
+          "E": "E correct: numbers are allowed in the description (regex: [a-z0-9_]*).",
+          "F": "F correct: multiple same-day files share the same date prefix, differentiated by description."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please update the technical debt record for this week — create a weekly technical debt summary document in JSON format, saved to the day10/ directory. Include summary_generated_at (current time), total_debt_items, high_priority_count, and items (array with id, title, priority, created_at, and sprint for each item).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext json --min-count 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The technical debt summary file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260327_tech_debt_weekly_summary.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please generate a CSV summary of team task completion for this week, for reporting purposes, saved to the day10/ directory. Columns: member_name, tasks_completed, hours_logged, blocker_count.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext csv",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The team weekly stats CSV file is correctly named.",
+        "incorrect": "CSV file naming does not meet standards. Should be `20260327_team_weekly_stats.csv` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "After the Sprint Review, the team decides to archive all this week's outputs. Which of the following archive file names are fully compliant?\n\nA. 20260327_sprint8_week1_review.json\nB. 20260327_archive_index.json\nC. sprint8_week1_summary_20260327.md\nD. 20260327_team_weekly_stats.csv\nE. 20260327_next_week_plan.json\nF. TechDebtSummary_20260327.json\nG. 20260327_sprint_review_agenda.md\n\nAnswer using \\bbox{X,Y,...} format (select compliant ones).",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "20260327_sprint8_week1_review.json",
+          "B": "20260327_archive_index.json",
+          "C": "sprint8_week1_summary_20260327.md (date at end)",
+          "D": "20260327_team_weekly_stats.csv",
+          "E": "20260327_next_week_plan.json",
+          "F": "TechDebtSummary_20260327.json (CamelCase + date at end)",
+          "G": "20260327_sprint_review_agenda.md"
+        },
+        "answer": [
+          "A",
+          "B",
+          "D",
+          "E",
+          "G"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A compliant: format is fully correct.",
+          "B": "B compliant: format is fully correct.",
+          "C": "C not compliant: date is at the end instead of the prefix.",
+          "D": "D compliant: format is fully correct.",
+          "E": "E compliant: format is fully correct.",
+          "F": "F not compliant: CamelCase naming and date at end — two violations.",
+          "G": "G compliant: format is fully correct."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please create a next week OKR tracking file in JSON format, saved to the day10/ directory. Include tracking_period_start (next Monday at 09:00), tracking_period_end (next Friday at 18:00), created_at (current time), and objectives (array with title and key_results for each).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext json --min-count 5",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The OKR tracking file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260327_next_week_okr_tracker.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r12",
+      "type": "multi_choice",
+      "question": "The following is the final file list after Sprint Review. Which files are fully compliant in both naming AND key time fields?\n\nA. File name 20260327_sprint8_review.json, generated_at: \"2026-03-27T14:00:00+08:00\"\nB. File name 20260327_week2_plan.json, plan_start: \"2026-03-30\" (pure date)\nC. File name archive_index.json, archived_at: \"2026-03-27T17:00:00+08:00\"\nD. File name 20260327_team_stats.csv (no time fields)\nE. File name 20260327_okr_tracker.json, tracking_period_start: \"2026-03-30T09:00:00+08:00\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "type": "multi_choice",
+        "options": {
+          "A": "Naming correct + time field ISO 8601",
+          "B": "Naming correct + plan_start pure date (P1 violation)",
+          "C": "Naming violation (no date prefix) + time field correct",
+          "D": "Naming correct + no time fields (compliant)",
+          "E": "Naming correct + time field ISO 8601"
+        },
+        "answer": [
+          "A",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A fully compliant: naming correct and time field uses ISO 8601 +08:00.",
+          "B": "B P1 violation: plan_start is a pure date (missing time and timezone offset).",
+          "C": "C P2 violation: no date prefix in the file name.",
+          "D": "D fully compliant: naming correct, CSV has no time fields (P1 not applicable).",
+          "E": "E fully compliant: naming correct and time field uses ISO 8601 +08:00."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r13",
+      "type": "file_check",
+      "question": "Please create a complete retrospective document for this week (Sprint 8 Week 1) in Markdown format, saved to the day10/ directory. Include: week highlights, problems encountered, improvement suggestions, and expectations for next week.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day10/ --ext md --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The week retrospective document is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260327_week1_retrospective.md` or similar format."
+      },
+      "update": []
+    }
+  ]
+}

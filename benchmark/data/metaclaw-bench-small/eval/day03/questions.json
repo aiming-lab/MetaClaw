@@ -1,0 +1,115 @@
+{
+  "id": "day03",
+  "desc": "Day 03 — P2 first encounter — code engineering file naming",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please organize the content of day03/ci_build_raw.txt into a structured JSON report and save it to the day03/ directory. The report should include build_time, duration_seconds, status, and steps fields.",
+      "feedback": {
+        "correct": "The build report file is correctly named.",
+        "incorrect": "The output file naming does not meet our standards. We require all output files to use the format `YYYYMMDD_<description>.ext`, with the description in lowercase snake_case. For example: `20260323_ci_build_report.json`. Note that the date prefix must come first."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day03/ --ext json",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "Which of the following file names conform to our output file naming convention?\n\nA. 20260323_ci_build_report.json\nB. ci_build_report_2026-03-23.json\nC. 20260323_test_coverage_summary.json\nD. TestCoverageSummary.json\nE. 20260323-ci-build.json\nF. 20260323_deploy_changelog.md\nG. report.json\n\nAnswer using \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: date prefix and snake_case, format is correct.",
+          "B": "B wrong: date is not at prefix position — should be 20260323_ci_build_report.json.",
+          "C": "C correct: date prefix and snake_case, format is correct.",
+          "D": "D wrong: CamelCase and missing date prefix.",
+          "E": "E wrong: hyphens used in description instead of underscores.",
+          "F": "F correct: date prefix and snake_case, .md extension is also valid.",
+          "G": "G wrong: no date prefix at all."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "20260323_ci_build_report.json",
+          "B": "ci_build_report_2026-03-23.json",
+          "C": "20260323_test_coverage_summary.json",
+          "D": "TestCoverageSummary.json",
+          "E": "20260323-ci-build.json",
+          "F": "20260323_deploy_changelog.md",
+          "G": "report.json"
+        },
+        "answer": [
+          "A",
+          "C",
+          "F"
+        ]
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please create the version changelog for the v2.3.0 deployment today and save it to the day03/ directory. Include version, released_at (today at 14:00), changes (array), and deployed_by fields.",
+      "feedback": {
+        "correct": "The changelog file is correctly named.",
+        "incorrect": "File naming does not meet standards. The changelog should be named like `20260323_v230_changelog.json` — date prefix + snake_case description."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day03/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please format the build summary as a Markdown report for sharing in the team Slack channel, and save it to the day03/ directory.",
+      "feedback": {
+        "correct": "The Markdown file is correctly named.",
+        "incorrect": "Markdown file naming does not meet standards. Should use `20260323_<description>.md` format, e.g. `20260323_build_summary.md`."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day03/ --ext md",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "Regarding the date prefix in file names, which of the following statements are correct?\n\nA. The date prefix reflects the **creation date** of the file — i.e., the date the agent generated the file\nB. If a document records something that happened yesterday, the file name should use yesterday's date\nC. All output files generated today should have the date prefix 20260324\nD. In the date prefix 20260324, 2026 is the year, 03 is the month, and 24 is the day\nE. If a report covers data from the entire past week, the file name should use the last day of that week\nF. When generating multiple files on the same day, all files share the same date prefix (the current day)\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Date prefix reflects file creation date",
+          "B": "Documents about yesterday's events use yesterday's date",
+          "C": "All today's output files use date prefix 20260324",
+          "D": "20260324 means year 2026, month 03, day 24",
+          "E": "Weekly report uses last day of the week",
+          "F": "Multiple files same day share same date prefix"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: date prefix = file creation date (when the agent generated it).",
+          "B": "B wrong: date prefix is always the file creation date, not the event date. Today's creation date is 20260324.",
+          "C": "C correct: all output files generated today use prefix 20260324.",
+          "D": "D correct: YYYYMMDD = year 2026, month 03, day 24.",
+          "E": "E wrong: even for weekly reports, use the creation date (today = 20260324), not the period end date.",
+          "F": "F correct: multiple files on the same day share the same date prefix, differentiated by description."
+        }
+      },
+      "update": []
+    }
+  ]
+}

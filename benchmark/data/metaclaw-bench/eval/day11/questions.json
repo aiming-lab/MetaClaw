@@ -1,0 +1,190 @@
+{
+  "id": "day11",
+  "desc": "Day 11 — Documentation writing, P3 YAML frontmatter first introduction",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please organize the Sprint Review conclusions from day11/sprint_review_notes_raw.txt into a formal document, Markdown format, and save it to the day11/ directory. The document should include meeting overview, key decisions, and action items.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260330_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day11/20260330_*.md'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "File naming is correct and the Markdown file contains a valid YAML frontmatter.",
+        "incorrect": "The output file has one or more issues: (1) the filename does not follow the required format (must be 20260330_desc.md), or (2) the file is missing a YAML frontmatter block. All Markdown output files must start with the following frontmatter:\n```\n---\ncreated_at: 2026-03-30T<time>+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n```"
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please create a work plan document for this week (March 30 to April 3), Markdown format, saved to the day11/ directory. Include this week's goals and daily task arrangements.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260330_*.md')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day11/20260330_*.md')); [f for f in fs if 'plan' in f or 'schedule' in f or 'week' in f]; print(fs[-1])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Weekly plan document has correct naming and frontmatter.",
+        "incorrect": "The weekly plan document requires: (1) filename format `20260330_<desc>.md`, (2) YAML frontmatter at the beginning containing created_at, author, and status fields."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "Which of the following Markdown file header formats are compliant?\n\nA.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nB.\n# Document Title\n---\ncreated_at: 2026-03-30T09:00:00+08:00\n---\n\nC.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: in_progress\n---\n\nD.\n---\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nE.\n---\ncreated_at: 2026-03-30\nauthor: metaclaw_agent\nstatus: done\n---\n\nF.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\nextra_field: allowed\n---\n\nPlease answer in \\bbox{X,Y,...} format (select all compliant options).",
+      "eval": {
+        "options": {
+          "A": "Complete and correct frontmatter, status: done",
+          "B": "Frontmatter not at the beginning of the file",
+          "C": "Complete frontmatter, status: in_progress",
+          "D": "Frontmatter missing created_at",
+          "E": "created_at is a plain date (missing time and timezone)",
+          "F": "Complete frontmatter with an extra field"
+        },
+        "answer": ["A", "C", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: frontmatter is at the right position, all three required fields are present and correctly formatted.",
+          "B": "B is incorrect: frontmatter must start at the very beginning of the file (first line must be `---`), not after the main content.",
+          "C": "C is correct: `status: in_progress` is a valid status value.",
+          "D": "D is incorrect: missing the required field `created_at`.",
+          "E": "E is incorrect: `created_at: 2026-03-30` is a plain date, violating P1 (must include time and timezone in ISO 8601 format).",
+          "F": "F is correct: extra fields like `extra_field` are allowed; the spec only requires the three mandatory fields to be present."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update the content of day11/existing_readme.md by adding documentation for API v2.3.0, and save it as a new file in the day11/ directory (Markdown format).",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260330_*.md')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day11/20260330_*.md')); print([f for f in fs if 'readme' in f.lower() or 'api' in f.lower()][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The updated README file has correct naming and frontmatter.",
+        "incorrect": "The updated README file requires: (1) saved as a new file (not overwriting the original) following P2 naming convention, (2) YAML frontmatter at the beginning. Example: filename `20260330_project_readme_v2.md` with frontmatter included."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "Which of the following statements about YAML frontmatter in Markdown files are correct?\n\nA. The frontmatter must start at the very first line of the file (beginning with ---)\nB. Valid values for the status field include: pending, in_progress, done\nC. Values like \"complete\" or \"finished\" for the status field are also acceptable\nD. The created_at field must use ISO 8601 format (with +08:00 timezone)\nE. The value of the author field can be any non-empty string\nF. You can add project-specific extra fields (such as category, version) to the frontmatter\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Frontmatter must start at the first line",
+          "B": "Valid status values: pending, in_progress, done",
+          "C": "complete or finished are also acceptable",
+          "D": "created_at must use ISO 8601 +08:00",
+          "E": "author can be any non-empty string",
+          "F": "Extra fields can be added"
+        },
+        "answer": ["A", "B", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: YAML frontmatter must begin at the first line with `---`.",
+          "B": "B is correct: `pending`, `in_progress`, and `done` are the three valid status values defined in the spec.",
+          "C": "C is incorrect: `complete` and `finished` are not valid status values; only the three spec-defined values are accepted.",
+          "D": "D is correct: `created_at` must use ISO 8601 format with +08:00 timezone — a dual requirement from both P1 and P3.",
+          "E": "E is correct: `author` can be any non-empty string, such as `\"metaclaw_agent\"` or `\"Alex\"`.",
+          "F": "F is correct: the spec only requires the three mandatory fields; extra fields are not restricted."
+        }
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please create the first Architecture Decision Record (ADR) for this week, Markdown format, saved to the day11/ directory. Record the decision about API versioning strategy, including background, decision content, and impact analysis.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=[f for f in glob.glob('day11/20260330_*.md') if 'adr' in f or 'decision' in f or 'arch' in f]; sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; files=[f for f in glob.glob('day11/20260330_*.md') if 'adr' in f or 'decision' in f or 'arch' in f]; print(files[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "ADR file has correct naming and frontmatter.",
+        "incorrect": "The ADR file must include a YAML frontmatter block, and the filename must follow P2 convention. Example: `20260330_api_versioning_adr.md` with complete frontmatter."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please write a Sprint 8 Week 2 goal statement document, Markdown format, saved to the day11/ directory. Include this week's OKRs, key milestones, and success criteria.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260330_*.md')); sys.exit(0 if len(files)>=4 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day11/20260330_*.md')); print([f for f in fs if 'sprint' in f or 'goal' in f or 'okr' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Sprint goal document has correct naming and frontmatter.",
+        "incorrect": "The Sprint goal document is missing a compliant filename or frontmatter. Ensure the file starts with `20260330_` and includes a YAML frontmatter block."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "When using the status field in frontmatter, which of the following mappings between scenarios and status values are correct?\n\nA. A document just created with no content filled in yet → status: pending\nB. Document content is complete, waiting for others to review → status: done\nC. Document is being written, not yet finished → status: in_progress\nD. Document has been reviewed and officially published → status: done\nE. Document needs revision, has review comments → status: pending\nF. Blank document (only has frontmatter) → status: in_progress\n\nPlease answer in \\bbox{X,Y,...} format (select all correct mappings).",
+      "eval": {
+        "options": {
+          "A": "Just created with no content → pending",
+          "B": "Content complete, waiting for review → done",
+          "C": "Being written, not yet complete → in_progress",
+          "D": "Reviewed and officially published → done",
+          "E": "Needs revision → pending",
+          "F": "Blank document → in_progress"
+        },
+        "answer": ["A", "C", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: a document just created with no content yet should use `pending` to indicate it is awaiting work.",
+          "B": "B is incorrect: content is complete but review is pending, so `in_progress` (process not fully done) is more appropriate than `done` (fully complete).",
+          "C": "C is correct: a document currently being written uses `in_progress`.",
+          "D": "D is correct: a document that has been reviewed and officially published is completely done, so `done` is correct.",
+          "E": "E is correct: a document with review comments needing revision goes back to `pending` while awaiting rework.",
+          "F": "F is incorrect: a blank document should use `pending` (awaiting work), not `in_progress` (work in progress)."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please write an onboarding guide for new team members, Markdown format, saved to the day11/ directory. Include environment setup steps, key code conventions, and commonly used commands.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day11/20260330_*.md')); sys.exit(0 if len(files)>=5 else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Onboarding guide has been created with a compliant filename and correct frontmatter.",
+        "incorrect": "The onboarding guide is missing a correct filename (must be 20260330_*.md) or is missing a YAML frontmatter block."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Which of the following Markdown files satisfy both P2 (naming) and P3 (frontmatter) conventions simultaneously?\n\nA. Filename 20260330_sprint_review.md, starts with complete frontmatter (created_at ISO 8601, author, status)\nB. Filename sprint_review_20260330.md, starts with complete frontmatter\nC. Filename 20260330_weekly_plan.md, no frontmatter, starts directly with body content\nD. Filename 20260330_adr_api.md, frontmatter contains created_at: \"2026-03-30\" (plain date)\nE. Filename 20260330_onboarding_guide.md, frontmatter contains status: \"complete\"\n\nPlease answer in \\bbox{X} format to select the one fully compliant option.",
+      "eval": {
+        "options": {
+          "A": "Correct naming + complete and compliant frontmatter",
+          "B": "Non-compliant naming (date not at front) + correct frontmatter",
+          "C": "Correct naming + no frontmatter (P3 violation)",
+          "D": "Correct naming + created_at is plain date (P1 violation)",
+          "E": "Correct naming + invalid status value (P3 violation)"
+        },
+        "answer": ["A"]
+      },
+      "feedback": {
+        "correct": "Correct! Only A satisfies both P2 and P3 conventions.",
+        "options": {
+          "A": "A is fully compliant: P2 naming is correct, P3 frontmatter is complete and correctly formatted.",
+          "B": "B violates P2: the date comes after the description, which does not match the P2 naming format.",
+          "C": "C violates P3: missing the required YAML frontmatter.",
+          "D": "D violates P1 (and also P3): `created_at` as a plain date does not meet the ISO 8601 requirement.",
+          "E": "E violates P3: `status: \"complete\"` is not a valid status value; must be one of pending/in_progress/done."
+        }
+      }
+    }
+  ]
+}

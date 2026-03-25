@@ -1,0 +1,114 @@
+{
+  "id": "day02",
+  "desc": "Day 02 — P1 cross-domain transfer — data processing, comprehensive",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please parse the day02/api_access.log file and generate statistics for today's requests. Save the results as day02/log_summary.json. Include the following fields: generated_at (current time around 09:30), analysis_start (today at 00:00), analysis_end (current time), total_requests, and status_counts (count for each status code).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/log_summary.json generated_at analysis_start analysis_end",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Log summary created with all time fields correctly formatted.",
+        "incorrect": "The time format in log_summary.json does not conform to the required standard. All time fields must include date, time, and timezone offset. For example, generated_at should be '2026-03-18T09:30:00+08:00', analysis_start should be '2026-03-18T00:00:00+08:00'."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "When processing server logs, various raw time formats need to be standardized. Which of the following conversions are correct?\n\nA. Apache format '18/Mar/2026:09:12:34 +0800' → '2026-03-18T09:12:34+08:00'\nB. Unix timestamp 1742265154 (UTC ~01:12:34) → '2026-03-18T09:12:34+08:00'\nC. '2026-03-18 09:12:34' (no timezone, known CST) → '2026-03-18T09:12:34+08:00'\nD. '2026-03-18T01:12:34Z' (UTC) → '2026-03-18T09:12:34+08:00'\nE. '18-03-2026 09:12:34 CST' → '2026-03-18T09:12:34+08:00'\nF. '2026/03/18 09:12' → '2026-03-18T09:12:00+08:00'\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "Apache format '18/Mar/2026:09:12:34 +0800' → '2026-03-18T09:12:34+08:00'",
+          "B": "Unix timestamp 1742265154 (UTC ~01:12:34) → '2026-03-18T09:12:34+08:00'",
+          "C": "'2026-03-18 09:12:34' (no timezone, known CST) → '2026-03-18T09:12:34+08:00'",
+          "D": "'2026-03-18T01:12:34Z' (UTC) → '2026-03-18T09:12:34+08:00'",
+          "E": "'18-03-2026 09:12:34 CST' → '2026-03-18T09:12:34+08:00'",
+          "F": "'2026/03/18 09:12' → '2026-03-18T09:12:00+08:00'"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, D, E, and F are all valid conversions. Option A correctly converts Apache log format to ISO 8601. Option C properly adds the T separator and timezone. Option D correctly converts UTC to CST by adding 8 hours (01:12:34 UTC + 8 = 09:12:34 CST). Option E reformats the date order and adds the T separator. Option F handles missing seconds by defaulting to :00. Option B is incorrect because the Unix timestamp conversion requires precise calculation and the result may not match exactly.",
+        "options": {
+          "A": "Correct. Apache log format [DD/Mon/YYYY:HH:MM:SS +ZZZZ] is converted by reformatting the date to YYYY-MM-DD and adding the T separator between date and time.",
+          "B": "Incorrect. Unix timestamp 1742265154 represents a specific moment in UTC. Converting to CST requires adding 8 hours, but the exact result depends on precise calculation. Without verification, we cannot confirm this timestamp equals 01:12:34 UTC.",
+          "C": "Correct. When the source format lacks timezone but is known to be CST, we add the T separator and append +08:00 to complete the ISO 8601 format.",
+          "D": "Correct. The Z suffix indicates UTC time. Converting to CST requires adding 8 hours: 01:12:34 + 8 hours = 09:12:34, then replacing Z with +08:00.",
+          "E": "Correct. This converts DD-MM-YYYY format to YYYY-MM-DD, adds the T separator, and replaces CST with the numeric timezone +08:00.",
+          "F": "Correct. When seconds are missing from the source time, we default to :00 seconds in the ISO 8601 output, and replace / separators with - in the date portion."
+        }
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please create day02/perf_metrics.json to record this morning's API performance metrics (09:00-10:45). Include: collection_start, collection_end, avg_response_ms (number), p99_response_ms (number), error_rate (number), and sampled_at (a top-level array with 8 sampling time points at 15-minute intervals from 09:00 to 10:45).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import json,re,sys; d=json.load(open('day02/perf_metrics.json')); pat=re.compile(r'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?\\+08:00$'); bad=[v for v in d.get('sampled_at',[]) if not pat.match(str(v))]; sys.exit(0 if not bad else 1)\" && python scripts/check_iso8601.py day02/perf_metrics.json collection_start collection_end",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Performance metrics recorded with all time fields correctly formatted.",
+        "incorrect": "Time fields in perf_metrics.json are not correctly formatted. collection_start should be '2026-03-18T09:00:00+08:00', collection_end '2026-03-18T10:45:00+08:00', and each sampled_at entry should follow the same format, e.g. '2026-03-18T09:15:00+08:00'."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "In a Markdown-formatted Sprint Review document, which of the following time representations are correct?\n\nA. **Sprint period**: 2026-03-16T09:00:00+08:00 to 2026-03-20T18:00:00+08:00\nB. **Meeting time**: 2:00 PM today\nC. **Generated at**: Generated at 2026-03-20T10:00:00+08:00\nD. **Deadline**: March 20, 2026\nE. **Milestone achieved**: 2026-03-19T14:12:00+08:00 (v2.3.0 deployment complete)\nF. **Next Review**: next Friday at the same time\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "**Sprint period**: 2026-03-16T09:00:00+08:00 to 2026-03-20T18:00:00+08:00",
+          "B": "**Meeting time**: 2:00 PM today",
+          "C": "**Generated at**: Generated at 2026-03-20T10:00:00+08:00",
+          "D": "**Deadline**: March 20, 2026",
+          "E": "**Milestone achieved**: 2026-03-19T14:12:00+08:00 (v2.3.0 deployment complete)",
+          "F": "**Next Review**: next Friday at the same time"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, and E all use the standard datetime format (YYYY-MM-DDTHH:MM:SS+08:00). Even in Markdown documents intended for human reading, time information should maintain the same standard format for consistency and machine readability.",
+        "options": {
+          "A": "Correct — uses the standard format for both start and end times of the sprint period.",
+          "B": "Incorrect — '2:00 PM today' is natural language and should be replaced with 2026-03-20T14:00:00+08:00.",
+          "C": "Correct — uses the standard format for the document generation timestamp.",
+          "D": "Incorrect — 'March 20, 2026' is a natural language date and should be 2026-03-20T00:00:00+08:00 (or include a specific time if relevant).",
+          "E": "Correct — the milestone timestamp uses the standard format, with additional context in parentheses.",
+          "F": "Incorrect — 'next Friday at the same time' is ambiguous and should be replaced with the explicit timestamp 2026-03-27T14:00:00+08:00."
+        }
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create day02/sprint7_closure.json to officially close Sprint 7. Include: sprint_id (\"Sprint-7\"), officially_closed_at (this afternoon after the sprint review ends, around 15:30), velocity (the total number of tasks completed this week), closed_by (\"Alex\"), and next_sprint_start (next Monday at 09:00).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day02/sprint7_closure.json officially_closed_at next_sprint_start",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! Sprint 7 has been officially closed with all timestamps in the correct format. The closure record properly documents the sprint end time and the next sprint start.",
+        "incorrect": "The sprint closure record does not have all timestamps in the correct format. The officially_closed_at field should be around 2026-03-20T15:30:00+08:00 (after the sprint review meeting), and next_sprint_start should be 2026-03-23T09:00:00+08:00 (next Monday morning)."
+      }
+    }
+  ]
+}

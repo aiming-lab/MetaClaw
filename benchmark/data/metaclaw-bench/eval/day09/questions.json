@@ -1,0 +1,200 @@
+{
+  "id": "day09",
+  "desc": "Day 09 — Project management tasks (P1+P2 combined test)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Based on day09/sprint8_progress_raw.txt, please generate a Sprint 8 mid-point progress report in JSON format, saved to the day09/ directory. Include report_generated_at (current time), sprint_progress_pct (overall progress), tasks (status of each task), and risks (identified risks).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The progress report file is correctly named.",
+        "incorrect": "The progress report file naming does not meet our standards. Should use `20260326_<description>.json`, e.g. `20260326_sprint8_midpoint_report.json`."
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please create a current milestone status snapshot in JSON format, saved to the day09/ directory. Each milestone should include id, title, target_date, status, last_updated (current time), and progress_pct.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The milestone snapshot file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260326_milestone_status_snapshot.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please check the latest progress report JSON file in the day09/ directory and verify that the report_generated_at field's time format meets requirements. If it doesn't, correct it and save the file again (overwrite the original, keeping the file name unchanged).",
+      "eval": {
+        "command": "python -c \"import json,re,glob,sys; files=sorted(glob.glob('day09/[0-9]*_*midpoint*.json')+glob.glob('day09/[0-9]*_*progress*.json')); d=json.load(open(files[0])) if files else sys.exit(1); v=d.get('report_generated_at',''); sys.exit(0 if re.match(r'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.[0-9]+)?\\+08:00$',str(v)) else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The time field format in the progress report is correct.",
+        "incorrect": "The report_generated_at format in the progress report does not meet ISO 8601 requirements. Should be `2026-03-26T<HH:MM:SS>+08:00` format."
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "The following are several PM document file names and partial content. Which are fully compliant (both P1 naming and P2 time format satisfied)?\n\nA. File name 20260326_sprint8_midpoint.json, contains generated_at: \"2026-03-26T09:00:00+08:00\"\nB. File name sprint8_midpoint_report.json, contains generated_at: \"2026-03-26T09:00:00+08:00\"\nC. File name 20260326_milestone_snapshot.json, contains target_date: \"this Friday\"\nD. File name 20260326_resource_plan.json, contains available_from: \"2026-03-30T09:00:00+08:00\"\nE. File name 20260326_risk_assessment.md (no time fields)\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Naming correct + time field ISO 8601",
+          "B": "Naming violation (no date prefix) + time field correct",
+          "C": "Naming correct + time field is natural language",
+          "D": "Naming correct + time field ISO 8601",
+          "E": "Naming correct + no time fields (compliant)"
+        },
+        "answer": ["A", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A compliant: naming and time field are both correct.",
+          "B": "B naming violation: missing date prefix — should be 20260326_sprint8_midpoint_report.json.",
+          "C": "C time field violation: target_date 'this Friday' is natural language and must use ISO 8601 format.",
+          "D": "D compliant: naming and time field are both correct.",
+          "E": "E compliant: correct naming, Markdown file has no time fields, not subject to P1."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Based on day09/resource_availability.txt, please generate the staffing schedule for next week (March 30 - April 3), saved as JSON to the day09/ directory. For each person, include name, available_days (date array in ISO 8601 format), and unavailable_reason (if any).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext json --min-count 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The staffing schedule file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260326_next_week_resource_plan.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Based on the current sprint progress, please generate a risk assessment report in Markdown format, saved to the day09/ directory. Each risk should include risk_id, description, probability (high/medium/low), impact, and mitigation.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The risk assessment report file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260326_sprint8_risk_assessment.md` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "Several PM documents need to be generated today. Which of the following names are correct?\n\nA. Sprint 8 mid-point report: 20260326_sprint8_midpoint_report.json\nB. Milestone snapshot: milestone_snapshot_20260326.json\nC. Next week schedule: 20260326_next_week_schedule.json\nD. Risk assessment: 20260326_risk_assessment.md\nE. Meeting decisions: decisions_20260326.json\nF. Project kanban snapshot: 20260326_kanban_snapshot.json\n\nAnswer using \\bbox{X,Y,...} format (select correctly named files).",
+      "eval": {
+        "options": {
+          "A": "20260326_sprint8_midpoint_report.json",
+          "B": "milestone_snapshot_20260326.json",
+          "C": "20260326_next_week_schedule.json",
+          "D": "20260326_risk_assessment.md",
+          "E": "decisions_20260326.json",
+          "F": "20260326_kanban_snapshot.json"
+        },
+        "answer": ["A", "C", "D", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: format is fully correct.",
+          "B": "B wrong: date is not at the prefix position — should be 20260326_milestone_snapshot.json.",
+          "C": "C correct: format is fully correct.",
+          "D": "D correct: format is fully correct.",
+          "E": "E wrong: date is not at the prefix position — should be 20260326_decisions.json.",
+          "F": "F correct: format is fully correct."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please generate a current project kanban status snapshot in JSON format, saved to the day09/ directory. Categorize tasks by status (backlog/in_progress/done/blocked), and record the count and task list for each status. Include a snapshot_at (current time) field.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext json --min-count 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The kanban snapshot file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260326_kanban_snapshot.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please draft a next week work plan email to the team in JSON format, saved to the day09/ directory. Include subject, to (array), scheduled_send_at (today at 5:00 PM), and body_summary (Markdown summary).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext json --min-count 5",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The email draft file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260326_next_week_plan_email.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "In project management documents, which of the following target_date field values are in the correct format?\n\nA. \"2026-03-27T18:00:00+08:00\" (this Friday at 18:00)\nB. \"EOD Friday\"\nC. \"2026-04-03T18:00:00+08:00\" (next Friday at 18:00)\nD. \"2026-03-31\" (pure date, end of month)\nE. \"2026-03-30T09:00:00+08:00\" (next Monday at 9:00 AM)\nF. \"TBD\"\n\nAnswer using \\bbox{X,Y,...} format (select correct ones).",
+      "eval": {
+        "options": {
+          "A": "2026-03-27T18:00:00+08:00",
+          "B": "EOD Friday",
+          "C": "2026-04-03T18:00:00+08:00",
+          "D": "2026-03-31 (pure date)",
+          "E": "2026-03-30T09:00:00+08:00",
+          "F": "TBD"
+        },
+        "answer": ["A", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: full ISO 8601 format with +08:00 timezone offset.",
+          "B": "B wrong: 'EOD Friday' is natural language, not a valid time value.",
+          "C": "C correct: correct ISO 8601 format.",
+          "D": "D wrong: pure date format missing time and timezone offset.",
+          "E": "E correct: correct ISO 8601 format.",
+          "F": "F wrong: 'TBD' is not a valid time value; use null if the date is truly undecided."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please create today's PM work summary in Markdown format, saved to the day09/ directory. Summarize all PM outputs updated today and key decisions made.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day09/ --ext md --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The PM summary file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260326_pm_daily_summary.md` or similar format."
+      },
+      "update": []
+    }
+  ]
+}

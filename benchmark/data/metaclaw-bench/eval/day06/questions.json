@@ -1,0 +1,223 @@
+{
+  "id": "day06",
+  "desc": "Day 06 — Sprint 8 start, code engineering tasks (P2 first introduction)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please organize the content of day06/ci_build_raw.txt into a structured JSON report and save it to the day06/ directory. The report should include build_time, duration_seconds, status, and steps fields.",
+      "feedback": {
+        "correct": "The build report file is correctly named.",
+        "incorrect": "The output file naming does not meet our standards. We require all output files to use the format `YYYYMMDD_<description>.ext`, with the description in lowercase snake_case. For example: `20260323_ci_build_report.json`. Note that the date prefix must come first."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day06/ --ext json",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please organize day06/test_results_raw.txt into a JSON summary and save it to the day06/ directory. Include total_tests, passed, failed, coverage_percent, and generated_at fields.",
+      "feedback": {
+        "correct": "The test coverage summary file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should use `20260323_<description>.json` format, e.g. `20260323_test_coverage_summary.json`."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day06/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "Which of the following file names conform to our output file naming convention?\n\nA. 20260323_ci_build_report.json\nB. ci_build_report_2026-03-23.json\nC. 20260323_test_coverage_summary.json\nD. TestCoverageSummary.json\nE. 20260323-ci-build.json\nF. 20260323_deploy_changelog.md\nG. report.json\n\nAnswer using \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: date prefix and snake_case, format is correct.",
+          "B": "B wrong: date is not at prefix position — should be 20260323_ci_build_report.json.",
+          "C": "C correct: date prefix and snake_case, format is correct.",
+          "D": "D wrong: CamelCase and missing date prefix.",
+          "E": "E wrong: hyphens used in description instead of underscores.",
+          "F": "F correct: date prefix and snake_case, .md extension is also valid.",
+          "G": "G wrong: no date prefix at all."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "20260323_ci_build_report.json",
+          "B": "ci_build_report_2026-03-23.json",
+          "C": "20260323_test_coverage_summary.json",
+          "D": "TestCoverageSummary.json",
+          "E": "20260323-ci-build.json",
+          "F": "20260323_deploy_changelog.md",
+          "G": "report.json"
+        },
+        "answer": [
+          "A",
+          "C",
+          "F"
+        ]
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please create the version changelog for the v2.3.0 deployment today and save it to the day06/ directory. Include version, released_at (today at 14:00), changes (array), and deployed_by fields.",
+      "feedback": {
+        "correct": "The changelog file is correctly named.",
+        "incorrect": "File naming does not meet standards. The changelog should be named like `20260323_v230_changelog.json` — date prefix + snake_case description."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day06/ --ext json --min-count 3",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please format the build summary as a Markdown report for sharing in the team Slack channel, and save it to the day06/ directory.",
+      "feedback": {
+        "correct": "The Markdown file is correctly named.",
+        "incorrect": "Markdown file naming does not meet standards. Should use `20260323_<description>.md` format, e.g. `20260323_build_summary.md`."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day06/ --ext md",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Regarding our file naming convention YYYYMMDD_snake_case.ext, which of the following statements are correct?\n\nA. The date prefix allows files to be automatically sorted by creation date\nB. Using hyphens (-) instead of underscores (_) is also acceptable\nC. snake_case requires the description to be all lowercase with words separated by underscores\nD. The date in the file name must match the actual creation date\nE. The file extension (e.g. .json, .md) case does not affect compliance\nF. The description part can include numbers, e.g. 20260323_v2_report.json\n\nAnswer using \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: YYYYMMDD prefix ensures alphabetical sort matches date order.",
+          "B": "B wrong: must use underscores (_), not hyphens (-).",
+          "C": "C correct: snake_case = all lowercase + underscore-separated.",
+          "D": "D correct: date must match the actual file creation date.",
+          "E": "E wrong: extension must be lowercase (e.g. .json not .JSON).",
+          "F": "F correct: numbers are allowed in the description (regex allows [a-z0-9_]*)."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "Date prefix allows sorting by creation date",
+          "B": "Hyphens instead of underscores are acceptable",
+          "C": "snake_case: all lowercase, underscore-separated",
+          "D": "Date must match actual creation date",
+          "E": "Extension case does not affect compliance",
+          "F": "Description can include numbers"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "F"
+        ]
+      },
+      "update": []
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create a dependency version manifest for this build, recording the current versions of the main dependency libraries, and save it to the day06/ directory in JSON format.",
+      "feedback": {
+        "correct": "The dependency manifest file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should use `20260323_<description>.json`, e.g. `20260323_dependency_versions.json`."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day06/ --ext json --min-count 4",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "Which of the following file names violate the naming convention?\n\nA. 20260323_sprint8_summary.json\nB. 2026-03-23_sprint8_summary.json\nC. sprint8_summary_20260323.json\nD. 20260323_Sprint8Summary.json\nE. 20260323_sprint8-summary.json\nF. 20260323_sprint8_summary_v2.json\nG. 20260323_s.json\n\nAnswer using \\bbox{X,Y,...} format (select the violations).",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A compliant: format is fully correct.",
+          "B": "B violation: date uses 2026-03-23 (with hyphens) instead of compact YYYYMMDD.",
+          "C": "C violation: date is not at the prefix position.",
+          "D": "D violation: CamelCase in description, should be snake_case.",
+          "E": "E violation: hyphens used in description instead of underscores.",
+          "F": "F compliant: numbers in description are allowed, format is correct.",
+          "G": "G compliant: technically matches the pattern (single-letter descriptions are allowed)."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "20260323_sprint8_summary.json",
+          "B": "2026-03-23_sprint8_summary.json",
+          "C": "sprint8_summary_20260323.json",
+          "D": "20260323_Sprint8Summary.json",
+          "E": "20260323_sprint8-summary.json",
+          "F": "20260323_sprint8_summary_v2.json",
+          "G": "20260323_s.json"
+        },
+        "answer": [
+          "B",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "update": []
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please save today's API performance benchmark results to the day06/ directory in JSON format. Include test_run_at (today at 3:00 PM), and endpoints (each with avg_ms and p99_ms).",
+      "feedback": {
+        "correct": "The performance benchmark file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should use `20260323_<description>.json`, e.g. `20260323_api_perf_benchmark.json`."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day06/ --ext json --min-count 5",
+        "expect_exit": 0
+      },
+      "update": []
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "For the build report JSON file generated today, which of the following statements are correct?\n\nA. The file name should be 20260323_ci_build_report.json, not ci_build_report.json\nB. The build_time field value should be in \"2026-03-23T09:00:00+08:00\" format\nC. A file name is compliant as long as it contains today's date, e.g. report_20260323.json\nD. The released_at field value of \"March 23\" is acceptable\nE. The date portion 20260323 in the file name can be placed after the description\nF. An empty string for the generated_at field does not affect naming compliance\n\nAnswer using \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P2 requires YYYYMMDD as prefix, e.g. 20260323_ci_build_report.json.",
+          "B": "B correct: P1 requires all time fields to use ISO 8601 +08:00 format.",
+          "C": "C wrong: date must be the prefix — report_20260323.json has date at the end.",
+          "D": "D wrong: natural language dates (like 'March 23') violate P1.",
+          "E": "E wrong: date must come first in the filename, not after the description.",
+          "F": "F wrong: an empty time field violates P1 regardless of file naming."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "File name format: 20260323_ci_build_report.json",
+          "B": "build_time uses ISO 8601 +08:00",
+          "C": "Containing date is sufficient, e.g. report_20260323.json",
+          "D": "released_at as \"March 23\" is acceptable",
+          "E": "Date portion can come after description",
+          "F": "Empty generated_at does not affect naming"
+        },
+        "answer": [
+          "A",
+          "B"
+        ]
+      },
+      "update": []
+    }
+  ]
+}

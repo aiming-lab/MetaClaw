@@ -1,0 +1,107 @@
+{
+  "id": "day05",
+  "desc": "Day 05 — P3 first encounter — MD/JSON/Python three file types",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please organize the Sprint Review conclusions from day05/sprint_review_notes_raw.txt into a formal document, Markdown format, and save it to the day05/ directory. The document should include meeting overview, key decisions, and action items.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day05/20260330_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day05/20260330_*.md'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "File naming is correct and the Markdown file contains a valid YAML frontmatter.",
+        "incorrect": "The output file has one or more issues: (1) the filename does not follow the required format (must be 20260330_desc.md), or (2) the file is missing a YAML frontmatter block. All Markdown output files must start with the following frontmatter:\n```\n---\ncreated_at: 2026-03-30T<time>+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n```"
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please process day05/monthly_api_stats_raw.json and generate a normalized monthly API statistics report, in JSON format, saved to the day05/ directory. Include endpoint summary data and overall metrics.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day05/20260331_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day05/20260331_*.json'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "JSON report naming and meta object both comply with the spec.",
+        "incorrect": "The JSON output file has the following issues: (1) the filename must follow P2 convention (20260331_desc.json), (2) the file must include a top-level `meta` object in the following format:\\n```json\\n{\"meta\": {\"created_at\": \"2026-03-31T<time>+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"content\": {...}}\\n```"
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "Which of the following Markdown file header formats are compliant?\n\nA.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nB.\n# Document Title\n---\ncreated_at: 2026-03-30T09:00:00+08:00\n---\n\nC.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: in_progress\n---\n\nD.\n---\nauthor: metaclaw_agent\nstatus: done\n---\n# Document Title\n\nE.\n---\ncreated_at: 2026-03-30\nauthor: metaclaw_agent\nstatus: done\n---\n\nF.\n---\ncreated_at: 2026-03-30T09:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\nextra_field: allowed\n---\n\nPlease answer in \\bbox{X,Y,...} format (select all compliant options).",
+      "eval": {
+        "options": {
+          "A": "Complete and correct frontmatter, status: done",
+          "B": "Frontmatter not at the beginning of the file",
+          "C": "Complete frontmatter, status: in_progress",
+          "D": "Frontmatter missing created_at",
+          "E": "created_at is a plain date (missing time and timezone)",
+          "F": "Complete frontmatter with an extra field"
+        },
+        "answer": [
+          "A",
+          "C",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: frontmatter is at the right position, all three required fields are present and correctly formatted.",
+          "B": "B is incorrect: frontmatter must start at the very beginning of the file (first line must be `---`), not after the main content.",
+          "C": "C is correct: `status: in_progress` is a valid status value.",
+          "D": "D is incorrect: missing the required field `created_at`.",
+          "E": "E is incorrect: `created_at: 2026-03-30` is a plain date, violating P1 (must include time and timezone in ISO 8601 format).",
+          "F": "F is correct: extra fields like `extra_field` are allowed; the spec only requires the three mandatory fields to be present."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please write a log parsing utility script and save it to the day05/ directory (Python file). The script should read an API access log file, parse the request time, endpoint, and status code, and return a statistics dictionary.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day05/20260401_*.py')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day05/20260401_*.py'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Python script naming and module-level docstring Meta section are correct.",
+        "incorrect": "The Python script has the following issues: (1) the filename must follow P2 convention (20260401_desc.py), (2) the module-level docstring must include a Meta section in the following format:\n```python\n\"\"\"\nModule description...\n\nMeta:\n  created_at: 2026-04-01T<time>+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```"
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "Which of the following JSON structures contain a compliant meta object?\n\nA. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nB. {\"metadata\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nC. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\"}, \"data\": [...]}\nD. {\"data\": [...], \"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"pending\"}}\nE. {\"meta\": {\"created_at\": \"2026/03/31 09:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nF. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\", \"version\": \"1.0\"}, \"data\": [...]}\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Complete and correct meta object",
+          "B": "Incorrect key name (metadata instead of meta)",
+          "C": "Missing status field",
+          "D": "meta not at top-level (JSON key order does not matter)",
+          "E": "created_at format error (slash + space)",
+          "F": "Complete meta with extra field version"
+        },
+        "answer": [
+          "A",
+          "D",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: the meta object is complete, all three required fields are correctly formatted.",
+          "B": "B is incorrect: the top-level key must be `meta`, not `metadata`.",
+          "C": "C is incorrect: missing the required `status` field.",
+          "D": "D is correct: JSON object key order does not affect compliance; `meta` after `data` is still valid.",
+          "E": "E is incorrect: `created_at` uses a slash format (P1 violation); must be ISO 8601.",
+          "F": "F is correct: all three required fields are present, and the extra `version` field is allowed."
+        }
+      }
+    }
+  ]
+}

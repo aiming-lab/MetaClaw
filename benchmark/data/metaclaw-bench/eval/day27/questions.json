@@ -1,0 +1,217 @@
+{
+  "id": "day27",
+  "desc": "Day 27 — Sprint 10 technical documentation, all P1-P5 rules",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please create the Sprint 10 kickoff meeting notes in Markdown format and save to day27/. Include sections for sprint goals, team assignments, key milestones, and known risks. Add the document creation date.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day27/20260421_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day27/20260421_*.md'))[0])\") && python scripts/check_done_log.py done.log --min-entries 1 --task-prefix sprint10_kickoff",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Kickoff notes correctly named, has YAML frontmatter, done.log updated.",
+        "incorrect": "Issues: (1) P2 naming required — `20260421_<desc>.md`; (2) YAML frontmatter at the top of the file with `created_at` (ISO 8601 +08:00), `author`, and `status` fields required (P3 for .md files); (3) append done.log entry, e.g. `[DONE] 2026-04-21T<time>+08:00 | sprint10_kickoff | Created Sprint 10 kickoff meeting notes` (P5)."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please update day27/api_reference.md: add documentation for two new endpoints — POST /export/json and POST /export/csv — including request parameters, response format, and error codes.",
+      "eval": {
+        "command": "python scripts/check_backup.py day27/api_reference.md && python scripts/check_metadata.py day27/api_reference.md && python scripts/check_done_log.py done.log --min-entries 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "api_reference.md.bak created, file now has YAML frontmatter, done.log updated.",
+        "incorrect": "Issues: (1) create `day27/api_reference.md.bak` before modifying (P4); (2) the updated document must include YAML frontmatter with `created_at` ISO 8601, `author`, and `status` (P3) — add frontmatter if the original was missing; (3) append 2nd done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "When updating an existing Markdown document that lacks YAML frontmatter, which approach is correct?\n\nA. Create a .bak of the original before modifying, and add YAML frontmatter to the updated version\nB. Create a .bak of the original before modifying, but skip adding frontmatter since the original didn't have it\nC. No .bak needed for Markdown files — only binary or configuration files need backup\nD. Add YAML frontmatter to the updated version without creating a .bak\nE. After updating the document and adding frontmatter, append a done.log entry\nF. Only add frontmatter if the document is newly created — existing documents are exempt from P3\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": ".bak before modify + add frontmatter to updated version",
+          "B": ".bak before modify + skip frontmatter (original lacked it)",
+          "C": "No .bak needed for Markdown files",
+          "D": "Add frontmatter without .bak",
+          "E": "Append done.log after updating",
+          "F": "Existing documents exempt from P3"
+        },
+        "answer": ["A", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P4 requires .bak before any modification, and P3 requires the output to have proper metadata. The agent is responsible for ensuring the updated file is P3-compliant even if the original was not.",
+          "B": "B wrong: once the agent touches the file (even to update it), the result is agent output and must comply with P3.",
+          "C": "C wrong: P4 applies to any existing file modification regardless of type.",
+          "D": "D wrong: missing the .bak step violates P4.",
+          "E": "E correct: P5 requires a done.log entry after each task completion.",
+          "F": "F wrong: P3 applies to all agent-produced outputs. When the agent modifies an existing file, the resulting file is agent output and must be P3-compliant."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update day27/project_overview.md: add a new section for Sprint 10 scope, including the three major feature areas planned for this sprint and the expected delivery timeline.",
+      "eval": {
+        "command": "python scripts/check_backup.py day27/project_overview.md && python scripts/check_metadata.py day27/project_overview.md && python scripts/check_done_log.py done.log --min-entries 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "project_overview.md.bak created, file has frontmatter, done.log has 3 entries.",
+        "incorrect": "Issues: (1) create `day27/project_overview.md.bak` before modifying (P4); (2) add YAML frontmatter with ISO 8601 `created_at` to the updated document (P3); (3) append 3rd done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please write a deployment runbook for the new data export features in Markdown format, save to day27/. Include sections for prerequisites, deployment steps, rollback procedure, and post-deployment verification. Add a planned deployment date field.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day27/20260421_*.md')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day27/20260421_*.md')); print([f for f in fs if 'deploy' in f or 'runbook' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Deployment runbook correctly named, has YAML frontmatter, done.log has 4 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) YAML frontmatter with ISO 8601 `created_at` required (P3); (3) any date/time fields in the document body (e.g. planned_deployment_date) must also use ISO 8601 (P1); (4) append 4th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Which of the following YAML frontmatter blocks is fully compliant with all rules?\n\nA.\n---\ncreated_at: 2026-04-21T10:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n\nB.\n---\ncreated_at: 2026-04-21\nauthor: metaclaw_agent\nstatus: done\n---\n\nC.\n---\nauthor: metaclaw_agent\nstatus: in_progress\n---\n\nD.\n---\ncreated_at: 2026-04-21T10:00:00Z\nauthor: metaclaw_agent\nstatus: done\n---\n\nE.\n---\ncreated_at: 2026-04-21T10:00:00+08:00\nauthor: metaclaw_agent\nstatus: done\nlast_modified: 2026-04-21T14:30:00+08:00\n---\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "created_at ISO 8601 +08:00, all required fields present",
+          "B": "created_at date-only (P1 violation)",
+          "C": "Missing created_at field (P3 violation)",
+          "D": "created_at uses UTC Z (P1 violation — must be +08:00)",
+          "E": "All required fields + extra last_modified ISO 8601"
+        },
+        "answer": ["A", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: all three required fields present, `created_at` in full ISO 8601 +08:00 format.",
+          "B": "B wrong: `created_at: 2026-04-21` is date-only — violates P1 (must include time and timezone).",
+          "C": "C wrong: missing `created_at` field — violates P3 (required field).",
+          "D": "D wrong: `+08:00` is required — UTC `Z` suffix violates P1.",
+          "E": "E correct: all required fields present with ISO 8601 timestamps, plus an optional extra field — fully compliant."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create an Architecture Decision Record (ADR) for the new data export service design in Markdown format, save to day27/. Include sections for: context, decision, consequences, and alternatives considered. Add the decision date.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day27/20260421_*.md')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day27/20260421_*.md')); print([f for f in fs if 'adr' in f or 'arch' in f or 'decision' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 5",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "ADR correctly named, has YAML frontmatter, done.log has 5 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) YAML frontmatter with ISO 8601 `created_at` required; (3) any date fields in the document (e.g. decision date) must use ISO 8601 format; (4) append 5th done.log entry."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "Today involves a mix of creating new documents and updating existing ones. Which statements about done.log entries are correct?\n\nA. Creating a new document (e.g. Sprint 10 kickoff notes) requires a done.log entry\nB. Updating an existing document (e.g. adding a section to api_reference.md) also requires a done.log entry\nC. If a task involves both creating a .bak and updating the document, only one done.log entry is needed (for the full task)\nD. The done.log task_id for a document update should be different from the task_id for a new document creation\nE. A done.log entry's timestamp can be in any timezone as long as it is ISO 8601 format\nF. At the end of the day, done.log should reflect the total number of independent tasks completed\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "Creating a new document → done.log entry",
+          "B": "Updating an existing document → done.log entry",
+          "C": ".bak + update = one done.log entry (one task)",
+          "D": "Different task_ids for create vs update",
+          "E": "done.log timestamps can use any timezone",
+          "F": "done.log count = total independent tasks"
+        },
+        "answer": ["A", "B", "C", "D", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: any task completion requires a done.log entry.",
+          "B": "B correct: updating an existing document is also a completed task.",
+          "C": "C correct: creating the backup and updating the document are part of the same task — one done.log entry covers the whole task.",
+          "D": "D correct: task_ids should be descriptive and distinguishable, e.g. `api_ref_update` vs `sprint10_kickoff_notes`.",
+          "E": "E wrong: done.log timestamps are time fields subject to P1 — must use +08:00.",
+          "F": "F correct: done.log entry count should equal the number of independent tasks completed."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please write a short onboarding guide for new team members joining Project Orion in Markdown format, save to day27/. Include sections for: environment setup, key tools, workflow overview, and first-week checklist. Include a guide_effective_from date.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day27/20260421_*.md')); sys.exit(0 if len(files)>=4 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day27/20260421_*.md')); print([f for f in fs if 'onboard' in f or 'guide' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 6",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Onboarding guide correctly named, has YAML frontmatter, done.log has 6 entries.",
+        "incorrect": "Issues: (1) P2 naming required (`20260421_*.md`); (2) YAML frontmatter with ISO 8601 `created_at` required (P3); (3) `guide_effective_from` in the document body must use ISO 8601 (P1); (4) append 6th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Which of the following edge cases correctly applies the documentation rules?\n\nA. A new .txt file containing release notes should have YAML-style frontmatter (same as .md files)\nB. If an existing .md file already has correct YAML frontmatter before the agent modifies it, the agent should preserve or update the frontmatter (not remove it)\nC. If the agent adds a new section to an existing .md file, it must create a .bak even if the section addition is the agent's primary task\nD. A new .md file created as a template (not yet filled in) still needs YAML frontmatter with status: pending\nE. The agent does not need to append done.log when the task is to create a .bak backup file as a standalone task\nF. An existing .md file modified to fix a typo does not require a .bak backup\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": ".txt files use YAML frontmatter like .md",
+          "B": "Preserve/update existing correct frontmatter when modifying",
+          "C": "Adding a section to .md still requires .bak",
+          "D": "Template .md still needs frontmatter with status: pending",
+          "E": "Standalone .bak creation task doesn't need done.log",
+          "F": "Typo fix doesn't require .bak"
+        },
+        "answer": ["A", "B", "C", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P3 applies to .md and .txt files using the same YAML frontmatter format.",
+          "B": "B correct: if good frontmatter exists, preserve it (updating `created_at` or adding missing fields as appropriate); never remove compliant metadata.",
+          "C": "C correct: any modification to an existing file requires .bak regardless of how minor — adding a section still counts as modifying the file.",
+          "D": "D correct: status `pending` is a valid P3 status value; a template file is still an agent output that needs proper metadata.",
+          "E": "E wrong: creating a backup as a standalone task is not a complete work task in itself — done.log tracks meaningful work completion, not sub-steps. However, if the overall task (e.g. \"back up and update api_reference.md\") is done, one done.log entry covers the whole task.",
+          "F": "F wrong: a typo fix modifies an existing file — P4 requires .bak regardless of how small the change is."
+        }
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "At end of day, a compliance review checks all documentation outputs. Select all correct statements about the expected state.\n\nA. Each new .md file created today has YAML frontmatter with ISO 8601 created_at\nB. Each existing .md file that was modified today has a corresponding .bak file in the same directory\nC. Each modified .md file (even if it previously lacked frontmatter) now has YAML frontmatter\nD. done.log has one entry per documentation task completed, including both new and updated docs\nE. All time fields in document bodies (e.g. planned dates, decision dates) use ISO 8601 format\nF. If a .md file was backed up but the agent decided not to modify it after all, the .bak should be deleted\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "New .md files: YAML frontmatter with ISO 8601",
+          "B": "Modified .md files: .bak counterparts exist",
+          "C": "Modified files updated to include frontmatter if missing",
+          "D": "done.log: one entry per doc task (new or updated)",
+          "E": "All time fields in document bodies: ISO 8601",
+          "F": "Unused .bak (file not actually modified) should be deleted"
+        },
+        "answer": ["A", "B", "C", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P3 applies to all new .md outputs.",
+          "B": "B correct: P4 requires .bak for every modified file.",
+          "C": "C correct: the agent's responsibility is to ensure the modified file is P3-compliant regardless of the original state.",
+          "D": "D correct: P5 counts each independent documentation task.",
+          "E": "E correct: P1 applies to all time fields wherever they appear in document content.",
+          "F": "F wrong: if a .bak file was created but the original wasn't modified, the .bak is harmless — deleting it is optional. The .bak exists as a safety record and doesn't need to be cleaned up. (In practice, avoid creating .bak if you ultimately won't modify the file — but the backup itself is not harmful.)"
+        }
+      }
+    }
+  ]
+}

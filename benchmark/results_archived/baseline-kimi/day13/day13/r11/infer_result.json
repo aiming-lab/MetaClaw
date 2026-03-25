@@ -1,0 +1,118 @@
+{
+  "test_id": "day13",
+  "group_id": "day13",
+  "round_id": "r11",
+  "qa_id": "r11",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] You missed option E: E is correct: .txt files use the same YAML frontmatter format as .md files (the spec treats .md/.txt together).\nKeep this in mind as you continue with the next task.\n\nPlease write a code documentation and commenting guide, in Markdown format, saved to the day13/ directory. Describe the format requirements and examples for Python file docstring content, including how to properly structure module-level documentation.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773847072.4645867,
+    "finished_at": 1773847143.5469143,
+    "duration_ms": 71082,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T15:19:03.462Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day13_b975df56-74e5-4463-9df2-ca13d6beb583",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day13_aa55bd1d",
+    "success": true,
+    "durationMs": 67747,
+    "messageCount": 38,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 11:17 EDT] [Previous Feedback] You missed option E: E is correct: .txt files use the same YAML frontmatter format as .md files (the spec treats .md/.txt together).\nKeep this in mind as you continue with the next task.\n\nPlease write a code documentation and commenting guide, in Markdown format, saved to the day13/ directory. Describe the format requirements and examples for Python file docstring content, including how to properly structure module-level documentation."
+          }
+        ],
+        "timestamp": 1773847075717
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "write",
+            "arguments": {
+              "file_path": "day13/20260401_docstring_guide.md",
+              "content": "---\ncreated_at: 2026-04-01T11:17:00+08:00\nauthor: metaclaw_agent\nstatus: done\n---\n\n# Code Documentation and Commenting Guide\n\nThis guide describes the format requirements and best practices for Python file docstrings and module-level documentation within the Orion Tech codebase.\n\n---\n\n## Table of Contents\n\n1. [File Naming Convention (P2)](#file-naming-convention-p2)\n2. [Module-Level Docstrings (P3)](#module-level-docstrings-p3)\n3. [Function and Class Docstrings](#function-and-class-docstrings)\n4. [Examples](#examples)\n5. [Common Mistakes to Avoid](#common-mistakes-to-avoid)\n\n---\n\n## File Naming Convention (P2)\n\nAll Python files must follow the P2 naming convention:\n\n```\nYYYYMMDD_snake_case_description.py\n```\n\n### Requirements\n\n- **Date prefix**: 8 digits in `YYYYMMDD` format (e.g., `20260401`)\n- **Separator**: Underscore (`_`) between date and name\n- **Name**: `snake_case` (lowercase letters, numbers, underscores)\n- **Extension**: Standard Python extension (`.py`)\n\n### Examples\n\n| ✅ Valid | ❌ Invalid |\n|---------|-----------|\n| `20260401_log_parser.py` | `240401_log_parser.py` (short year) |\n| `20260401_data_validation.py` | `2026-04-01_data_validation.py` (hyphens in date) |\n| `20260401_api_client.py` | `api_client.py` (missing date) |\n| `20260401_config_loader_v2.py` | `20260401_ConfigLoader.py` (camelCase) |\n\n---\n\n## Module-Level Docstrings (P3)\n\nEvery Python file must include a module-level docstring with a **Meta section**.\n\n### Format\n\n```python\n\"\"\"\nBrief description of the module.\n\nOptional: Longer explanation of what the module does,\nits purpose, and any important notes.\n\nMeta:\n  created_at: YYYY-MM-DDTHH:MM:SS+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n### Meta Section Fields\n\n| Field | Format | Required | Description |\n|-------|--------|----------|-------------|\n| `created_at` | ISO 8601 with timezone | Yes | File creation timestamp: `2026-04-01T11:17:00+08:00` |\n| `author` | String | Yes | Always `metaclaw_agent` for agent-generated files |\n| `status` | Enum | Yes | One of: `done`, `in_progress`, `draft` |\n\n### Meta Section Formatting Rules\n\n1. **Indentation**: Use 2 spaces for field indentation\n2. **Spacing**: Keys and values separated by `: ` (colon + space)\n3. **Newlines**: Each field on its own line\n4. **Position**: Meta section at the end of the docstring, separated by a blank line\n\n### Status Values\n\n| Status | Usage |\n|--------|-------|\n| `done` | File is complete and ready for use |\n| `in_progress` | File is being actively worked on |\n| `draft` | File is a work-in-progress or experimental |\n\n---\n\n## Function and Class Docstrings\n\n### Function Docstrings\n\nUse the Google-style docstring format:\n\n```python\ndef function_name(param1: str, param2: int = 0) -> bool:\n    \"\"\"\n    Brief description of what the function does.\n\n    Longer description if needed. Explain the purpose,\n    any side effects, or important usage notes.\n\n    Args:\n        param1: Description of the first parameter.\n        param2: Description of the second parameter.\n            Can span multiple lines for complex descriptions.\n\n    Returns:\n        Description of the return value.\n\n    Raises:\n        ValueError: When and why this exception is raised.\n        TypeError: When and why this exception is raised.\n\n    Example:\n        >>> function_name(\"test\", 42)\n        True\n    \"\"\"\n```\n\n### Class Docstrings\n\n```python\nclass MyClass:\n    \"\"\"\n    Brief description of the class.\n\n    Longer description of the class purpose and behavior.\n\n    Attributes:\n        attr1: Description of the first attribute.\n        attr2: Description of the second attribute.\n\n    Example:\n        >>> obj = MyClass(\"value\")\n        >>> obj.method()\n        'result'\n    \"\"\"\n\n    def __init__(self, value: str):\n        \"\"\"\n        Initialize the class.\n\n        Args:\n            value: Initial value for the instance.\n        \"\"\"\n        self.value = value\n```\n\n---\n\n## Examples\n\n### Complete Module Example\n\n```python\n\"\"\"\nEmail Validation Utility\n\nProvides functions to validate email addresses, domains,\nand extract email components.\n\nMeta:\n  created_at: 2026-04-01T10:30:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n\nimport re\nfrom typing import Tuple, Optional\n\n\nEMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')\n\n\ndef validate_email(email: str) -> bool:\n    \"\"\"\n    Validate an email address format.\n\n    Checks if the provided string matches the standard\n    email address pattern (RFC 5322 simplified).\n\n    Args:\n        email: The email address to validate.\n\n    Returns:\n        True if the email format is valid, False otherwise.\n\n    Example:\n        >>> validate_email(\"user@example.com\")\n        True\n        >>> validate_email(\"invalid-email\")\n        False\n    \"\"\"\n    if not isinstance(email, str):\n        return False\n    return bool(EMAIL_PATTERN.match(email))\n\n\ndef parse_email(email: str) -> Tuple[str, str]:\n    \"\"\"\n    Parse an email into local part and domain.\n\n    Args:\n        email: The email address to parse.\n\n    Returns:\n        A tuple of (local_part, domain).\n\n    Raises:\n        ValueError: If the email format is invalid.\n\n    Example:\n        >>> parse_email(\"user@example.com\")\n        ('user', 'example.com')\n    \"\"\"\n    if not validate_email(email):\n        raise ValueError(f\"Invalid email format: {email}\")\n    local, domain = email.rsplit('@', 1)\n    return local, domain\n```\n\n### Minimal Module Example\n\n```python\n\"\"\"\nMath Constants\n\nProvides commonly used mathematical constants.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n\nPI = 3.14159265359\nE = 2.71828182846\nGOLDEN_RATIO = 1.61803398875\n```\n\n---\n\n## Common Mistakes to Avoid\n\n### ❌ Incorrect: Meta in comment\n\n```python\n# Meta: created_at=2026-04-01T09:00:00+08:00 author=metaclaw_agent status=done\n\"\"\"\nUtility module.\n\"\"\"\n```\n\n### ✅ Correct: Meta in docstring\n\n```python\n\"\"\"\nUtility module.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n### ❌ Incorrect: All on one line\n\n```python\n\"\"\"Utility module. Meta: created_at=2026-04-01T09:00:00+08:00 author=metaclaw_agent status: done\"\"\"\n```\n\n### ✅ Correct: Proper line breaks\n\n```python\n\"\"\"\nUtility module.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n### ❌ Incorrect: Wrong indentation\n\n```python\n\"\"\"\nUtility module.\n\nMeta:\n    created_at: 2026-04-01T09:00:00+08:00\n    author: metaclaw_agent\n    status: done\n\"\"\"\n```\n\n### ✅ Correct: 2-space indentation\n\n```python\n\"\"\"\nUtility module.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n### ❌ Incorrect: Missing blank line before Meta\n\n```python\n\"\"\"\nUtility module.\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n### ✅ Correct: Blank line before Meta\n\n```python\n\"\"\"\nUtility module.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n---\n\n## Quick Reference\n\n### Checklist for New Python Files\n\n- [ ] File follows P2 naming: `YYYYMMDD_snake_case.py`\n- [ ] Module-level docstring exists at the top\n- [ ] Meta section is included in the docstring\n- [ ] `created_at` is in ISO 8601 format with `+08:00` timezone\n- [ ] `author` is set to `metaclaw_agent`\n- [ ] `status` is one of: `done`, `in_progress`, `draft`\n- [ ] Meta fields are indented with 2 spaces\n- [ ] Blank line separates description from Meta section\n- [ ] Functions have proper Google-style docstrings\n\n---\n\n*End of Documentation Guide*\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773847075720
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 7553 bytes to day13/20260401_docstring_guide.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773847136743
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Created `20260401_docstring_guide.md` — a comprehensive documentation guide covering:\n\n- **P2 Naming Convention**: `YYYYMMDD_snake_case.py` format\n- **P3 Module-Level Docstrings**: Meta section requirements and formatting\n- **Function/Class Docstrings**: Google-style format with Args, Returns, Raises\n- **Examples**: Complete and minimal module examples\n- **Common Mistakes**: Side-by-side incorrect vs. correct comparisons\n- **Quick Reference Checklist**: For new Python files"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773847136746
+      }
+    ]
+  },
+  "answer": "Created `20260401_docstring_guide.md` — a comprehensive documentation guide covering:\n\n- **P2 Naming Convention**: `YYYYMMDD_snake_case.py` format\n- **P3 Module-Level Docstrings**: Meta section requirements and formatting\n- **Function/Class Docstrings**: Google-style format with Args, Returns, Raises\n- **Examples**: Complete and minimal module examples\n- **Common Mistakes**: Side-by-side incorrect vs. correct comparisons\n- **Quick Reference Checklist**: For new Python files\n",
+  "inline_score": {
+    "passed": true,
+    "exit_code": 0,
+    "stdout": "OK\n",
+    "stderr": ""
+  }
+}

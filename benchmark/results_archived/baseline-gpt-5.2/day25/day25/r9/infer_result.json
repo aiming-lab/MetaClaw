@@ -1,0 +1,77 @@
+{
+  "test_id": "day25",
+  "group_id": "day25",
+  "round_id": "r9",
+  "qa_id": "r9",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Issues: (1) P2 naming (20260417_*.md); (2) YAML frontmatter with ISO 8601 created_at required; (3) done.log entry required; (4) target_dates in deliverables must use ISO 8601.\nKeep this in mind as you continue with the next task.\n\nPlease write a Python script that checks a directory for P1-P5 compliance issues, save to day25/. The script should scan files and report violations. Include proper module docstring with Meta section.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773902060.966414,
+    "finished_at": 1773902321.9204726,
+    "duration_ms": 260954,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-19T06:38:11.834Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day25_5caa2175-f53c-4848-92e1-a7b817313bc8",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day25_92aebd1b",
+    "success": true,
+    "durationMs": 226989,
+    "messageCount": 53,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Thu 2026-03-19 02:34 EDT] [Previous Feedback] Issues: (1) P2 naming (20260417_*.md); (2) YAML frontmatter with ISO 8601 created_at required; (3) done.log entry required; (4) target_dates in deliverables must use ISO 8601.\nKeep this in mind as you continue with the next task.\n\nPlease write a Python script that checks a directory for P1-P5 compliance issues, save to day25/. The script should scan files and report violations. Include proper module docstring with Meta section."
+          }
+        ],
+        "timestamp": 1773902064845
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_9OVPybU3wVhirAC6e2eOz3N6",
+            "name": "write",
+            "arguments": {
+              "path": "day25/20260417_p1_p5_compliance_checker.py",
+              "content": "\"\"\"P1–P5 Compliance Checker\n\nScans a target directory and reports potential violations of the team preference rules:\n\n- P1: All time/date fields use ISO 8601 format with +08:00 (e.g., YYYY-MM-DDTHH:MM:SS+08:00)\n- P2: All agent-generated output files are named YYYYMMDD_snake_case.ext\n- P3: All output files contain structured metadata (format depends on file type)\n- P4: Before modifying any existing file, create a .bak backup of the original\n- P5: After completing each independent task, append a line to done.log\n\nThis script uses best-effort heuristics. Some checks (especially P4/P5) cannot be\nproven from file contents alone; those are reported as \"potential\" violations.\n\nMeta:\n  created_at: 2026-03-19T14:34:52+08:00\n  author: MetaClaw Agent\n  version: 1.0\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport re\nimport sys\nfrom dataclasses import dataclass, asdict\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Iterable\n\n\nP2_NAME_RE = re.compile(r\"^\\d{8}_[a-z0-9]+(?:_[a-z0-9]+)*\\.[a-z0-9]+$\")\n# Strict ISO 8601 with +08:00 offset and seconds (no fractional seconds)\nP1_TS_RE = re.compile(r\"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00$\")\n\n# Keys that likely represent timestamps\nTS_KEY_RE = re.compile(r\"(created_at|updated_at|modified_at|completed_at|closed_at|generated_at|recorded_at|start_date|end_date)$\")\n\n\n@dataclass\nclass FileReport:\n    filename: str\n    p2_compliant: bool\n    p3_compliant: bool\n    p1_timestamp_issues: list[str]\n    p4_backup_missing: bool | None\n    p5_log_missing: bool | None\n\n\ndef _now_iso_utc() -> str:\n    return datetime.now(timezone.utc).isoformat()\n\n\ndef _iter_files(root: Path) -> Iterable[Path]:\n    for p in sorted(root.iterdir()):\n        if p.is_file():\n            yield p\n\n\ndef check_p2(filename: str) -> bool:\n    return bool(P2_NAME_RE.match(filename))\n\n\ndef _json_load(path: Path) -> Any:\n    with path.open(\"r\", encoding=\"utf-8\") as f:\n        return json.load(f)\n\n\ndef _md_frontmatter(path: Path) -> dict[str, str] | None:\n    \"\"\"Parse minimal YAML frontmatter (--- ... ---) into key/value strings.\"\"\"\n    text = path.read_text(encoding=\"utf-8\", errors=\"replace\")\n    if not text.startswith(\"---\"):\n        return None\n    parts = text.split(\"---\", 2)\n    if len(parts) < 3:\n        return None\n    fm = parts[1].strip(\"\\n\")\n    out: dict[str, str] = {}\n    for line in fm.splitlines():\n        if not line.strip() or line.lstrip().startswith(\"#\"):\n            continue\n        if \":\" not in line:\n            continue\n        k, v = line.split(\":\", 1)\n        out[k.strip()] = v.strip().strip('\"').strip(\"'\")\n    return out\n\n\ndef _collect_timestamp_issues(obj: Any, path_prefix: str = \"\") -> list[str]:\n    issues: list[str] = []\n\n    def walk(x: Any, prefix: str) -> None:\n        if isinstance(x, dict):\n            for k, v in x.items():\n                p = f\"{prefix}.{k}\" if prefix else str(k)\n                if isinstance(k, str) and TS_KEY_RE.search(k):\n                    if isinstance(v, str) and v:\n                        if not P1_TS_RE.match(v):\n                            issues.append(f\"{p}: '{v}' not ISO8601(+08:00, seconds) (P1)\")\n                    # if value is not string, flag as potential issue\n                    elif v is not None:\n                        issues.append(f\"{p}: value is not a string timestamp (P1)\")\n                walk(v, p)\n        elif isinstance(x, list):\n            for i, v in enumerate(x):\n                walk(v, f\"{prefix}[{i}]\")\n\n    walk(obj, path_prefix)\n    return issues\n\n\ndef check_p3(path: Path) -> tuple[bool, list[str]]:\n    \"\"\"Return (p3_ok, p1_issues_found_in_metadata_and_payload).\"\"\"\n    suffix = path.suffix.lower()\n\n    if suffix == \".json\":\n        try:\n            data = _json_load(path)\n        except Exception as e:\n            return False, [f\"json_parse_error: {e}\"]\n\n        meta = data.get(\"meta\") if isinstance(data, dict) else None\n        if not isinstance(meta, dict):\n            return False, [\"missing top-level meta object (P3)\"]\n        created_at = meta.get(\"created_at\")\n        if not isinstance(created_at, str) or not created_at:\n            return False, [\"meta.created_at missing/empty (P3)\"]\n\n        issues = []\n        if not P1_TS_RE.match(created_at):\n            issues.append(f\"meta.created_at '{created_at}' not ISO8601(+08:00, seconds) (P1)\")\n        issues.extend(_collect_timestamp_issues(data))\n        return True, issues\n\n    if suffix in {\".md\", \".markdown\"}:\n        fm = _md_frontmatter(path)\n        if fm is None:\n            return False, [\"missing YAML frontmatter (P3)\"]\n        created_at = fm.get(\"created_at\")\n        if not created_at:\n            return False, [\"frontmatter created_at missing (P3)\"]\n        issues = []\n        if not P1_TS_RE.match(created_at):\n            issues.append(f\"frontmatter created_at '{created_at}' not ISO8601(+08:00, seconds) (P1)\")\n        return True, issues\n\n    # For other file types, we don't enforce P3 here.\n    return True, []\n\n\ndef check_p4(root: Path, filename: str) -> bool | None:\n    \"\"\"Heuristic:\n\n    If a file *looks* like an existing non-output artifact (not P2) and is not itself\n    a backup, we expect a corresponding '<name>.bak' next to it.\n\n    Returns:\n      - True/False when the heuristic applies\n      - None when not applicable / cannot infer\n    \"\"\"\n    if filename.endswith(\".bak\"):\n        return None\n    if check_p2(filename):\n        return None\n    # done.log and README are treated as special (often pre-existing)\n    if filename in {\"done.log\", \"README.md\"}:\n        return None\n    bak = root / f\"{filename}.bak\"\n    return bak.exists()\n\n\ndef check_p5(root: Path, filename: str, done_log_text: str | None) -> bool | None:\n    \"\"\"Heuristic: require done.log to mention the filename.\"\"\"\n    if filename == \"done.log\":\n        return None\n    if done_log_text is None:\n        return False\n    return filename in done_log_text\n\n\ndef main(argv: list[str]) -> int:\n    ap = argparse.ArgumentParser(description=\"Check a directory for P1-P5 compliance issues\")\n    ap.add_argument(\"path\", nargs=\"?\", default=\".\", help=\"Directory to scan (default: .)\")\n    ap.add_argument(\"--json\", action=\"store_true\", help=\"Output JSON report (default)\")\n    args = ap.parse_args(argv)\n\n    root = Path(args.path).resolve()\n    if not root.exists() or not root.is_dir():\n        print(f\"error: not a directory: {root}\", file=sys.stderr)\n        return 2\n\n    done_log_path = root / \"done.log\"\n    done_log_text = None\n    if done_log_path.exists():\n        done_log_text = done_log_path.read_text(encoding=\"utf-8\", errors=\"replace\")\n\n    file_reports: list[FileReport] = []\n    for p in _iter_files(root):\n        p2_ok = check_p2(p.name)\n        p3_ok, p1_issues = check_p3(p)\n        p4_ok = check_p4(root, p.name)\n        p5_ok = check_p5(root, p.name, done_log_text)\n\n        file_reports.append(\n            FileReport(\n                filename=p.name,\n                p2_compliant=p2_ok,\n                p3_compliant=p3_ok,\n                p1_timestamp_issues=p1_issues,\n                p4_backup_missing=(False if p4_ok is None else (not p4_ok)),\n                p5_log_missing=(False if p5_ok is None else (not p5_ok)),\n            )\n        )\n\n    overall_pass = True\n    for fr in file_reports:\n        if not fr.p2_compliant:\n            overall_pass = False\n        if not fr.p3_compliant:\n            overall_pass = False\n        if fr.p1_timestamp_issues:\n            overall_pass = False\n        if fr.p4_backup_missing:\n            overall_pass = False\n        if fr.p5_log_missing:\n            overall_pass = False\n\n    report = {\n        \"meta\": {\n            \"created_at\": _now_iso_utc(),\n            \"tool\": \"p1_p5_compliance_checker\",\n            \"root\": str(root),\n        },\n        \"overall_pass\": overall_pass,\n        \"files\": [asdict(fr) for fr in file_reports],\n    }\n\n    print(json.dumps(report, ensure_ascii=False, indent=2))\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main(sys.argv[1:]))\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773902195370
+      }
+    ]
+  },
+  "answer": "completed\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: Meta section missing or empty field: status\n",
+    "stderr": ""
+  }
+}

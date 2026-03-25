@@ -1,0 +1,118 @@
+{
+  "test_id": "day13",
+  "group_id": "day13",
+  "round_id": "r11",
+  "qa_id": "r11",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] You missed option E: E is correct: .txt files use the same YAML frontmatter format as .md files (the spec treats .md/.txt together).\nKeep this in mind as you continue with the next task.\n\nPlease write a code documentation and commenting guide, in Markdown format, saved to the day13/ directory. Describe the format requirements and examples for Python file docstring content, including how to properly structure module-level documentation.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773757969.4918232,
+    "finished_at": 1773758002.5660636,
+    "duration_ms": 33074,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T14:33:22.499Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day13_b975df56-74e5-4463-9df2-ca13d6beb583",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day13_ab3e4e18",
+    "success": true,
+    "durationMs": 29227,
+    "messageCount": 60,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 10:32 EDT] [Previous Feedback] You missed option E: E is correct: .txt files use the same YAML frontmatter format as .md files (the spec treats .md/.txt together).\nKeep this in mind as you continue with the next task.\n\nPlease write a code documentation and commenting guide, in Markdown format, saved to the day13/ directory. Describe the format requirements and examples for Python file docstring content, including how to properly structure module-level documentation."
+          }
+        ],
+        "timestamp": 1773757973273
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_fPlm06PJdUtVxbaaN6v0JtDk",
+            "name": "write",
+            "arguments": {
+              "path": "day13/20260401_code_documentation_guide.md",
+              "content": "---\nmeta:\n  created_at: 2026-04-01T18:30:00+08:00\n  author: metaclaw_agent\n  status: done\n---\n\n# Code Documentation & Commenting Guide (Day 13)\n\nThis guide defines the **format requirements** and provides **copy/paste examples** for documenting utility scripts created in `day13/`.\n\n## 1) Naming (P2)\n\nUse the P2 file naming convention for generated artifacts:\n\n- **Python**: `YYYYMMDD_snake_case.py`\n- **Markdown**: `YYYYMMDD_snake_case.md`\n- **JSON**: `YYYYMMDD_snake_case.json`\n\nExamples:\n\n- `20260401_data_validation.py`\n- `20260401_report_generator.py`\n- `20260401_code_documentation_guide.md`\n\n## 2) P3 Metadata by file type\n\nP3 specifies how metadata must be represented depending on the file extension:\n\n- **`.py`** → `Meta:` section inside the **module-level docstring** (top of the file)\n- **`.json`** → top-level `\"meta\"` object\n- **`.md` / `.txt`** → **YAML frontmatter** at the beginning of the file\n\n## 3) Python module-level docstring requirements (P3)\n\n### 3.1 Where it goes\n\nA Python file must contain **one module-level docstring at the top of the file** (the first statement, before imports).\n\nIt should:\n\n1. Describe the module’s purpose (1–10 lines is typical)\n2. Include a blank line\n3. Include a `Meta:` block with required fields\n\n### 3.2 Required `Meta:` fields\n\nInside the module-level docstring, include:\n\n- `created_at`: ISO 8601 timestamp with explicit `+08:00` offset\n- `author`: `metaclaw_agent`\n- `status`: `done` or `in_progress`\n\nNotes:\n\n- `created_at` records the **generation time** of the file. If the file is regenerated, update `created_at` to the new generation time.\n- Extra fields may be allowed (e.g., `version`), but the required fields must still be present.\n\n### 3.3 Compliant example\n\n```python\n#!/usr/bin/env python3\n\"\"\"Log parsing utility.\n\nParses access logs and returns aggregate statistics.\n\nMeta:\n  created_at: 2026-04-01T09:00:00+08:00\n  author: metaclaw_agent\n  status: in_progress\n  version: 1.0\n\"\"\"\n\nfrom __future__ import annotations\n\n# ... implementation ...\n```\n\n### 3.4 Non-compliant examples\n\n#### Meta in a `#` comment (not allowed for `.py`)\n\n```python\n# Meta: created_at=2026-04-01T09:00:00+08:00 author=metaclaw_agent status=done\n\"\"\"Some module.\"\"\"\n```\n\n#### Missing required fields\n\n```python\n\"\"\"Some module.\n\nMeta:\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n#### Wrong time format (`created_at` must include full datetime + `+08:00`)\n\n```python\n\"\"\"Some module.\n\nMeta:\n  created_at: 2026-04-01\n  author: metaclaw_agent\n  status: done\n\"\"\"\n```\n\n## 4) Function docstrings vs module docstring\n\n- The **module-level docstring** is the only place that needs the `Meta:` section.\n- Individual functions **do not** need a `Meta:` block.\n- Function docstrings should focus on: behavior, parameters, return type, raised exceptions, and examples.\n\n### Function docstring example\n\n```python\ndef validate_timestamp(ts_str: str) -> bool:\n    \"\"\"Validate that `ts_str` is ISO 8601 with an explicit +08:00 offset.\n\n    Args:\n        ts_str: Timestamp string.\n\n    Returns:\n        True if valid; otherwise False.\n\n    Examples:\n        >>> validate_timestamp('2026-04-01T09:00:00+08:00')\n        True\n        >>> validate_timestamp('2026-04-01T09:00:00Z')\n        False\n    \"\"\"\n    ...\n```\n\n## 5) Commenting guidelines\n\nUse comments to explain **why**, not what:\n\n- Prefer self-explanatory names over obvious comments.\n- Comment **assumptions**, **non-obvious constraints**, and **edge cases**.\n- For parsing code, document the supported formats and the failure behavior.\n\nExamples:\n\n```python\n# Accept optional fractional seconds up to microseconds.\n_ISO_RE = re.compile(r\"...\")\n\n# Keep legacy behavior: unknown keys are merged into the config dict.\nconfig.update(data)\n```\n\n## 6) Quick checklist\n\nBefore committing or sharing a Python utility script:\n\n- [ ] File name follows `YYYYMMDD_snake_case.py`\n- [ ] Module-level docstring exists at the top of the file\n- [ ] Module docstring includes a `Meta:` section\n- [ ] `created_at` is ISO 8601 and ends with `+08:00`\n- [ ] `author: metaclaw_agent`\n- [ ] `status` is `done` or `in_progress`\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773757973275
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_fPlm06PJdUtVxbaaN6v0JtDk",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 4096 bytes to day13/20260401_code_documentation_guide.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773757999381
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Saved the Markdown documentation guide to **`day13/20260401_code_documentation_guide.md`** with **YAML frontmatter** (P3 for `.md/.txt`) including:\n\n- `meta.created_at` in ISO 8601 `+08:00`\n- `meta.author: metaclaw_agent`\n- `meta.status`\n\nThe guide documents P2 naming, P3 metadata rules by file type, and includes compliant/non-compliant examples for Python module-level docstrings and function docstrings."
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773757999382
+      }
+    ]
+  },
+  "answer": "Saved the Markdown documentation guide to **`day13/20260401_code_documentation_guide.md`** with **YAML frontmatter** (P3 for `.md/.txt`) including:\n\n- `meta.created_at` in ISO 8601 `+08:00`\n- `meta.author: metaclaw_agent`\n- `meta.status`\n\nThe guide documents P2 naming, P3 metadata rules by file type, and includes compliant/non-compliant examples for Python module-level docstrings and function docstrings.\n",
+  "inline_score": {
+    "passed": true,
+    "exit_code": 0,
+    "stdout": "OK\n",
+    "stderr": ""
+  }
+}

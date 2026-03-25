@@ -29,12 +29,9 @@ Valid categories: general, coding, research, data_analysis, security,
 import glob
 import logging
 import os
-import re
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
-
-_SAFE_NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,63}$")
 
 # ------------------------------------------------------------------ #
 # Conversation task-type keywords                                      #
@@ -352,6 +349,67 @@ class SkillManager:
 
         return general + task_skills + common_mistakes
 
+    def retrieve_relevant(
+        self,
+        task_description: str,
+        top_k: int = 6,
+        min_relevance: float = 0.07,
+    ) -> list[dict]:
+        """Retrieve skills filtered by keyword relevance to the task.
+
+        Unlike ``retrieve()``, this method scores each skill against the task
+        description using overlap coefficient keyword matching.  Skills below
+        *min_relevance* are discarded.  Results are sorted by relevance score
+        (descending).  Designed for synergy mode where injecting irrelevant
+        skills is worse than injecting none.
+        """
+        # Scan ALL skills across every category (not just detected task type)
+        # to avoid missing relevant skills due to task type misclassification.
+        all_skills: list[dict] = []
+        seen_names: set[str] = set()
+        for category_skills in self.skills.values():
+            if isinstance(category_skills, list):
+                for s in category_skills:
+                    name = s.get("name", "")
+                    if name not in seen_names:
+                        seen_names.add(name)
+                        all_skills.append(s)
+            elif isinstance(category_skills, dict):
+                for sub_skills in category_skills.values():
+                    for s in sub_skills:
+                        name = s.get("name", "")
+                        if name not in seen_names:
+                            seen_names.add(name)
+                            all_skills.append(s)
+        if not all_skills:
+            return []
+
+        task_terms = self._tokenize_text(task_description)
+        if not task_terms:
+            return all_skills[:top_k]
+
+        scored: list[tuple[float, dict]] = []
+        for skill in all_skills:
+            # Score on name + description only (not content) to avoid
+            # false positives from generic words in skill body text.
+            skill_text = (
+                skill.get("name", "")
+                + " "
+                + skill.get("description", "")
+            )
+            skill_terms = self._tokenize_text(skill_text)
+            if not skill_terms:
+                continue
+            intersection = task_terms & skill_terms
+            # Use overlap coefficient: |A∩B| / min(|A|, |B|)
+            # Better than Jaccard when set sizes differ significantly.
+            relevance = len(intersection) / min(len(task_terms), len(skill_terms))
+            if relevance >= min_relevance:
+                scored.append((relevance, skill))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [s[1] for s in scored[:top_k]]
+
     def format_for_conversation(self, skills: list[dict]) -> str:
         """Format skill dicts into a block for insertion into a system prompt."""
         if not skills:
@@ -378,9 +436,6 @@ class SkillManager:
         name = skill.get("name", "").strip()
         if not name:
             logger.warning("[SkillManager] add_skill called with missing name")
-            return False
-        if not _SAFE_NAME_RE.match(name):
-            logger.warning("[SkillManager] rejected invalid skill name: %s", name)
             return False
 
         existing = self._get_all_skill_names()
@@ -425,10 +480,6 @@ class SkillManager:
         """Persist a single skill to its SKILL.md file inside a subdirectory of skills_dir."""
         name = skill.get("name", "unknown")
         skill_dir = os.path.join(self._skills_dir, name)
-        canonical = os.path.realpath(skill_dir)
-        if not canonical.startswith(os.path.realpath(self._skills_dir) + os.sep):
-            logger.warning("[SkillManager] blocked path traversal in skill name: %s", name)
-            return
         os.makedirs(skill_dir, exist_ok=True)
         path = os.path.join(skill_dir, "SKILL.md")
         description = skill.get("description", "")
@@ -485,3 +536,52 @@ class SkillManager:
             ),
             "common_mistakes": len(self.skills.get("common_mistakes", [])),
         }
+
+    # ------------------------------------------------------------------ #
+    # Synergy helpers                                                     #
+    # ------------------------------------------------------------------ #
+
+    _STOP_WORDS = frozenset({
+        "the", "is", "and", "or", "of", "to", "in", "for", "on", "at",
+        "by", "an", "as", "it", "be", "do", "if", "no", "not", "are",
+        "was", "were", "been", "has", "have", "had", "this", "that",
+        "with", "from", "will", "can", "should", "would", "could",
+        "use", "when", "any", "all", "each", "every", "more", "than",
+        "also", "but", "its", "does", "did", "may", "might", "into",
+        "what", "how", "who", "where", "which", "why", "your", "you",
+        "skill", "follow", "instead", "before", "after",
+    })
+
+    @staticmethod
+    def _stem(word: str) -> str:
+        """Lightweight suffix stripping (not a full stemmer)."""
+        # Order matters — try longest suffixes first
+        for suffix in ("ation", "tion", "sion", "ment", "ness", "ious",
+                        "ical", "ally", "ible", "able", "ting", "ing",
+                        "ful", "ous", "ive", "ity", "ise", "ize",
+                        "ies", "ily", "ely", "ure", "ant", "ent",
+                        "ist", "ism", "ory", "ary",
+                        "ly", "ed", "er", "es"):
+            if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+                return word[: -len(suffix)]
+        return word
+
+    @staticmethod
+    def _tokenize_text(text: str) -> set[str]:
+        """Split text into meaningful keyword tokens.
+
+        - Splits on non-alphanumeric characters (hyphens/underscores also split)
+        - Filters stop words and short tokens (< 3 chars)
+        - Applies lightweight stemming for better matching
+        """
+        import re
+        raw = re.findall(r'[a-zA-Z0-9]+', text.lower())
+        tokens: set[str] = set()
+        for tok in raw:
+            if len(tok) >= 3 and tok not in SkillManager._STOP_WORDS:
+                stemmed = SkillManager._stem(tok)
+                if len(stemmed) >= 3:
+                    tokens.add(stemmed)
+                else:
+                    tokens.add(tok)
+        return tokens

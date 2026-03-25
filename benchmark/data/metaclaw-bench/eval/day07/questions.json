@@ -1,0 +1,200 @@
+{
+  "id": "day07",
+  "desc": "Day 07 — Documentation writing tasks (P2 consolidation)",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please draft this week's technical weekly report in Markdown format, covering the main completed items this week, issues encountered, and plans for next week. Save it to the day07/ directory.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The weekly report file is correctly named.",
+        "incorrect": "File naming does not meet our standards. Should use `20260324_<description>.md` format, e.g. `20260324_weekly_tech_report.md`. The date must be today's date (20260324) and placed as a prefix."
+      },
+      "update": []
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please prepare an email draft for the PM regarding the API v2.3.0 change notification, saved as JSON in the day07/ directory. Include to, subject, body_summary, and draft_created_at (current time, approximately 10:00) fields.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The email draft file is correctly named.",
+        "incorrect": "File naming does not meet standards. Email draft should be named like `20260324_api_change_email_draft.json`, using the format YYYYMMDD_snake_case.json."
+      },
+      "update": []
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Based on day07/review_raw_notes.txt, please organize the formal meeting notes from yesterday's (March 23) API review session and save them to the day07/ directory in Markdown format. Include the meeting time, participants, discussion points, and decisions.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext md --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The meeting notes file is correctly named.",
+        "incorrect": "Meeting notes file naming does not meet standards. Note: the notes document a meeting from yesterday (March 23), but the file **creation date** is today (20260324), so the date prefix should be `20260324`, e.g. `20260324_api_review_meeting_notes.md`."
+      },
+      "update": []
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "Regarding the date prefix in file names, which of the following statements are correct?\n\nA. The date prefix reflects the **creation date** of the file — i.e., the date the agent generated the file\nB. If a document records something that happened yesterday, the file name should use yesterday's date\nC. All output files generated today should have the date prefix 20260324\nD. In the date prefix 20260324, 2026 is the year, 03 is the month, and 24 is the day\nE. If a report covers data from the entire past week, the file name should use the last day of that week\nF. When generating multiple files on the same day, all files share the same date prefix (the current day)\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Date prefix reflects file creation date",
+          "B": "Documents about yesterday's events use yesterday's date",
+          "C": "All today's output files use date prefix 20260324",
+          "D": "20260324 means year 2026, month 03, day 24",
+          "E": "Weekly report uses last day of the week",
+          "F": "Multiple files same day share same date prefix"
+        },
+        "answer": ["A", "C", "D", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: date prefix = file creation date (when the agent generated it).",
+          "B": "B wrong: date prefix is always the file creation date, not the event date. Today's creation date is 20260324.",
+          "C": "C correct: all output files generated today use prefix 20260324.",
+          "D": "D correct: YYYYMMDD = year 2026, month 03, day 24.",
+          "E": "E wrong: even for weekly reports, use the creation date (today = 20260324), not the period end date.",
+          "F": "F correct: multiple files on the same day share the same date prefix, differentiated by description."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please draft the Sprint 8 technical specification document in Markdown, covering the interface definitions and implementation points for the 3 core feature modules to be implemented. Save it to the day07/ directory.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext md --min-count 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The technical specification document is correctly named.",
+        "incorrect": "Technical spec document naming does not meet standards. Should be `20260324_sprint8_tech_spec.md` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please create an Architecture Decision Record for the API versioning strategy decided in yesterday's review session, saved as JSON in the day07/ directory. Include decision_title, context, decision, consequences, and decided_at (yesterday at 3:00 PM).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The ADR file is correctly named.",
+        "incorrect": "ADR file naming does not meet standards. Should use `20260324_<description>.json`, e.g. `20260324_api_versioning_adr.json`."
+      },
+      "update": []
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "Several files need to be generated today. Which of the following names are correct?\n\nA. Weekly tech report: 20260324_weekly_tech_report.md\nB. Meeting notes (recording yesterday's meeting): 20260323_api_review_notes.md\nC. ADR file: 20260324_api_versioning_adr.json\nD. Email draft: email_draft_20260324.json\nE. Tech spec: 20260324_sprint8_tech_spec.md\nF. Decision summary: 20260324_decisions_summary.txt\n\nAnswer using \\bbox{X,Y,...} format (select correctly named files).",
+      "eval": {
+        "options": {
+          "A": "20260324_weekly_tech_report.md",
+          "B": "20260323_api_review_notes.md (yesterday's meeting)",
+          "C": "20260324_api_versioning_adr.json",
+          "D": "email_draft_20260324.json",
+          "E": "20260324_sprint8_tech_spec.md",
+          "F": "20260324_decisions_summary.txt"
+        },
+        "answer": ["A", "C", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: proper YYYYMMDD prefix and snake_case.",
+          "B": "B wrong: should use creation date 20260324, not event date 20260323.",
+          "C": "C correct: proper YYYYMMDD prefix and snake_case.",
+          "D": "D wrong: date should be a prefix, not a suffix (should be 20260324_email_draft.json).",
+          "E": "E correct: proper YYYYMMDD prefix and snake_case.",
+          "F": "F correct: .txt extension is also valid, format is correct."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please organize the technical debt discovered this week and create a technical debt tracking document, saved to the day07/ directory in Markdown format. Include entries with title, priority (high/medium/low), discovered_at, and estimated_effort fields.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext md --min-count 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The tech debt tracking document is correctly named.",
+        "incorrect": "File naming does not meet standards. Should be `20260324_tech_debt_tracker.md` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please create today's work daily report in JSON format, saved to the day07/ directory. Include report_date (today), completed_tasks (array), blocked_items (array), next_day_plan, and submitted_at (current time, approximately 17:30).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext json --min-count 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The daily report file is correctly named.",
+        "incorrect": "Daily report file naming does not meet standards. Should use `20260324_daily_report.json` or similar format."
+      },
+      "update": []
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "The following are file name + content combinations. Which ones are fully compliant (both naming and content are correct)?\n\nA. File name 20260324_meeting_notes.json, with meeting_time: \"2026-03-24T10:00:00+08:00\"\nB. File name meeting_notes_20260324.json, with meeting_time: \"2026-03-24T10:00:00+08:00\"\nC. File name 20260324_report.md, containing \"Generated at: 2026-03-24 10:00\"\nD. File name 20260324_adr_api.json, with decided_at: \"2026-03-23T15:00:00+08:00\"\nE. File name 20260324_sprint_plan.json, with sprint_start: \"2026-03-23\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Naming correct + time field ISO 8601",
+          "B": "Naming wrong (date not prefix) + time field ISO 8601",
+          "C": "Naming correct + time field format wrong (no T and timezone)",
+          "D": "Naming correct + time field ISO 8601 (yesterday's time, reasonable)",
+          "E": "Naming correct + time field pure date format"
+        },
+        "answer": ["A", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A fully compliant: naming correct and time field uses ISO 8601 +08:00 format.",
+          "B": "B naming violation: date should be a prefix, not a suffix (should be 20260324_meeting_notes.json).",
+          "C": "C time field violation: '2026-03-24 10:00' is missing T separator and +08:00 timezone.",
+          "D": "D fully compliant: naming correct and decided_at uses valid ISO 8601 format.",
+          "E": "E time field violation: '2026-03-23' is a pure date without time or timezone offset."
+        }
+      },
+      "update": []
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please create a technical retrospective document for this week (first week), in JSON format, saved to the day07/ directory. Include review_period_start (last Monday at 09:00), review_period_end (today at 18:00), key_achievements (array), lessons_learned (array), and created_at (current time, approximately 16:00).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext json --min-count 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "The technical retrospective file is correctly named.",
+        "incorrect": "File naming does not meet standards. Should use `20260324_tech_retrospective.json` or similar format. Remember to use today's date prefix 20260324."
+      },
+      "update": []
+    }
+  ]
+}

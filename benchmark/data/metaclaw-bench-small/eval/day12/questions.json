@@ -1,0 +1,123 @@
+{
+  "id": "day12",
+  "desc": "Day 12 — Ultimate comprehensive test — hardest scenarios",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please create a Sprint 10 Week 1 status dashboard in JSON format, save to day12/. Include: dashboard_generated_at (current time), sprint_id (10), week (1), completion_summary (total_tasks, completed, in_progress, blocked), velocity_this_week, key_achievements (string array), and blockers (array with issue and owner). Add a meta object.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260424_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_iso8601.py $(python -c \"import glob; print(sorted(glob.glob('day12/20260424_*.json'))[0])\") meta.created_at dashboard_generated_at && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day12/20260424_*.json'))[0])\") && python scripts/check_done_log.py done.log --min-entries 1 --task-prefix sprint10_dashboard",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Dashboard correctly named, timestamps ISO 8601, meta object present, done.log updated.",
+        "incorrect": "Issues: (1) P2 naming required (`20260424_*.json`); (2) top-level meta object with ISO 8601 `created_at` required (P3); (3) `dashboard_generated_at` must be ISO 8601 +08:00 (P1); (4) append done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please create a performance baseline report for Sprint 10 in JSON format, save to day12/. Include: baseline_captured_at (current time), api_response_time_ms (p50, p95, p99), error_rate_percent, throughput_rps, and test_conditions (array of environment parameters). Add a meta object.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260424_*.json')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_iso8601.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260424_*.json')); print([f for f in fs if 'baseline' in f or 'perf' in f][0])\") meta.created_at baseline_captured_at && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260424_*.json')); print([f for f in fs if 'baseline' in f or 'perf' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Performance baseline correctly named, timestamps ISO 8601, meta object present, done.log has 3 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) meta object with ISO 8601 `created_at` required (P3); (3) `baseline_captured_at` must be ISO 8601 +08:00 (P1); (4) append 3rd done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please write deployment notes for the features going to staging next week in Markdown format, save to day12/. Include: deployment window (date and time), components being deployed, pre-deployment checklist, rollback trigger conditions, and on-call contacts.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260424_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day12/20260424_*.md'))[0])\") && python scripts/check_done_log.py done.log --min-entries 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Deployment notes correctly named, has YAML frontmatter, done.log has 5 entries.",
+        "incorrect": "Issues: (1) P2 naming required (`20260424_*.md`); (2) YAML frontmatter with ISO 8601 `created_at` required (P3); (3) deployment window datetime must use ISO 8601 (P1) — e.g. `\"2026-04-27T22:00:00+08:00\"` not `\"next Monday evening\"`; (4) append 5th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "For each file type created today, match the correct P3 metadata format:\n\nA. .py file: module-level docstring with a Meta section containing created_at, author, status\nB. .json file: top-level \"meta\" object with created_at, author, status fields\nC. .md file: YAML frontmatter block (---...---) at the top with created_at, author, status\nD. .csv file: first-line comment starting with \"# meta:\" followed by key=value pairs\nE. .txt file: same format as .md (YAML frontmatter or similar first-section metadata)\nF. .yaml/.yml file: a top-level \"meta\" key (same as JSON convention)\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": ".py: module docstring Meta section",
+          "B": ".json: top-level meta object",
+          "C": ".md: YAML frontmatter block",
+          "D": ".csv: first-line # meta: comment",
+          "E": ".txt: same as .md (YAML frontmatter)",
+          "F": ".yaml/.yml: top-level meta key"
+        },
+        "answer": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct — all six are the correct P3 formats for their respective file types.",
+        "options": {
+          "A": "A correct: Python files use module-level docstring with a `Meta:` section.",
+          "B": "B correct: JSON files use a top-level `\"meta\"` object.",
+          "C": "C correct: Markdown files use YAML frontmatter.",
+          "D": "D correct: CSV files use a `# meta:` first-line comment.",
+          "E": "E correct: text files use the same YAML-style frontmatter as .md files.",
+          "F": "F correct: YAML/YML files use a top-level `meta:` key following the same convention as JSON."
+        }
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create a technical debt refinement document in Markdown format, save to day12/. List the top 5 technical debt items prioritized for next sprint, each with a description, estimated effort, business impact, and proposed resolution approach. Include the refinement session date.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260424_*.md')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260424_*.md')); print([f for f in fs if 'debt' in f or 'refin' in f or 'tech' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Tech debt doc correctly named, has YAML frontmatter, done.log has 8 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) YAML frontmatter with ISO 8601 `created_at` required (P3); (3) refinement session date must use ISO 8601 (P1); (4) append 8th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "A JSON report has a nested structure where time fields appear at different levels:\n{\n  \"meta\": { \"created_at\": \"...\" },\n  \"analysis_period\": { \"start\": \"...\", \"end\": \"...\" },\n  \"breakdown\": [{ \"week_ending\": \"...\" }]\n}\n\nWhich statements are correct?\n\nA. All four time fields (meta.created_at, analysis_period.start, analysis_period.end, breakdown[].week_ending) must be ISO 8601 +08:00\nB. Only top-level time fields need ISO 8601 — nested fields are optional\nC. check_iso8601.py can validate nested fields using dot-notation paths\nD. check_iso8601.py can validate array element fields using bracket notation (e.g. breakdown[].week_ending)\nE. If analysis_period.start and end use date-only format (\"2026-04-14\"), that is acceptable for range boundaries\nF. The meta.created_at field is special — it only needs to comply with P3, not P1\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "All nested time fields need ISO 8601 +08:00",
+          "B": "Only top-level time fields need ISO 8601",
+          "C": "check_iso8601.py supports dot-notation for nested fields",
+          "D": "check_iso8601.py supports bracket notation for array elements",
+          "E": "Date-only is acceptable for period start/end boundaries",
+          "F": "meta.created_at only needs to comply with P3, not P1"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P1 applies to all time fields regardless of nesting depth.",
+          "B": "B wrong: no depth exception — all time fields must be ISO 8601 +08:00.",
+          "C": "C correct: check_iso8601.py uses dot-notation for nested object paths.",
+          "D": "D correct: `breakdown[].week_ending` syntax validates all array elements.",
+          "E": "E wrong: period boundaries that carry time semantics still require full ISO 8601 format. Use `\"2026-04-14T00:00:00+08:00\"` for day-start boundaries.",
+          "F": "F wrong: `meta.created_at` must satisfy both P1 (correct time format) and P3 (field presence) — they are complementary, not mutually exclusive."
+        }
+      }
+    }
+  ]
+}

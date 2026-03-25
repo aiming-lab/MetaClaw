@@ -1,0 +1,229 @@
+{
+  "id": "day15",
+  "desc": "Day 15 — Comprehensive wrap-up, P3 full generalization across all file types",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please create a summary report of this week's work outputs in JSON format, saved to the day15/ directory. Include week, generated_at (current time), total_files (number of files created this week), and file_list (filename and type for each file).",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day15/20260403_*.json'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Weekly output summary JSON file has correct naming, meta object, and time fields.",
+        "incorrect": "The weekly output summary requires: (1) P2 naming (20260403_*.json), (2) P3 meta object, (3) P1 time field format — generated_at example: `2026-04-03T09:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please draft a Q2 (April–June) kickoff plan document, in Markdown format, saved to the day15/ directory. Include Q2 goals, key projects, and milestone schedule.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day15/20260403_*.md'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Q2 kickoff plan has correct naming and frontmatter.",
+        "incorrect": "The Q2 kickoff plan requires P2 naming (20260403_*.md) and a P3 YAML frontmatter block (containing created_at in ISO 8601, author, and status)."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please generate a team weekly summary CSV file, saved to the day15/ directory. Columns: member_name, tasks_completed, code_commits, docs_written, incidents.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.csv')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day15/20260403_*.csv'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Team weekly report CSV file has correct naming and first-line comment.",
+        "incorrect": "The CSV file requires: (1) P2 naming (20260403_*.csv), (2) P3 first-line comment format: `# meta: created_at=2026-04-03T<time>+08:00 author=metaclaw_agent status=done`."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "For the four file types created today, which of the following P3 format descriptions are correct?\n\nA. JSON files: the top-level JSON must have a \"meta\" key containing created_at, author, and status\nB. Markdown files: include a ## Metadata section in the body with the fields listed\nC. Python files: module-level docstring contains a \"Meta:\" section with key-value pairs\nD. CSV files: the last line is a # meta: key=value comment\nE. Markdown files: a YAML frontmatter block surrounded by --- at the beginning of the file\nF. JSON files: the meta object can be nested inside any sub-object, not necessarily at the top level\n\nPlease answer in \\bbox{X,Y,...} format (select all correct ones).",
+      "eval": {
+        "options": {
+          "A": "JSON → top-level meta object",
+          "B": "Markdown → ## Metadata section in body",
+          "C": "Python → module docstring Meta section",
+          "D": "CSV → last line # meta comment",
+          "E": "Markdown → YAML frontmatter at file beginning",
+          "F": "JSON → meta can be nested in sub-objects"
+        },
+        "answer": ["A", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: JSON files must have the meta object at the root level (top-level field).",
+          "B": "B is incorrect: Markdown files do not use a `## Metadata` section; instead they use YAML frontmatter at the beginning of the file.",
+          "C": "C is correct: Python files use a `Meta:` section inside the module-level docstring with key-value pairs.",
+          "D": "D is incorrect: CSV files must have the meta comment on the **first line** (not the last line).",
+          "E": "E is correct: Markdown files use YAML frontmatter (surrounded by `---`) at the start of the file.",
+          "F": "F is incorrect: JSON files must have the meta at the **top level**; it cannot be nested inside sub-objects."
+        }
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please write a weekly summary generator Python script, saved to the day15/ directory. The script should read JSON files in a specified directory, count the number of files and the overall compliance rate of structured headers, and print a summary.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.py')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day15/20260403_*.py'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Python script has correct naming and module-level docstring Meta section.",
+        "incorrect": "The Python script requires P2 naming (20260403_*.py) and a P3 module-level docstring containing a Meta section (with created_at, author, status)."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please create a Q2 key milestone schedule, in JSON format, saved to the day15/ directory. Include the main milestones for each month in Q2, with each entry containing milestone_name, target_date (ISO 8601), and owner.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.json')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day15/20260403_*.json')); print([f for f in fs if 'q2' in f or 'timeline' in f or 'milestone' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Q2 milestone schedule has correct naming, meta object, and time fields.",
+        "incorrect": "The Q2 milestone schedule must satisfy P1 (target_date ISO 8601), P2 (naming convention), and P3 (meta object)."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create a work plan for next week (April 6–10), in Markdown format, saved to the day15/ directory. List the main tasks for each day.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.md')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day15/20260403_*.md')); print([f for f in fs if 'next' in f or 'plan' in f or 'week' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Next week's plan document has correct naming and frontmatter.",
+        "incorrect": "The next week plan document requires P2 naming (20260403_*.md) and a P3 YAML frontmatter block."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "Looking back at the various types of files handled this week, which of the following summaries about the file documentation conventions are correct?\n\nA. All agent-generated files (regardless of type) require structured documentation headers\nB. Only JSON and Markdown files need P3; Python and CSV files do not\nC. The created_at field in P3 has the same time format requirement as P1 (ISO 8601 +08:00)\nD. The core purpose of P3 is to allow automated tools to identify files as \"generated by the agent\"\nE. The meta.status field records the completion state of the file's content, not the file write operation status\nF. If a file has no time-semantic content, it does not need P3 documentation headers\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "All agent-generated files need documentation headers",
+          "B": "Only JSON and Markdown need P3",
+          "C": "P3 created_at format requirement is consistent with P1",
+          "D": "P3 purpose: enable automated tools to identify agent-generated files",
+          "E": "status records content completion state",
+          "F": "Files with no time content do not need P3"
+        },
+        "answer": ["A", "C", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: P3 applies universally to all agent-generated output files, regardless of file type.",
+          "B": "B is incorrect: Python files (module docstring Meta section) and CSV files (first-line comment) both require P3; only the format differs by type.",
+          "C": "C is correct: the `created_at` field in P3 has exactly the same format requirement as P1 — both require ISO 8601 +08:00.",
+          "D": "D is correct: one of P3's design intentions is to allow automated tools to identify and track agent-generated files.",
+          "E": "E is correct: `meta.status` records the work completion state of the file's content (whether it is done), not whether the file was successfully written to disk.",
+          "F": "F is incorrect: P3 is unconditional — all agent-generated files require documentation headers, regardless of whether the file contains time-semantic content."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please generate a compliance statistics report for all output files from this week (day11–day15) in JSON format, saved to the day15/ directory. Provide compliance rates and non-compliant file counts for P1, P2, and P3 separately.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.json')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day15/20260403_*.json')); print([f for f in fs if 'compliance' in f or 'audit' in f or 'stat' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Compliance statistics report has correct naming, meta object, and time fields.",
+        "incorrect": "The compliance statistics report itself must also satisfy all three P1–P3 conventions (no exemptions based on file content)."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create a quick reference card for the P1–P3 conventions, in Markdown format, saved to the day15/ directory. Use a table format to list the requirements and examples for each convention, for easy team reference.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.md')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day15/20260403_*.md')); print([f for f in fs if 'ref' in f or 'guide' in f or 'cheat' in f or 'quick' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Reference card document has correct naming and frontmatter.",
+        "incorrect": "The reference card document requires P2 naming (20260403_*.md) and a P3 YAML frontmatter block."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "The following is the final file submission list for Friday. Which files fully satisfy all three P1+P2+P3 conventions?\n\nA. File 20260403_week_summary.json, meta.created_at: \"2026-04-03T09:00:00+08:00\", content period_start: \"2026-03-30T09:00:00+08:00\"\nB. File 20260403_q2_kickoff.md, frontmatter created_at: \"2026-04-03T09:00:00+08:00\", body milestone time \"2026-06-30T18:00:00+08:00\"\nC. File 20260403_team_report.csv, first line # meta: created_at=2026-04-03T09:00:00+08:00 author=metaclaw_agent status=done\nD. File 20260403_summary_gen.py, complete docstring Meta, code contains REPORT_DATE = \"Apr 3, 2026\"\nE. File 20260403_compliance_stats.json, complete top-level meta object, all time fields in content use ISO 8601 +08:00\n\nPlease answer in \\bbox{X,Y,...} format (select all fully compliant).",
+      "eval": {
+        "options": {
+          "A": "JSON: P2+P3 correct, P1 content time field correct",
+          "B": "MD: P2+P3 correct, P1 body time field correct",
+          "C": "CSV: P2+P3 correct (no time content fields)",
+          "D": "PY: P2+P3 correct, code time constant is natural language (P1 violation)",
+          "E": "JSON: P2+P3 correct, P1 all content times correct"
+        },
+        "answer": ["A", "B", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is fully compliant: P2 naming correct, P3 meta complete, P1 time field correct.",
+          "B": "B is fully compliant: P2 naming correct, P3 frontmatter complete, P1 time field correct.",
+          "C": "C is fully compliant: P2 naming correct, P3 CSV meta comment correct, no time content fields so P1 is not violated.",
+          "D": "D violates P1: `REPORT_DATE = \"Apr 3, 2026\"` uses natural language, violating P1 (code-level time constants must also use ISO 8601).",
+          "E": "E is fully compliant: all three conventions are satisfied."
+        }
+      }
+    },
+    {
+      "id": "r12",
+      "type": "file_check",
+      "question": "Please create a formal Sprint 8 Week 2 closure record in JSON format, saved to the day15/ directory. Include sprint_week (2), week_closed_at (today at 18:00), velocity (number of tasks completed this week), and next_week_start (next Monday at 09:00).",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day15/20260403_*.json')); sys.exit(0 if len(files)>=4 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day15/20260403_*.json')); print([f for f in fs if 'close' in f or 'closure' in f or 'sprint' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Sprint closure record has correct naming, meta object, and time fields.",
+        "incorrect": "The Sprint closure record must satisfy P1 (week_closed_at format: `2026-04-03T18:00:00+08:00`), P2 (naming convention), and P3 (meta object)."
+      }
+    },
+    {
+      "id": "r13",
+      "type": "multi_choice",
+      "question": "After working through this week, which of the following summaries about the file documentation conventions are correct?\n\nA. P3 requires all agent-generated output files to include structured documentation headers\nB. Different file types use different documentation header formats, but the required fields (created_at, author, status) are unified across all types\nC. The created_at field in the documentation header is simultaneously constrained by P1, requiring ISO 8601 +08:00 format\nD. Pre-existing reference files in the workspace (not generated by the agent) also need P3 documentation headers\nE. The three valid values for meta.status (pending/in_progress/done) cover the entire lifecycle of a file\nF. P3 and P2 are independent conventions; a file satisfying P3 does not need to satisfy P2\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "All agent-generated output files need documentation headers",
+          "B": "Format varies by type, required fields are unified",
+          "C": "P3 created_at is also constrained by P1",
+          "D": "Pre-existing reference files also need P3",
+          "E": "Three status values cover the file lifecycle",
+          "F": "P3 and P2 are independent; satisfying P3 does not require satisfying P2"
+        },
+        "answer": ["A", "B", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: P3 applies to all agent-generated files without exception.",
+          "B": "B is correct: JSON uses a meta object, Markdown uses frontmatter, Python uses a docstring section, and CSV uses a comment line — but created_at/author/status are required across all formats.",
+          "C": "C is correct: the `created_at` field in the documentation header is a time field, so P1 applies and it must use ISO 8601 +08:00 format.",
+          "D": "D is incorrect: only **agent-generated** output files require P3; pre-existing reference materials do not.",
+          "E": "E is correct: `pending` (not started) → `in_progress` (in progress) → `done` (complete) covers the entire process from file creation to completion.",
+          "F": "F is incorrect: P1–P3 are parallel conventions that apply simultaneously. A file satisfying P3 must also satisfy P2 (naming convention); the two are not mutually exclusive or exempting."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "id": "day30",
+  "desc": "Day 30 — Sprint 10 comprehensive wrap-up, final benchmark challenge, all P1-P5 rules",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please create a Sprint 10 Week 1 status dashboard in JSON format, save to day30/. Include: dashboard_generated_at (current time), sprint_id (10), week (1), completion_summary (total_tasks, completed, in_progress, blocked), velocity_this_week, key_achievements (string array), and blockers (array with issue and owner). Add a meta object.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day30/20260424_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_iso8601.py $(python -c \"import glob; print(sorted(glob.glob('day30/20260424_*.json'))[0])\") meta.created_at dashboard_generated_at && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day30/20260424_*.json'))[0])\") && python scripts/check_done_log.py done.log --min-entries 1 --task-prefix sprint10_dashboard",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Dashboard correctly named, timestamps ISO 8601, meta object present, done.log updated.",
+        "incorrect": "Issues: (1) P2 naming required (`20260424_*.json`); (2) top-level meta object with ISO 8601 `created_at` required (P3); (3) `dashboard_generated_at` must be ISO 8601 +08:00 (P1); (4) append done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please update day30/sprint10_board.json: mark T-501 and T-502 as \"completed\", and set their updated_at to the current time. Also update the top-level last_updated field to now.",
+      "eval": {
+        "command": "python scripts/check_backup.py day30/sprint10_board.json && python scripts/check_iso8601.py day30/sprint10_board.json last_updated tasks[].updated_at && python scripts/check_done_log.py done.log --min-entries 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "sprint10_board.json.bak created, all time fields now ISO 8601, done.log has 2 entries.",
+        "incorrect": "Issues: (1) create `day30/sprint10_board.json.bak` before modifying (P4); (2) `last_updated` and all `tasks[].updated_at` must be ISO 8601 +08:00 — e.g. `\"2026-04-24T09:30:00+08:00\"` (P1, correcting the existing date-only values); (3) append 2nd done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please create a performance baseline report for Sprint 10 in JSON format, save to day30/. Include: baseline_captured_at (current time), api_response_time_ms (p50, p95, p99), error_rate_percent, throughput_rps, and test_conditions (array of environment parameters). Add a meta object.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day30/20260424_*.json')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_iso8601.py $(python -c \"import glob; fs=sorted(glob.glob('day30/20260424_*.json')); print([f for f in fs if 'baseline' in f or 'perf' in f][0])\") meta.created_at baseline_captured_at && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day30/20260424_*.json')); print([f for f in fs if 'baseline' in f or 'perf' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Performance baseline correctly named, timestamps ISO 8601, meta object present, done.log has 3 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) meta object with ISO 8601 `created_at` required (P3); (3) `baseline_captured_at` must be ISO 8601 +08:00 (P1); (4) append 3rd done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "A task requires: \"Update the existing sprint board (JSON) AND create a new performance report (JSON).\" Which of the following describes the fully correct combined behavior?\n\nA. Back up sprint10_board.json, update it with ISO 8601 timestamps, create the performance report with P2 name + meta object + ISO 8601 fields, append two done.log entries\nB. Create the performance report first, then update the sprint board — order does not matter for compliance\nC. One done.log entry is sufficient since both are part of the same \"wrap-up\" task\nD. The sprint board modification needs .bak and ISO 8601 fix; the new performance report needs P2+P3+P1+P5\nE. P4 .bak is only needed if the sprint board modification will change more than 3 fields\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": ".bak + fix timestamps for board; P2+P3+P1+P5 for new report; two done.log",
+          "B": "Order of two tasks doesn't matter for compliance",
+          "C": "One combined done.log entry for two tasks",
+          "D": "Board: P4+P1+P5; new report: P2+P3+P1+P5 (separate tasks)",
+          "E": ".bak required only if >3 fields are changed"
+        },
+        "answer": ["A", "B", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: full compliance for both sub-tasks plus two separate done.log entries.",
+          "B": "B correct: the order of completing the two tasks (board update vs new report) is flexible as long as .bak always precedes its corresponding modification.",
+          "C": "C wrong: these are two independent tasks — P5 requires a done.log entry for each.",
+          "D": "D correct: this correctly breaks down the rules by task type.",
+          "E": "E wrong: P4 has no threshold on the number of fields changed — any modification to an existing file requires .bak."
+        }
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please update day30/api_changelog.md: add a new section for Sprint 10 Week 1 documenting three new endpoints added this week — POST /export/json, POST /export/csv, and GET /metrics/sprint. Include the date each endpoint was added.",
+      "eval": {
+        "command": "python scripts/check_backup.py day30/api_changelog.md && python scripts/check_metadata.py day30/api_changelog.md && python scripts/check_done_log.py done.log --min-entries 4",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "api_changelog.md.bak created, file now has YAML frontmatter, done.log has 4 entries.",
+        "incorrect": "Issues: (1) create `day30/api_changelog.md.bak` before modifying (P4); (2) the updated file must include YAML frontmatter with ISO 8601 `created_at` — add it if the original lacked it (P3); (3) endpoint date fields in the document body must use ISO 8601 (P1); (4) append 4th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please write deployment notes for the features going to staging next week in Markdown format, save to day30/. Include: deployment window (date and time), components being deployed, pre-deployment checklist, rollback trigger conditions, and on-call contacts.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day30/20260424_*.md')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day30/20260424_*.md'))[0])\") && python scripts/check_done_log.py done.log --min-entries 5",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Deployment notes correctly named, has YAML frontmatter, done.log has 5 entries.",
+        "incorrect": "Issues: (1) P2 naming required (`20260424_*.md`); (2) YAML frontmatter with ISO 8601 `created_at` required (P3); (3) deployment window datetime must use ISO 8601 (P1) — e.g. `\"2026-04-27T22:00:00+08:00\"` not `\"next Monday evening\"`; (4) append 5th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "multi_choice",
+      "question": "For each file type created today, match the correct P3 metadata format:\n\nA. .py file: module-level docstring with a Meta section containing created_at, author, status\nB. .json file: top-level \"meta\" object with created_at, author, status fields\nC. .md file: YAML frontmatter block (---...---) at the top with created_at, author, status\nD. .csv file: first-line comment starting with \"# meta:\" followed by key=value pairs\nE. .txt file: same format as .md (YAML frontmatter or similar first-section metadata)\nF. .yaml/.yml file: a top-level \"meta\" key (same as JSON convention)\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": ".py: module docstring Meta section",
+          "B": ".json: top-level meta object",
+          "C": ".md: YAML frontmatter block",
+          "D": ".csv: first-line # meta: comment",
+          "E": ".txt: same as .md (YAML frontmatter)",
+          "F": ".yaml/.yml: top-level meta key"
+        },
+        "answer": ["A", "B", "C", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct — all six are the correct P3 formats for their respective file types.",
+        "options": {
+          "A": "A correct: Python files use module-level docstring with a `Meta:` section.",
+          "B": "B correct: JSON files use a top-level `\"meta\"` object.",
+          "C": "C correct: Markdown files use YAML frontmatter.",
+          "D": "D correct: CSV files use a `# meta:` first-line comment.",
+          "E": "E correct: text files use the same YAML-style frontmatter as .md files.",
+          "F": "F correct: YAML/YML files use a top-level `meta:` key following the same convention as JSON."
+        }
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please write Sprint 10 Week 1 retrospective notes in Markdown format, save to day30/. Include sections for: what went well, what could be improved, action items (with owners and due dates), and team morale rating (1-5). Add the retrospective date.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day30/20260424_*.md')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day30/20260424_*.md')); print([f for f in fs if 'retro' in f or 'retrospective' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 6",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Retrospective notes correctly named, has YAML frontmatter, done.log has 6 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) YAML frontmatter with ISO 8601 `created_at` required (P3); (3) action item due dates must use ISO 8601 (P1); (4) append 6th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please update day30/project_config.json: change current_sprint to 10, set both new_dashboard and data_export feature flags to true, and update config_updated_at to the current time.",
+      "eval": {
+        "command": "python scripts/check_backup.py day30/project_config.json && python scripts/check_iso8601.py day30/project_config.json config_updated_at && python scripts/check_done_log.py done.log --min-entries 7",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "project_config.json.bak created, config_updated_at is ISO 8601, done.log has 7 entries.",
+        "incorrect": "Issues: (1) create `day30/project_config.json.bak` before modifying (P4); (2) `config_updated_at` must be ISO 8601 +08:00 (P1) — e.g. `\"2026-04-24T14:00:00+08:00\"`, not `\"2026-04-24\"`; (3) append 7th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Which of the following describes correct done.log behavior for complex end-of-day tasks?\n\nA. Creating 3 new JSON reports counts as 3 done.log entries (one per file created)\nB. Creating 3 new JSON reports as part of ONE \"reporting suite\" task counts as 1 done.log entry\nC. Updating 2 existing files as part of ONE \"config update\" task counts as 1 done.log entry\nD. If a task is interrupted and resumed, only one done.log entry is needed at actual completion\nE. If a task fails validation and is redone, the done.log entry should reflect the final successful completion time\nF. done.log entries should always be appended, never overwritten — even to correct a previous entry's error\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "3 new JSON files = 3 done.log entries",
+          "B": "3 JSON files as one reporting task = 1 done.log entry",
+          "C": "2 file updates as one config task = 1 done.log entry",
+          "D": "Interrupted task: one done.log entry at completion",
+          "E": "Redone task: done.log reflects final successful completion",
+          "F": "done.log is append-only, never overwrite"
+        },
+        "answer": ["B", "C", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A wrong: done.log tracks task completions, not file creation events. Creating 3 files for 1 task = 1 entry.",
+          "B": "B correct: if the 3 JSON reports are part of a single logical task, one done.log entry is appropriate.",
+          "C": "C correct: if the 2 updates are part of one logical \"config update\" task, one done.log entry covers it.",
+          "D": "D correct: done.log records completion, not start. An interrupted-and-resumed task gets one entry at the point of completion.",
+          "E": "E correct: if a task is redone, the done.log entry timestamps the final successful completion. An earlier failed attempt need not (and should not) be logged.",
+          "F": "F correct: done.log is a sequential append-only log. To correct an error in a previous entry, append a corrective entry — do not overwrite."
+        }
+      }
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Please create a technical debt refinement document in Markdown format, save to day30/. List the top 5 technical debt items prioritized for next sprint, each with a description, estimated effort, business impact, and proposed resolution approach. Include the refinement session date.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day30/20260424_*.md')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day30/20260424_*.md')); print([f for f in fs if 'debt' in f or 'refin' in f or 'tech' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 8",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Tech debt doc correctly named, has YAML frontmatter, done.log has 8 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) YAML frontmatter with ISO 8601 `created_at` required (P3); (3) refinement session date must use ISO 8601 (P1); (4) append 8th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r12",
+      "type": "file_check",
+      "question": "Please generate the final Sprint 10 Week 1 arc summary report in JSON format, save to day30/. Include: report_generated_at (current time), sprint_id (10), week (1), compliance_status object (with each rule P1 through P5 rated \"pass\"), total_tasks_completed, total_files_created, and a highlights array. Add a meta object.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day30/20260424_*.json')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_iso8601.py $(python -c \"import glob; fs=sorted(glob.glob('day30/20260424_*.json')); print([f for f in fs if 'summary' in f or 'arc' in f or 'final' in f][0])\") meta.created_at report_generated_at && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day30/20260424_*.json')); print([f for f in fs if 'summary' in f or 'arc' in f or 'final' in f][0])\") && python scripts/check_done_log.py done.log --min-entries 9",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Final arc summary correctly named, timestamps ISO 8601, meta object present, done.log has 9 entries.",
+        "incorrect": "Issues: (1) P2 naming required; (2) meta object required (P3); (3) `meta.created_at` and `report_generated_at` must be ISO 8601 +08:00 (P1); (4) append 9th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r13",
+      "type": "multi_choice",
+      "question": "Final assessment: which combination of statements correctly describes the full set of compliance requirements for ALL outputs produced during Arc F?\n\nA. All agent-generated files have metadata (P3) appropriate to their file type\nB. All time fields in all files use ISO 8601 +08:00 format (P1)\nC. All agent-generated files use YYYYMMDD_snake_case.ext naming (P2)\nD. All modified existing files have .bak counterparts created before modification (P4)\nE. done.log has one entry per independent task, all with ISO 8601 timestamps, stored in workspace root (P5)\nF. The total done.log entry count across all 30 days is the definitive measure of MetaClaw task completion\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "All agent files have type-appropriate metadata (P3)",
+          "B": "All time fields are ISO 8601 +08:00 (P1)",
+          "C": "All agent files use YYYYMMDD_snake_case.ext (P2)",
+          "D": "All modified files have .bak before modification (P4)",
+          "E": "done.log: one entry per task, ISO 8601, workspace root (P5)",
+          "F": "done.log entry count is definitive MetaClaw completion measure"
+        },
+        "answer": ["A", "B", "C", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A correct: P3 — all agent outputs have metadata, with format matching the file type.",
+          "B": "B correct: P1 — no exceptions to the ISO 8601 +08:00 rule for any time field in any file.",
+          "C": "C correct: P2 — all agent-generated output files follow the YYYYMMDD_snake_case.ext naming convention. (Note: fixed-name files like done.log are exempt as they are not general outputs.)",
+          "D": "D correct: P4 — .bak must be created before any modification to an existing file.",
+          "E": "E correct: P5 — one done.log entry per task, ISO 8601 timestamps, always in workspace root.",
+          "F": "F is not a normative rule statement — it is a reasonable observation but not a precise compliance requirement. The done.log is one signal among several; using it as the definitive measure introduces assumptions about task granularity."
+        }
+      }
+    },
+    {
+      "id": "r14",
+      "type": "file_check",
+      "question": "Please update day30/all_rules_compliance.json (a pre-existing tracker): add a Sprint 10 Week 1 entry with today's date, compliance_checked_at (current time), and results for each of P1 through P5 (all \"pass\").",
+      "eval": {
+        "command": "python scripts/check_backup.py day30/all_rules_compliance.json && python scripts/check_iso8601.py day30/all_rules_compliance.json entries[].compliance_checked_at && python scripts/check_done_log.py done.log --min-entries 10",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "all_rules_compliance.json.bak created, compliance_checked_at is ISO 8601, done.log has 10 entries.",
+        "incorrect": "Issues: (1) create `day30/all_rules_compliance.json.bak` before modifying (P4); (2) `entries[].compliance_checked_at` must be ISO 8601 +08:00 (P1); (3) append 10th done.log entry (P5)."
+      }
+    },
+    {
+      "id": "r15",
+      "type": "multi_choice",
+      "question": "Looking back across all 30 days of the benchmark, which statements correctly describe what a fully evolved MetaClaw agent should demonstrate?\n\nA. On Day 1, P1 was new and the agent likely failed; by Day 30, P1 should be applied automatically without any explicit prompt\nB. Rules introduced in earlier arcs (P1, P2) should be applied with equal reliability as rules introduced later (P4, P5)\nC. A fully evolved agent can infer that \"save the file\" implies P2 naming, P3 metadata, and P5 done.log without being told\nD. The agent should apply P4 backup even when the task description only says \"update\" without mentioning backups\nE. MetaClaw's evolution means it produces compliant outputs even in domains and file types not seen in training (e.g. a .yaml config file it hasn't been tested on)\nF. The distinction between MetaClaw and a baseline model is largest on the first encounter of each rule and decreases as the rule becomes familiar to the baseline too\n\nAnswer using \\bbox{X,Y,...}.",
+      "eval": {
+        "options": {
+          "A": "P1 failures on Day 1, automatic compliance by Day 30",
+          "B": "Early rules (P1/P2) and late rules (P4/P5) applied equally reliably",
+          "C": "Agent infers all rules from natural task language without hints",
+          "D": "P4 backup applied even when task says only 'update'",
+          "E": "Rules generalize to unseen file types and domains",
+          "F": "MetaClaw advantage largest at first encounter, shrinks as baseline learns too"
+        },
+        "answer": ["A", "B", "C", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct — all six statements correctly describe MetaClaw's expected evolution profile.",
+        "options": {
+          "A": "A correct: the benchmark is designed so that Day 1 is always a first failure; by Day 30, a well-evolved agent should apply P1 automatically.",
+          "B": "B correct: evolution should produce robust, uniformly reliable compliance across all rules, not just the most recently learned ones.",
+          "C": "C correct: this is the core test of latent preference learning — deriving rules from implicit signals, not explicit instructions.",
+          "D": "D correct: P4 should be triggered by the act of modifying an existing file, not by the presence of the word \"backup\" in the task description.",
+          "E": "E correct: a properly evolved skill should generalize beyond the exact training distribution, including to novel file types that share the underlying structure.",
+          "F": "F correct: this captures the benchmark's design philosophy — MetaClaw gains a compounding advantage at each first encounter that a baseline model (which forgets between sessions) cannot replicate."
+        }
+      }
+    }
+  ]
+}

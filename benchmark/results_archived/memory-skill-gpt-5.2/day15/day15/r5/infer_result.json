@@ -1,0 +1,118 @@
+{
+  "test_id": "day15",
+  "group_id": "day15",
+  "round_id": "r5",
+  "qa_id": "r5",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease write a weekly summary generator Python script, saved to the day15/ directory. The script should read JSON files in a specified directory, count the number of files and the overall compliance rate of structured headers, and print a summary.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773758400.6203399,
+    "finished_at": 1773758439.7349596,
+    "duration_ms": 39114,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T14:40:39.623Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day15_d17f0df1-a277-48b5-949e-552409453dde",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day15_0f94a5d9",
+    "success": true,
+    "durationMs": 35225,
+    "messageCount": 30,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 10:40 EDT] [Previous Feedback] Correct!\n\nPlease write a weekly summary generator Python script, saved to the day15/ directory. The script should read JSON files in a specified directory, count the number of files and the overall compliance rate of structured headers, and print a summary."
+          }
+        ],
+        "timestamp": 1773758404399
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_5i1NLPquFmng5kdh3g8pGhuI",
+            "name": "write",
+            "arguments": {
+              "path": "day15/20260403_weekly_summary_generator.py",
+              "content": "\"\"\"Weekly Summary Generator\n\nMeta:\n  created_at: 2026-04-03T09:00:00+08:00\n  author: metaclaw_agent\n  status: done\n\nPurpose:\n  Read JSON files in a specified directory, count the number of JSON files,\n  evaluate compliance of structured headers, and print a summary.\n\nCompliance rule (JSON P3):\n  A JSON file is compliant if its *top-level* object contains a \"meta\" key\n  and meta contains: created_at, author, status.\n\nUsage:\n  python day15/20260403_weekly_summary_generator.py --dir day14\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport os\nfrom dataclasses import dataclass\nfrom typing import Any, Dict, List, Tuple\n\n\nREQUIRED_META_KEYS = (\"created_at\", \"author\", \"status\")\n\n\n@dataclass\nclass FileCheckResult:\n    filename: str\n    compliant: bool\n    reason: str = \"\"\n\n\ndef is_json_meta_compliant(payload: Any) -> Tuple[bool, str]:\n    if not isinstance(payload, dict):\n        return False, \"top-level JSON is not an object\"\n\n    meta = payload.get(\"meta\")\n    if not isinstance(meta, dict):\n        return False, \"missing or non-object top-level meta\"\n\n    missing = [k for k in REQUIRED_META_KEYS if k not in meta]\n    if missing:\n        return False, f\"meta missing keys: {', '.join(missing)}\"\n\n    return True, \"\"\n\n\ndef iter_json_files(directory: str) -> List[str]:\n    try:\n        entries = os.listdir(directory)\n    except FileNotFoundError:\n        return []\n\n    files: List[str] = []\n    for name in sorted(entries):\n        path = os.path.join(directory, name)\n        if os.path.isfile(path) and name.lower().endswith(\".json\"):\n            files.append(path)\n    return files\n\n\ndef check_directory(directory: str) -> Dict[str, Any]:\n    json_files = iter_json_files(directory)\n\n    results: List[FileCheckResult] = []\n    for path in json_files:\n        filename = os.path.basename(path)\n        try:\n            with open(path, \"r\", encoding=\"utf-8\") as f:\n                payload = json.load(f)\n        except json.JSONDecodeError as e:\n            results.append(FileCheckResult(filename=filename, compliant=False, reason=f\"invalid JSON: {e}\"))\n            continue\n        except OSError as e:\n            results.append(FileCheckResult(filename=filename, compliant=False, reason=f\"read error: {e}\"))\n            continue\n\n        ok, reason = is_json_meta_compliant(payload)\n        results.append(FileCheckResult(filename=filename, compliant=ok, reason=reason))\n\n    total = len(results)\n    compliant = sum(1 for r in results if r.compliant)\n    compliance_rate = (compliant / total) if total else 0.0\n\n    noncompliant_files = [\n        {\"filename\": r.filename, \"reason\": r.reason}\n        for r in results\n        if not r.compliant\n    ]\n\n    return {\n        \"directory\": directory,\n        \"total_json_files\": total,\n        \"compliant_files\": compliant,\n        \"compliance_rate\": round(compliance_rate, 4),\n        \"noncompliant_files\": noncompliant_files,\n    }\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(description=\"Generate weekly JSON compliance summary.\")\n    parser.add_argument(\"--dir\", required=True, help=\"Directory containing JSON files to scan\")\n    args = parser.parse_args()\n\n    summary = check_directory(args.dir)\n\n    print(\"Weekly JSON Output Summary\")\n    print(f\"Directory: {summary['directory']}\")\n    print(f\"Total JSON files: {summary['total_json_files']}\")\n    print(f\"Compliant files: {summary['compliant_files']}\")\n    print(f\"Compliance rate: {summary['compliance_rate'] * 100:.2f}%\")\n\n    if summary[\"noncompliant_files\"]:\n        print(\"\\nNon-compliant files:\")\n        for item in summary[\"noncompliant_files\"]:\n            print(f\"- {item['filename']}: {item['reason']}\")\n\n\nif __name__ == \"__main__\":\n    main()\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773758404400
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_5i1NLPquFmng5kdh3g8pGhuI",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 3718 bytes to day15/20260403_weekly_summary_generator.py"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773758432465
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Wrote the weekly summary generator script:\n\n- **`day15/20260403_weekly_summary_generator.py`**\n\nWhat it does:\n- Reads **`.json`** files in a target directory (`--dir <path>`)\n- Counts total JSON files\n- Checks **P3 JSON header compliance**: top-level `meta` object contains `created_at`, `author`, `status`\n- Prints totals, compliant count, compliance rate, and a list of non-compliant files with reasons\n\nRun example:\n```bash\npython day15/20260403_weekly_summary_generator.py --dir day14\n```"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773758432466
+      }
+    ]
+  },
+  "answer": "Wrote the weekly summary generator script:\n\n- **`day15/20260403_weekly_summary_generator.py`**\n\nWhat it does:\n- Reads **`.json`** files in a target directory (`--dir <path>`)\n- Counts total JSON files\n- Checks **P3 JSON header compliance**: top-level `meta` object contains `created_at`, `author`, `status`\n- Prints totals, compliant count, compliance rate, and a list of non-compliant files with reasons\n\nRun example:\n```bash\npython day15/20260403_weekly_summary_generator.py --dir day14\n```\n",
+  "inline_score": {
+    "passed": true,
+    "exit_code": 0,
+    "stdout": "OK\n",
+    "stderr": ""
+  }
+}

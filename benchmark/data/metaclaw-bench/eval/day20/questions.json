@@ -1,0 +1,215 @@
+{
+  "id": "day20",
+  "desc": "Day 20 — Comprehensive wrap-up, P4 full generalization across all file types",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day20/weekly_status.json: set the sprint_week's completed_at to today at 5:00 PM, and change current_progress from \"85%\" to \"100%\".",
+      "eval": {
+        "command": "python scripts/check_backup.py day20/weekly_status.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "weekly_status.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day20/weekly_status.json, you must first create a .bak backup (P4). The completed_at field must use ISO 8601 format (P1): `2026-04-10T17:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please update day20/api_benchmark.json to append the daily p99 response time data points for this week (2026-04-06 to 2026-04-10).",
+      "eval": {
+        "command": "python scripts/check_backup.py day20/api_benchmark.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "api_benchmark.json.bak was correctly created before appending data.",
+        "incorrect": "Even for an append operation, you must first create day20/api_benchmark.json.bak (\"appending\" is a form of modifying an existing file)."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please update day20/deploy_checklist.md: mark items 2, 4, and 5 as complete (change [ ] to [x]).",
+      "eval": {
+        "command": "python scripts/check_backup.py day20/deploy_checklist.md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "deploy_checklist.md.bak was correctly created before modification.",
+        "incorrect": "Before modifying day20/deploy_checklist.md, you must first create a .bak backup. Even changing only [ ] to [x] is a modification to an existing file and requires a backup."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "multi_choice",
+      "question": "Which of the following \"small changes\" still require creating a .bak backup?\n\nA. Changing a boolean value in config.json from false to true\nB. Fixing a typo in a document\nC. Updating a version number in README.md from \"v2.2\" to \"v2.3\"\nD. Appending a single number to the end of a data file\nE. Removing an extra blank line in a Markdown file\nF. Changing the API endpoint URL in a configuration file\n\nPlease answer in \\bbox{X,Y,...} format (select those requiring .bak).",
+      "eval": {
+        "options": {
+          "A": "Boolean value false → true in config.json",
+          "B": "Fix a typo",
+          "C": "Update version number in README",
+          "D": "Append a number to data file",
+          "E": "Remove extra blank line in Markdown",
+          "F": "Change API endpoint URL in config"
+        },
+        "answer": ["A", "B", "C", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "All correct! All modifications to existing files require .bak, regardless of how small the change is.",
+        "options": {
+          "A": "Required — modifying a value in an existing file.",
+          "B": "Required — even fixing a single character in an existing file requires .bak.",
+          "C": "Required — updating content in an existing file requires .bak.",
+          "D": "Required — appending to an existing file is a modification and requires .bak.",
+          "E": "Required — removing a blank line is still modifying file content; .bak required.",
+          "F": "Required — modifying a config value; .bak required. P4 does not exempt changes based on importance or size."
+        }
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please update day20/app_config.json: change feature_flags.new_dashboard from false to true.",
+      "eval": {
+        "command": "python scripts/check_backup.py day20/app_config.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "app_config.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day20/app_config.json, you must first create a .bak backup. Feature flag changes are configuration modifications and require backup."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please create this week's Sprint 9 Week 1 Sprint Review report in JSON format, saved to the day20/ directory (create a new file). Include review_date (today), generated_at (current time), sprint_goal_achieved (boolean), velocity, and highlights (array).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day20/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Sprint Review report naming follows P2 convention correctly.",
+        "incorrect": "The Sprint Review report must follow P2 naming convention (20260410_*.json), e.g. `20260410_sprint9_week1_review.json`. This is a new file — no .bak required (P4 not applicable)."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create an archive index of this week's output files in JSON format, saved to the day20/ directory (create a new file). List all files modified or created this week (day16-day20), including whether .bak files exist.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day20/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Archive index naming follows P2 convention correctly.",
+        "incorrect": "The archive index must follow P2 naming convention (20260410_*.json), e.g. `20260410_week_archive_index.json`."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "Regarding the relationship between .bak files and P2 naming rules, which of the following statements are correct?\n\nA. deploy_checklist.md.bak does not need to follow P2 naming convention (it's not an agent output file)\nB. weekly_status.json.bak should be named 20260410_weekly_status.json.bak\nC. .bak files are derivatives of the original file, not independent output files; they are exempt from P2\nD. All .bak files are completely exempt from P1-P4 rules\nE. If a .bak file needs to be promoted to an official file (e.g., restored as the production version), it should be renamed following P2\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": ".bak doesn't need P2 compliance",
+          "B": ".bak should have YYYYMMDD_ prefix",
+          "C": ".bak is derivative, not output; exempt from P2",
+          "D": ".bak is exempt from all P1-P4 rules",
+          "E": ".bak promoted to official file should follow P2 naming"
+        },
+        "answer": ["A", "C", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — .bak files are system backup files, not agent-named output; they are exempt from P2.",
+          "B": "Incorrect — .bak files don't need a YYYYMMDD_ prefix; their naming rule is simply `<original_name>.bak`.",
+          "C": "Correct — .bak files are copies of the original, not independently authored agent output; they are exempt from P2.",
+          "D": "Partially incorrect — \"exempt from all P1-P4\" is too absolute. .bak files are exempt from P2 naming and P3 metadata, but P4's core requirement (that .bak must exist and be created BEFORE modification) still applies. The timing is the essence of P4.",
+          "E": "Correct — if a .bak file is promoted to an official file (e.g., renamed as the current production version), it becomes agent output and should be renamed following P2."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "There is a pre-existing ci_config.yaml file in day20/. Please update it to change the build_timeout parameter from 300 to 600 seconds, and update the last_modified field to today's date.",
+      "eval": {
+        "command": "python scripts/check_backup.py day20/ci_config.yaml",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "ci_config.yaml.bak was correctly created before modification.",
+        "incorrect": "Before modifying day20/ci_config.yaml, you must first create a .bak backup. YAML files are also subject to P4 rules."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create a Sprint Review presentation document in Markdown format, saved to the day20/ directory (create a new file). Include this week's achievements, demo highlights, and Q&A preparation.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day20/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Sprint Review presentation document naming follows P2 convention correctly.",
+        "incorrect": "The document must follow P2 naming convention (20260410_*.md), e.g. `20260410_sprint_review_slides.md`."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "After this week (Arc D), which of the following summaries of P4 are correct?\n\nA. P4 core operation: backup first (cp file file.bak), then modify file\nB. New files do not trigger P4; only \"modifying existing files\" triggers P4\nC. .bak naming convention: original filename + .bak suffix, in the same directory\nD. For multiple modifications to the same file, overwrite .bak each time (keep only the most recent backup)\nE. .bak files don't need to satisfy P2/P3, but must contain pre-modification original content\nF. P4's value: provides recovery path, supports diff comparison, records operation history\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Backup first, then modify",
+          "B": "New files don't trigger P4; existing file modification does",
+          "C": ".bak = original name + .bak, same directory",
+          "D": "Multiple modifications overwrite .bak, keep latest",
+          "E": ".bak exempt from P2/P3, but contains pre-modification content",
+          "F": "P4 value: recovery, diff, history"
+        },
+        "answer": ["A", "B", "C", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "All correct! A comprehensive and accurate understanding of P4.",
+        "options": {
+          "A": "Correct — P4 core: create backup first, then modify.",
+          "B": "Correct — P4 only applies to modifying existing files, not creating new ones.",
+          "C": "Correct — .bak naming: <original_name>.bak, same directory.",
+          "D": "Correct — for multiple modifications, overwrite .bak to keep the most recent pre-modification state.",
+          "E": "Correct — .bak files are exempt from P2/P3, but must contain the pre-modification content.",
+          "F": "Correct — P4 provides recovery, diff comparison, and operation history tracking."
+        }
+      }
+    },
+    {
+      "id": "r12",
+      "type": "file_check",
+      "question": "Please create a summary record of this week's backup operations in JSON format, saved to the day20/ directory (create a new file). List all files backed up with .bak this week (day16-day20): original file name, backup time (use 17:30 today for all), and change type (bug_fix/update/refactor).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day20/ --ext json --min-count 3",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Backup operations summary naming follows P2 convention correctly.",
+        "incorrect": "The backup operations summary must follow P2 naming convention (20260410_*.json), e.g. `20260410_backup_operations_summary.json`."
+      }
+    },
+    {
+      "id": "r13",
+      "type": "file_check",
+      "question": "Please create a work preview for next week (April 13–17) in Markdown format, saved to the day20/ directory (create a new file). Include: expected work focus, list of files likely to be modified (reminding about which files will need .bak backups), and next week's OKRs.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day20/ --ext md --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Next week preview document naming follows P2 convention correctly.",
+        "incorrect": "The document must follow P2 naming convention (20260410_*.md), e.g. `20260410_next_week_preview.md`."
+      }
+    }
+  ]
+}

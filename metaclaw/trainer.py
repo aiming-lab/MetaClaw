@@ -26,8 +26,7 @@ from .config import MetaClawConfig
 from .data_formatter import ConversationSample, batch_to_datums, compute_advantages
 from .openclaw_env_rollout import rollout_loop
 from .prm_scorer import PRMScorer
-from .rollout import AsyncRolloutWorker
-from .sdk_backend import resolve_sdk_backend
+from .rollout import AsyncRolloutWorker, _drain_output_queue
 from .skill_evolver import SkillEvolver
 from .skill_manager import SkillManager
 
@@ -66,8 +65,6 @@ class MetaClawTrainer:
         last_request_tracker=None,
     ):
         self.config = config
-        self.backend = resolve_sdk_backend(config)
-        self._sdk = self.backend.module
         self._last_request_tracker = last_request_tracker
         self.training_client = None
         self.sampling_client = None
@@ -75,6 +72,7 @@ class MetaClawTrainer:
         self.skill_manager: Optional[SkillManager] = None
         self.prm_scorer: Optional[PRMScorer] = None
         self.skill_evolver: Optional[SkillEvolver] = None
+        self.memory_manager = None
         self._wandb = None
 
         # Scheduler integration
@@ -94,14 +92,18 @@ class MetaClawTrainer:
         # Tracks the skill generation active when the current batch started.
         # Initialised to 0; updated from skill_manager.generation after setup().
         self._current_skill_generation: int = 0
+        # Step counter for externally triggered train steps (bench-driven / CLI).
+        self._external_step_counter: int = 0
     # ------------------------------------------------------------------ #
     # Setup                                                                #
     # ------------------------------------------------------------------ #
 
     async def setup(self):
-        """Initialise RL backend clients, SkillManager, PRMScorer, and rollout worker."""
+        """Initialise Tinker clients, SkillManager, PRMScorer, and rollout worker."""
         from .log_color import setup_logging
         setup_logging()
+
+        import tinker
 
         # Optional Weights & Biases logging.
         # Enable by setting WANDB_DISABLED to anything except "true"/"1"/"yes"/"on".
@@ -126,15 +128,9 @@ class MetaClawTrainer:
             except Exception as e:
                 logger.warning("[Trainer] wandb init failed; continuing without wandb: %s", e)
 
-        # 1. RL backend service + LoRA training client
-        backend_label = self.backend.label
-        logger.info("[Trainer] connecting to %s service …", backend_label)
-        service_kwargs: dict[str, str] = {}
-        if self.backend.base_url:
-            service_kwargs["base_url"] = self.backend.base_url
-        if self.backend.api_key:
-            service_kwargs["api_key"] = self.backend.api_key
-        service_client = self._sdk.ServiceClient(**service_kwargs)
+        # 1. Tinker service + LoRA training client
+        logger.info("[Trainer] connecting to Tinker service …")
+        service_client = tinker.ServiceClient()
         self.training_client = await service_client.create_lora_training_client_async(
             base_model=self.config.model_name,
             rank=self.config.lora_rank,
@@ -157,7 +153,7 @@ class MetaClawTrainer:
         self.sampling_client = (
             await self.training_client.save_weights_and_get_sampling_client_async()
         )
-        logger.info("[Trainer] initial sampling client ready (%s)", backend_label)
+        logger.info("[Trainer] initial sampling client ready")
 
         # 3. SkillManager
         if self.config.use_skills:
@@ -220,11 +216,19 @@ class MetaClawTrainer:
             )
             logger.info("[Trainer] SkillEvolver ready: provider=%s", self.config.evolver_provider)
 
-        # 6. Rollout worker (owns MetaClawAPIServer)
+        # 6. MemoryManager (optional)
+        if self.config.memory_enabled:
+            from .memory.manager import MemoryManager
+
+            self.memory_manager = MemoryManager.from_config(self.config)
+            logger.info("[Trainer] MemoryManager ready: store=%s", self.config.memory_store_path)
+
+        # 7. Rollout worker (owns MetaClawAPIServer)
         self.rollout_worker = AsyncRolloutWorker(
             config=self.config,
             sampling_client=self.sampling_client,
             skill_manager=self.skill_manager,
+            memory_manager=self.memory_manager,
             prm_scorer=self.prm_scorer,
             skill_evolver=self.skill_evolver,
             last_request_tracker=self._last_request_tracker,
@@ -242,10 +246,12 @@ class MetaClawTrainer:
 
     async def _train_on_batch(self, batch: list[ConversationSample], step_idx: int):
         """Run one GRPO-style RL update on *batch*."""
+        import tinker
+
         # Compute advantages (centre-normalise within batch)
         advantages = compute_advantages(batch)
         kl_coef = self.config.kl_penalty_coef if self.config.use_opd else 0.0
-        data_D = batch_to_datums(batch, advantages, sdk=self._sdk, kl_penalty_coef=kl_coef)
+        data_D = batch_to_datums(batch, advantages, kl_penalty_coef=kl_coef)
 
         if not data_D:
             logger.warning("[Trainer] empty data batch — skipping step")
@@ -260,7 +266,7 @@ class MetaClawTrainer:
 
         logger.info("[Trainer] optim_step_async starting …")
         await self.training_client.optim_step_async(
-            self._sdk.AdamParams(learning_rate=self.config.learning_rate)
+            tinker.AdamParams(learning_rate=self.config.learning_rate)
         )
         logger.info("[Trainer] optim_step_async done")
 
@@ -287,9 +293,9 @@ class MetaClawTrainer:
         if step_idx % 5 == 0:
             ckpt_name = f"step_{step_idx:04d}"
             try:
-                result = await self.training_client.save_state_async(name=ckpt_name)
-                resume_path = getattr(result, "path", None)
-                logger.info("[Trainer] save_state done, name=%s resume_path=%s", ckpt_name, resume_path)
+                save_future = self.training_client.save_state_async(name=ckpt_name)
+                result = await save_future
+                logger.info("[Trainer] save_state done, name=%s resume_path=%s", ckpt_name, result.path)
             except Exception as e:
                 logger.warning("[Trainer] save_state failed (name=%s): %s", ckpt_name, e)
         self.rollout_worker.update_sampling_client(self.sampling_client)
@@ -363,6 +369,104 @@ class MetaClawTrainer:
             )
 
     # ------------------------------------------------------------------ #
+    # External trigger (bench-driven mode / manual CLI)                    #
+    # ------------------------------------------------------------------ #
+
+    async def train_step_external(self) -> dict:
+        """Execute a single RL training step using samples already in the
+        output queue.  Called by ``metaclaw train-step`` CLI or the admin
+        HTTP endpoint.
+
+        Returns a dict with training metrics or an error description.
+        """
+        if self.training_client is None:
+            return {"status": "error", "message": "trainer not initialised (no Tinker client)"}
+
+        # Drain all available samples from the output queue.
+        groups = self.rollout_worker.get_completed_groups()
+        batch: list[ConversationSample] = []
+        for _group_id, group in groups:
+            fresh = [
+                s for s in group
+                if s.skill_generation >= self._current_skill_generation
+            ]
+            batch.extend(fresh)
+
+        if not batch:
+            return {"status": "skipped", "message": "no samples in queue", "samples": 0}
+
+        self._external_step_counter += 1
+        step_idx = self._external_step_counter
+
+        try:
+            await self._train_on_batch(batch, step_idx=step_idx)
+        except Exception as exc:
+            logger.error("[Trainer] train_step_external failed: %s", exc, exc_info=True)
+            return {"status": "error", "message": str(exc)}
+
+        # Skill evolution (same logic as the normal training loop)
+        await self._maybe_evolve_skills(batch)
+
+        rewards = [s.reward for s in batch]
+        mean_r = sum(rewards) / len(rewards)
+        success_rate = sum(1 for r in rewards if r > 0) / len(rewards)
+        result = {
+            "status": "ok",
+            "step": step_idx,
+            "samples": len(batch),
+            "mean_reward": round(mean_r, 4),
+            "success_rate": round(success_rate, 4),
+        }
+        logger.info("[Trainer] train_step_external complete: %s", result)
+        return result
+
+    async def serve_manual_trigger(self):
+        """Set up the full RL stack (Tinker + proxy + skills) but do NOT
+        enter the autonomous training loop.  Instead, keep the proxy alive
+        and wait for external ``train_step_external()`` calls via
+        ``metaclaw train-step`` or the admin HTTP endpoint.
+
+        This is the entry point used when ``manual_train_trigger=True``.
+        """
+        await self.setup()
+
+        self.rollout_worker.start()
+        self.rollout_worker.resume_submission()
+        logger.info(
+            "[Trainer] bench-driven mode: proxy serving at http://%s:%d — "
+            "waiting for external train-step triggers",
+            self.config.proxy_host, self.config.proxy_port,
+        )
+
+        # Optionally start programmatic task rollout (same as in run()).
+        _env_rollout_task = None
+        if self.config.openclaw_env_data_dir:
+            proxy_url = f"http://localhost:{self.config.proxy_port}"
+            _env_rollout_task = asyncio.create_task(
+                rollout_loop(
+                    proxy_url=proxy_url,
+                    data_dir=self.config.openclaw_env_data_dir,
+                    split=self.config.openclaw_env_split,
+                    concurrency=self.config.openclaw_env_concurrency,
+                    max_steps_per_episode=self.config.openclaw_env_max_steps,
+                    temperature=0.6,
+                    model_id=self.config.served_model_name,
+                )
+            )
+
+        # Keep alive until externally cancelled.
+        try:
+            while True:
+                await asyncio.sleep(1.0)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if _env_rollout_task is not None:
+                _env_rollout_task.cancel()
+            self.rollout_worker.stop()
+            logger.info("[Trainer] bench-driven mode stopped")
+
+    # ------------------------------------------------------------------ #
     # Main loop                                                            #
     # ------------------------------------------------------------------ #
 
@@ -414,24 +518,6 @@ class MetaClawTrainer:
 
         return data
 
-    async def _wait_for_proxy_ready(self, timeout_s: float = 30.0):
-        """Block until the local proxy responds on /healthz."""
-        import httpx
-
-        url = f"http://127.0.0.1:{self.config.proxy_port}/healthz"
-        deadline = asyncio.get_running_loop().time() + timeout_s
-        async with httpx.AsyncClient(timeout=1.0) as client:
-            while True:
-                try:
-                    resp = await client.get(url)
-                    if resp.status_code == 200:
-                        return
-                except Exception:
-                    pass
-                if asyncio.get_running_loop().time() >= deadline:
-                    raise RuntimeError(f"proxy did not become ready within {timeout_s:.1f}s: {url}")
-                await asyncio.sleep(0.2)
-
     async def run(self):
         """Full training loop: setup → start worker → collect → train → [evolve] → repeat.
 
@@ -457,7 +543,6 @@ class MetaClawTrainer:
             "[Trainer] proxy server starting at http://%s:%d",
             self.config.proxy_host, self.config.proxy_port,
         )
-        await self._wait_for_proxy_ready()
 
         # Optionally start the programmatic task rollout loop as a background task.
         # Set openclaw_env_data_dir to a directory containing <split>.jsonl task files.
@@ -474,7 +559,6 @@ class MetaClawTrainer:
                     max_steps_per_episode=self.config.openclaw_env_max_steps,
                     temperature=0.6,
                     model_id=self.config.served_model_name,
-                    proxy_api_key=self.config.proxy_api_key,
                 )
             )
             logger.info(
@@ -538,8 +622,6 @@ class MetaClawTrainer:
 
             try:
                 await self._train_on_batch(batch, step_idx=step + 1)
-                if self.config.enable_skill_evolution:
-                    await self._maybe_evolve_skills(batch)
             finally:
                 self.rollout_worker.resume_submission()
 

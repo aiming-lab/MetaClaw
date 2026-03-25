@@ -101,7 +101,7 @@ def _colorize_message(message: str, *, level: str, logger_name: str) -> str:
         return f"{ANSI_BOLD}{ANSI_CYAN}{text}{ANSI_RESET}"
     if text.startswith("======================================================================"):
         return f"{ANSI_CYAN}{text}{ANSI_RESET}"
-    if "[OpenClaw] proxy ready" in text or "proxy 0.0.0.0:30000" in text:
+    if "[OpenClaw] proxy ready" in text or re.search(r"proxy 0\.0\.0\.0:\d+", text):
         return f"{ANSI_BOLD}{ANSI_CYAN}{text}{ANSI_RESET}"
     if "| __main__ | [Replay]" in text or text.startswith("[Replay][Manual]"):
         return f"{ANSI_BOLD}{ANSI_BLUE}{text}{ANSI_RESET}"

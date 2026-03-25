@@ -1,0 +1,1 @@
+Today's tasks: (1) update Sprint 8 task statuses, (2) generate the Q1 quarterly summary report, (3) draft the Q2 planning document, (4) compile the team skills matrix.

@@ -1,0 +1,222 @@
+{
+  "test_id": "day27",
+  "group_id": "day27",
+  "round_id": "r7",
+  "qa_id": "r7",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease create an Architecture Decision Record (ADR) for the new data export service design in Markdown format, save to day27/. Include sections for: context, decision, consequences, and alternatives considered. Add the decision date.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773736902.512116,
+    "finished_at": 1773736939.9486291,
+    "duration_ms": 37436,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T08:42:19.845Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day27_bc38df86-8d2c-4fcc-823b-9cefe7750f34",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day27_bf0ca4b5",
+    "success": true,
+    "durationMs": 33295,
+    "messageCount": 69,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 04:41 EDT] [Previous Feedback] Correct!\n\nPlease create an Architecture Decision Record (ADR) for the new data export service design in Markdown format, save to day27/. Include sections for: context, decision, consequences, and alternatives considered. Add the decision date."
+          }
+        ],
+        "timestamp": 1773736906551
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_QGNkU97KE7Dk2r81r3Mansok",
+            "name": "exec",
+            "arguments": {
+              "command": "TZ=Asia/Shanghai date -Iseconds"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736906553
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_QGNkU97KE7Dk2r81r3Mansok",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "2026-03-17T16:41:49+08:00"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 10,
+          "aggregated": "2026-03-17T16:41:49+08:00",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day27_bf0ca4b5"
+        },
+        "isError": false,
+        "timestamp": 1773736909072
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_8TqoXrzGhFsmV8LbqfnkoCXV",
+            "name": "write",
+            "arguments": {
+              "path": "day27/20260421_adr_data_export_service.md",
+              "content": "---\ncreated_at: 2026-03-17T16:41:49+08:00\nauthor: Alex Zhang\nstatus: draft\n---\n\n# ADR: Data Export Service (Sprint 10)\n\n**Decision date:** 2026-04-21T00:00:00+08:00\n\n## Context\n\nProject Orion currently provides **CSV export (beta)** for task lists. Pilot customers responded positively, but requested:\n\n- **JSON export** for API-driven integrations\n- Improved **reliability** for large exports (async processing, retries)\n- Better **observability** (job status, failure reasons)\n- Stronger **security controls** (authorization, audit trail)\n\nAdditionally, exports can be resource intensive and should not block the interactive API request path.\n\n## Decision\n\nWe will implement a **Data Export Service (v1)** as an **asynchronous job-based workflow** exposed through API endpoints:\n\n- `POST /export/json`\n- `POST /export/csv`\n\nKey design points:\n\n1. **Asynchronous job model**\n   - Requests create an export job and return **202 Accepted** with a `job_id` and `status_url`.\n   - A background worker processes the job and writes the artifact to object storage.\n\n2. **Shared job schema across formats**\n   - A single export job table/model stores: `job_id`, `project_id`, `format`, `filters`, `requested_fields/columns`, `status`, timestamps, and `failure_reason`.\n\n3. **Storage in object storage (S3)**\n   - Export artifacts are written to S3 with server-side encryption.\n   - Download access is controlled via application authorization checks and/or time-limited signed URLs.\n\n4. **Idempotency and deduplication**\n   - Support idempotency keys for job creation to prevent accidental duplicate exports.\n   - Optionally dedupe identical parameter sets within a short window (rate/cost control).\n\n5. **Observability and auditability**\n   - Structured logs include `job_id` correlation.\n   - Metrics include job latency, failure rate, queue depth, and retry counts.\n   - Audit events are recorded for job creation and artifact access.\n\n6. **Security model**\n   - Authorization is enforced at job creation and download.\n   - Jobs are scoped to `project_id` and the requesting principal.\n   - Sensitive fields can be excluded by default and explicitly requested only when permitted.\n\n## Consequences\n\n### Positive\n\n- Prevents long-running exports from blocking API request threads.\n- Provides a consistent integration story for CSV and JSON.\n- Improves reliability for large datasets (retries, backoff, queueing).\n- Enables better operational control via metrics and alerting.\n\n### Negative / trade-offs\n\n- Adds operational complexity: workers, queue/backpressure, and storage lifecycle management.\n- Requires additional endpoints for job status/artifact retrieval (even if not documented in v1).\n- Potentially higher infrastructure cost due to async processing and storage.\n\n## Alternatives Considered\n\n1. **Synchronous export (generate response inline)**\n   - Pros: simplest to implement.\n   - Cons: timeouts, poor UX, heavy load on API tier, fragile for large datasets.\n\n2. **Format-specific pipelines (separate services for CSV vs JSON)**\n   - Pros: isolated logic per format.\n   - Cons: duplication of job lifecycle, auth, observability, and storage concerns.\n\n3. **Export via database-only approach (materialized views / direct CSV from DB)**\n   - Pros: potentially fast for simple exports.\n   - Cons: limited filtering/transform flexibility, hard to secure field-level access, increased DB load.\n\n4. **Use a third-party export/reporting tool**\n   - Pros: reduced in-house build effort.\n   - Cons: integration overhead, cost, vendor lock-in, limited customization for Orion-specific requirements.\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736909076
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_8TqoXrzGhFsmV8LbqfnkoCXV",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 3596 bytes to day27/20260421_adr_data_export_service.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773736934060
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_2pjULIKwlFhmOr46MZdmqtAq",
+            "name": "exec",
+            "arguments": {
+              "command": "cat >> done.log <<'EOF'\n[DONE] 2026-03-17T16:42:14+08:00 | adr_data_export_service | Created ADR for data export service design (context, decision, consequences, alternatives)\nEOF\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773736934063
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_2pjULIKwlFhmOr46MZdmqtAq",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "(no output)"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 12,
+          "aggregated": "",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day27_bf0ca4b5"
+        },
+        "isError": false,
+        "timestamp": 1773736935827
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Created the ADR in Markdown and saved to:\n\n- `day27/20260421_adr_data_export_service.md`\n\nIt includes YAML frontmatter (`created_at` ISO 8601 +08:00, `author`, `status`) plus the required sections (context, decision, consequences, alternatives considered) and a decision date (`2026-04-21T00:00:00+08:00`).\n\nAppended to `done.log`:\n- `[DONE] 2026-03-17T16:42:14+08:00 | adr_data_export_service | Created ADR for data export service design (context, decision, consequences, alternatives)`"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773736935834
+      }
+    ]
+  },
+  "answer": "Created the ADR in Markdown and saved to:\n\n- `day27/20260421_adr_data_export_service.md`\n\nIt includes YAML frontmatter (`created_at` ISO 8601 +08:00, `author`, `status`) plus the required sections (context, decision, consequences, alternatives considered) and a decision date (`2026-04-21T00:00:00+08:00`).\n\nAppended to `done.log`:\n- `[DONE] 2026-03-17T16:42:14+08:00 | adr_data_export_service | Created ADR for data export service design (context, decision, consequences, alternatives)`\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: frontmatter status must be one of {'in_progress', 'pending', 'done'}, got 'draft'\n",
+    "stderr": ""
+  }
+}

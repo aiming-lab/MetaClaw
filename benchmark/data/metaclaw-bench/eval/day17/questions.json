@@ -1,0 +1,203 @@
+{
+  "id": "day17",
+  "desc": "Day 17 — Data processing, P4 backup for data files",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day17/monthly_metrics.json to append this week's (2026-03-30 to 2026-04-04) metrics data, including request_count, error_rate, avg_response_ms, and active_users.",
+      "eval": {
+        "command": "python scripts/check_backup.py day17/monthly_metrics.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Backup monthly_metrics.json.bak was correctly created before modifying the file.",
+        "incorrect": "Before modifying day17/monthly_metrics.json, you must first create day17/monthly_metrics.json.bak as a backup. Modifying data files without a backup risks permanent data loss."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please fix the data error in day17/analysis_report.json: the error_rate for week 3 should be 0.023 (it was incorrectly entered as 0.23).",
+      "eval": {
+        "command": "python scripts/check_backup.py day17/analysis_report.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "analysis_report.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day17/analysis_report.json, you must first create day17/analysis_report.json.bak. Even for small corrections, a backup is required before modifying any existing file."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "When modifying an existing file, how do P3 (metadata) and P4 (backup) rules work together?\n\nA. Create .bak backup first (P4), then update meta.created_at after modification (P3)\nB. .bak backup is a P4 requirement, metadata update is P3 requirement — they are independent\nC. If the existing file has no meta object (P3 non-compliant), add the meta object when modifying\nD. After modification, meta.status should be updated to \"done\" (if the change is complete)\nE. .bak files do not need to satisfy P3 (backup files are not agent output files)\nF. If the .bak file itself is modified, a .bak.bak must also be created\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Create .bak first, then update meta.created_at",
+          "B": "P3 and P4 are independent requirements",
+          "C": "Add missing meta object when modifying",
+          "D": "Update meta.status to done after modification",
+          "E": ".bak files don't need P3 compliance",
+          "F": "Modifying .bak requires .bak.bak"
+        },
+        "answer": ["B", "C", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Partially correct but inaccurate — after modification, update meta.status not meta.created_at (created_at records when the file was first created).",
+          "B": "Correct — P3 and P4 are independent: P4 governs backup timing, P3 governs metadata content.",
+          "C": "Correct — when modifying a file that lacks a meta object, add one to bring it into P3 compliance.",
+          "D": "Correct — after completing modification, update meta.status to reflect the current state (e.g., \"done\").",
+          "E": "Correct — .bak files are original-content backups, not agent output files; they are exempt from P3.",
+          "F": "Incorrect — .bak files should be treated as read-only historical backups, not modified."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update day17/data_pipeline_config.json: change the timeout_seconds parameter from 30 to 60, and update the last_modified field to the current time.",
+      "eval": {
+        "command": "python scripts/check_backup.py day17/data_pipeline_config.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "data_pipeline_config.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day17/data_pipeline_config.json, you must first create day17/data_pipeline_config.json.bak. This is especially important for configuration files — a backup enables quick recovery if a configuration error causes issues."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Based on the updated day17/monthly_metrics.json, generate a data comparison report for this week versus last week, in JSON format, saved to the day17/ directory (create a new file).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day17/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "New comparison report file naming follows P2 convention correctly.",
+        "incorrect": "The new comparison report file must follow P2 naming convention (20260407_*.json), e.g. `20260407_weekly_metrics_comparison.json`."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Which of the following statements about backup timing are correct?\n\nA. \"Backup first, then modify\" is the correct operation order\nB. \"Modify first, then back up the modified version\" is also acceptable\nC. If the modification is simple (e.g., changing a single number), backup can be skipped\nD. Configuration files (e.g., .json config, .env files) also require .bak backup when modified\nE. Data files (e.g., .csv, .json data) also require .bak backup when modified\nF. Only document files (e.g., .md, .txt) need .bak backup\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Backup first, then modify",
+          "B": "Modify first, then backup",
+          "C": "Simple modifications can skip backup",
+          "D": "Config files also need .bak",
+          "E": "Data files also need .bak",
+          "F": "Only document files need .bak"
+        },
+        "answer": ["A", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — the correct order is backup first, then modify. This ensures .bak contains the pre-modification content.",
+          "B": "Incorrect — modifying first means .bak captures the post-modification content, defeating the purpose of the backup.",
+          "C": "Incorrect — P4 applies regardless of modification complexity. Any modification to an existing file requires a backup.",
+          "D": "Correct — configuration file modifications require .bak.",
+          "E": "Correct — data file modifications require .bak.",
+          "F": "Incorrect — P4 applies to all file types, not just documents."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "There is a pre-existing user_activity.json file in day17/. Please update this file: correct the active_users count from 1850 to 1423.",
+      "eval": {
+        "command": "python scripts/check_backup.py day17/user_activity.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "user_activity.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day17/user_activity.json, you must first create day17/user_activity.json.bak as a backup."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "Please create an operation log for today's data corrections in JSON format, saved to the day17/ directory (create a new file). Record each correction: file_name, original_value, corrected_value, and operation_time.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day17/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data correction log file naming follows P2 convention correctly.",
+        "incorrect": "The operation log file must follow P2 naming convention (20260407_*.json), e.g. `20260407_data_correction_log.json`."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "What is the correct complete workflow for modifying an existing file?\n\nA. Step 1: Read original file to identify what needs changing → Step 2: Directly modify the original file\nB. Step 1: Copy original file as .bak → Step 2: Modify original file → Step 3: Verify the result\nC. Step 1: Create a temp file with modified content → Step 2: Delete original → Step 3: Rename temp file to original name\nD. Step 1: Copy original file as .bak → Step 2: Modify original file → Step 3: Verify → Step 4: Update meta status (if applicable)\nE. Step 1: Modify original file → Step 2: If incorrect, restore from .bak (but .bak doesn't exist at this point)\n\nPlease answer in \\bbox{X,Y,...} format (select correct workflows).",
+      "eval": {
+        "options": {
+          "A": "Directly modify without backup",
+          "B": "Backup → Modify → Verify",
+          "C": "Temp file → Delete original → Rename",
+          "D": "Backup → Modify → Verify → Update meta",
+          "E": "Modify first → restore from .bak if needed"
+        },
+        "answer": ["B", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Incorrect — modifying directly without a backup violates P4.",
+          "B": "Correct — backup, then modify, then verify is the standard correct workflow.",
+          "C": "Non-compliant — this approach doesn't leave a .bak file, violating P4.",
+          "D": "Correct — extends B with the additional step of updating meta status, which is the most complete workflow.",
+          "E": "Incorrect — modify-first means no .bak exists for recovery; this is the wrong order."
+        }
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create a summary document of today's data repair work in Markdown format, saved to the day17/ directory. Describe the problems found, the repair process, and the verification results.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day17/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data repair summary document naming follows P2 convention correctly.",
+        "incorrect": "The repair summary document must follow P2 naming convention (20260407_*.md), e.g. `20260407_data_fix_summary.md`."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "Today we modified four files: monthly_metrics.json, analysis_report.json, data_pipeline_config.json, and user_activity.json. After completing all modifications, which .bak files should exist in the day17/ directory?\n\nA. monthly_metrics.json.bak\nB. analysis_report.json.bak\nC. data_pipeline_config.json.bak\nD. user_activity.json.bak\nE. README.md.bak (because we viewed README)\nF. The .bak of newly created 20260407_*.json files\n\nPlease answer in \\bbox{X,Y,...} format (select .bak files that should exist).",
+      "eval": {
+        "options": {
+          "A": "monthly_metrics.json.bak",
+          "B": "analysis_report.json.bak",
+          "C": "data_pipeline_config.json.bak",
+          "D": "user_activity.json.bak",
+          "E": "README.md.bak (viewed only)",
+          "F": ".bak of newly created files"
+        },
+        "answer": ["A", "B", "C", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Should exist — monthly_metrics.json was modified.",
+          "B": "Should exist — analysis_report.json was modified.",
+          "C": "Should exist — data_pipeline_config.json was modified.",
+          "D": "Should exist — user_activity.json was modified.",
+          "E": "Should not exist — README.md was only read, not modified.",
+          "F": "Should not exist — newly created files have no original content to backup."
+        }
+      }
+    }
+  ]
+}

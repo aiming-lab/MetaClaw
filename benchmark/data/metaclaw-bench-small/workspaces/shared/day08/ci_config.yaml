@@ -1,0 +1,27 @@
+name: metaclaw_ci_pipeline
+version: 1.2
+
+build:
+  image: ubuntu-20.04
+  build_timeout: 300
+  parallel_jobs: 4
+
+tests:
+  unit_tests:
+    enabled: true
+    timeout: 180
+  integration_tests:
+    enabled: true
+    timeout: 300
+  coverage_threshold: 80
+
+deployment:
+  auto_deploy_staging: true
+  auto_deploy_production: false
+  require_approval: true
+
+notifications:
+  slack_channel: "#ci-alerts"
+  email_on_failure: true
+
+last_modified: "2026-04-03"

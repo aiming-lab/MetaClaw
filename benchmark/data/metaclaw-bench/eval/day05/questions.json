@@ -1,0 +1,280 @@
+{
+  "id": "day05",
+  "desc": "Sprint 7 final day — Consolidate weekly data, normalize time formats, generate sprint review documentation, archive outputs, and prepare for Sprint 8",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please read day05/weekly_raw_data.json and normalize all standup_time fields to the standard format. For today (day05), fill in the standup time as 09:30. Save the result as day05/weekly_data_normalized.json, keeping the original date fields but standardizing only the standup_time values.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day05/weekly_data_normalized.json days[].standup_time",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! All standup_time fields across the week have been successfully normalized to the standard format. The raw data had various inconsistent formats (AM/PM notation, missing timezone, UTC vs CST), and you've converted them all correctly.",
+        "incorrect": "The standup_time fields are not in the correct format. Each day's standup time must follow the standard datetime format, for example: 2026-03-16T09:30:00+08:00. Note that the raw data contains different formats for each day — some use AM/PM notation, some are in UTC (Z), some have no timezone — all need to be normalized to our standard format with +08:00 timezone."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please use the sprint_review_template.md as a base and create the official Sprint Review document, saving it as day05/sprint_review_final.md. The document should include the following time information: sprint period (from 2026-03-16 09:00 to today 18:00), document generation time (current time around 10:00), and review meeting time (today at 14:00).",
+      "update": [],
+      "eval": {
+        "command": "python -c \"import re,sys; text=open('day05/sprint_review_final.md').read(); iso_pat=re.compile(r'\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?\\+08:00'); matches=iso_pat.findall(text); natural_bad=re.search(r'(AM|PM|at \\d+:\\d+|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)',text); sys.exit(0 if len(matches)>=3 and not natural_bad else 1)\"",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! The Sprint Review document has been generated with all time information properly formatted. The document contains at least three timestamps in the correct format and avoids natural language time expressions.",
+        "incorrect": "The Sprint Review document does not have all time information in the correct format. All timestamps in the document must use the standard format, for example: 2026-03-16T09:00:00+08:00 for the sprint start time. Avoid using natural language expressions like 'at 14:00' or 'Friday' — use the full ISO 8601 format with timezone for all time references."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "In a Markdown-formatted Sprint Review document, which of the following time representations are correct?\n\nA. **Sprint period**: 2026-03-16T09:00:00+08:00 to 2026-03-20T18:00:00+08:00\nB. **Meeting time**: 2:00 PM today\nC. **Generated at**: Generated at 2026-03-20T10:00:00+08:00\nD. **Deadline**: March 20, 2026\nE. **Milestone achieved**: 2026-03-19T14:12:00+08:00 (v2.3.0 deployment complete)\nF. **Next Review**: next Friday at the same time\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "**Sprint period**: 2026-03-16T09:00:00+08:00 to 2026-03-20T18:00:00+08:00",
+          "B": "**Meeting time**: 2:00 PM today",
+          "C": "**Generated at**: Generated at 2026-03-20T10:00:00+08:00",
+          "D": "**Deadline**: March 20, 2026",
+          "E": "**Milestone achieved**: 2026-03-19T14:12:00+08:00 (v2.3.0 deployment complete)",
+          "F": "**Next Review**: next Friday at the same time"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, and E all use the standard datetime format (YYYY-MM-DDTHH:MM:SS+08:00). Even in Markdown documents intended for human reading, time information should maintain the same standard format for consistency and machine readability.",
+        "options": {
+          "A": "Correct — uses the standard format for both start and end times of the sprint period.",
+          "B": "Incorrect — '2:00 PM today' is natural language and should be replaced with 2026-03-20T14:00:00+08:00.",
+          "C": "Correct — uses the standard format for the document generation timestamp.",
+          "D": "Incorrect — 'March 20, 2026' is a natural language date and should be 2026-03-20T00:00:00+08:00 (or include a specific time if relevant).",
+          "E": "Correct — the milestone timestamp uses the standard format, with additional context in parentheses.",
+          "F": "Incorrect — 'next Friday at the same time' is ambiguous and should be replaced with the explicit timestamp 2026-03-27T14:00:00+08:00."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please fill in the day05/archive_index_stub.json file by adding the archived_at timestamp for each entry. All files will be archived uniformly at 17:30 this afternoon. Make sure to update both the individual file entries and the archive_summary.archived_at field with the same timestamp.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day05/archive_index_stub.json archive_summary.archived_at files[].archived_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! All archived_at fields have been filled with the correct timestamp format. Both the summary-level and individual file-level timestamps are properly formatted.",
+        "incorrect": "The archived_at fields are not in the correct format. All archive timestamps should follow the standard format, for example: 2026-03-20T17:30:00+08:00. Make sure to update both the archive_summary.archived_at field and all files[].archived_at fields."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create day05/sprint8_kickoff.json to record preliminary planning information for next week's Sprint 8. Include: sprint_start (next Monday at 09:00), sprint_end (next Friday at 18:00), kickoff_meeting (next Monday at 09:30), and planning_created_at (current time around 10:30).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day05/sprint8_kickoff.json sprint_start sprint_end kickoff_meeting planning_created_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! The Sprint 8 kickoff planning file has been created with all timestamps in the correct format. Next week's sprint timeline is now properly documented.",
+        "incorrect": "The Sprint 8 kickoff planning file does not have all timestamps in the correct format. All time fields must use the standard format, for example: 2026-03-23T09:00:00+08:00 for next Monday's sprint start. Remember that today is 2026-03-20 (Friday), so next Monday is 2026-03-23 and next Friday is 2026-03-27."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "The following are time field values extracted from various data files this week. Which ones need to be converted to the correct format?\n\nA. \"standup_time\": \"2026-03-16T09:30:00+08:00\"\nB. \"completed_at\": \"2026-03-17 11:15:00\"\nC. \"review_at\": \"2026-03-18T14:00:00Z\"\nD. \"generated_at\": \"2026-03-19T10:30:00+08:00\"\nE. \"archived_at\": \"Fri Mar 20 17:30:00 CST 2026\"\nF. \"deploy_time\": \"2026-03-19T14:00:00+08:00\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "\"standup_time\": \"2026-03-16T09:30:00+08:00\"",
+          "B": "\"completed_at\": \"2026-03-17 11:15:00\"",
+          "C": "\"review_at\": \"2026-03-18T14:00:00Z\"",
+          "D": "\"generated_at\": \"2026-03-19T10:30:00+08:00\"",
+          "E": "\"archived_at\": \"Fri Mar 20 17:30:00 CST 2026\"",
+          "F": "\"deploy_time\": \"2026-03-19T14:00:00+08:00\""
+        },
+        "answer": [
+          "B",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options B, C, and E all need format conversion. B is missing the 'T' separator and timezone, C uses UTC (Z) instead of the required +08:00 timezone, and E uses a natural language format that needs to be converted to ISO 8601 with +08:00.",
+        "options": {
+          "A": "Already correct — follows the standard YYYY-MM-DDTHH:MM:SS+08:00 format.",
+          "B": "Needs conversion — missing 'T' separator and timezone. Should be: 2026-03-17T11:15:00+08:00",
+          "C": "Needs conversion — uses Z (UTC) timezone. Should be converted to +08:00 timezone: 2026-03-18T22:00:00+08:00 (14:00 UTC = 22:00 CST)",
+          "D": "Already correct — follows the standard format.",
+          "E": "Needs conversion — natural language format. Should be: 2026-03-20T17:30:00+08:00",
+          "F": "Already correct — follows the standard format."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create day05/weekly_task_stats.json to summarize this week's task completion statistics. Include: week (\"2026-W12\"), stats_generated_at (current time around 11:00), period_start (2026-03-16 at 09:00), period_end (2026-03-20 at 18:00), and a daily_stats array where each day has a date field (in ISO format at 00:00) and tasks_completed count.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day05/weekly_task_stats.json stats_generated_at period_start period_end daily_stats[].date",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! The weekly task statistics file has been created with all time fields in the correct format. The period timestamps and all daily date entries follow the standard format.",
+        "incorrect": "The weekly task statistics file does not have all time fields in the correct format. All timestamps must use the standard format, for example: 2026-03-16T09:00:00+08:00 for period_start. For the daily_stats array, each date field should use the format 2026-03-16T00:00:00+08:00 (midnight of each day)."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "This week's generated files span multiple types including JSON, Markdown, and Python. Regarding maintaining time format consistency across different file types, which of the following statements are correct?\n\nA. JSON, Markdown, and Python comments/docstrings should all use the same standard datetime format\nB. Markdown documents are meant for human reading, so natural language times are acceptable\nC. When referencing the same event across files, the timestamp should be identical in all places\nD. Time constants hardcoded in Python code don't need to follow the standard datetime format\nE. Before archiving files, all time fields should already be normalized to standard format\nF. Standardizing datetime formats primarily benefits machines — human readability is not improved\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "JSON, Markdown, and Python comments/docstrings should all use the same standard datetime format",
+          "B": "Markdown documents are meant for human reading, so natural language times are acceptable",
+          "C": "When referencing the same event across files, the timestamp should be identical in all places",
+          "D": "Time constants hardcoded in Python code don't need to follow the standard datetime format",
+          "E": "Before archiving files, all time fields should already be normalized to standard format",
+          "F": "Standardizing datetime formats primarily benefits machines — human readability is not improved"
+        },
+        "answer": [
+          "A",
+          "C",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, and E are all true. Maintaining consistent datetime format across all file types ensures data integrity, makes cross-referencing reliable, and simplifies data processing pipelines. Format standardization should happen before archival.",
+        "options": {
+          "A": "Correct — All file types should use the same standard format for consistency and to enable reliable data processing across the system.",
+          "B": "Incorrect — Even in Markdown documents for humans, standard datetime formats improve clarity and enable automated processing (e.g., generating timelines, checking deadlines).",
+          "C": "Correct — When the same event is referenced in multiple files, using identical timestamps ensures data consistency and prevents confusion.",
+          "D": "Incorrect — Time constants in code should also follow the standard format for consistency and to facilitate testing, logging, and debugging.",
+          "E": "Correct — Files should be normalized before archival to ensure the archive contains clean, standardized data ready for long-term storage and retrieval.",
+          "F": "Incorrect — Standard datetime formats benefit both machines (parsing, sorting) and humans (unambiguous, sortable, no timezone confusion)."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please create day05/sprint7_closure.json to officially close Sprint 7. Include: sprint_id (\"Sprint-7\"), officially_closed_at (this afternoon after the sprint review ends, around 15:30), velocity (the total number of tasks completed this week), closed_by (\"Alex\"), and next_sprint_start (next Monday at 09:00).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day05/sprint7_closure.json officially_closed_at next_sprint_start",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! Sprint 7 has been officially closed with all timestamps in the correct format. The closure record properly documents the sprint end time and the next sprint start.",
+        "incorrect": "The sprint closure record does not have all timestamps in the correct format. The officially_closed_at field should be around 2026-03-20T15:30:00+08:00 (after the sprint review meeting), and next_sprint_start should be 2026-03-23T09:00:00+08:00 (next Monday morning)."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please draft a weekly summary email to the PM, saving it as day05/weekly_email_draft.json in JSON format. Include: to (array of recipient email addresses), subject (email subject line), draft_created_at (current time around 13:30), scheduled_send_at (14:00 today, before the sprint review), and body_summary (a brief summary string of the email content).",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day05/weekly_email_draft.json draft_created_at scheduled_send_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Excellent! The weekly email draft has been created with all timestamps in the correct format. The draft creation time and scheduled send time are both properly formatted.",
+        "incorrect": "The email draft does not have timestamps in the correct format. The draft_created_at field should be around 2026-03-20T13:30:00+08:00, and scheduled_send_at should be 2026-03-20T14:00:00+08:00 (timed to be sent right before the sprint review meeting)."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "The following are time format conversion requirements compiled from various file types this week. Which conversion results are correct? (Current date: 2026-03-20, CST timezone)\n\nA. JSON \"2026-03-17 11:15:00\" → \"2026-03-17T11:15:00+08:00\"\nB. Log \"2026-03-18T14:00:00Z\" → \"2026-03-18T14:00:00+08:00\" (direct Z→+08:00 replacement)\nC. Doc \"March 19, 2026 2:12 PM\" → \"2026-03-19T14:12:00+08:00\"\nD. Comment \"2026/03/20 09:00 CST\" → \"2026-03-20T09:00:00+08:00\"\nE. Code datetime(2026, 3, 16, 9, 0, 0) → \"2026-03-16T09:00:00+08:00\"\nF. Log \"16/Mar/2026:09:30:00 +0800\" → \"2026-03-16T09:30:00+08:00\"\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "JSON \"2026-03-17 11:15:00\" → \"2026-03-17T11:15:00+08:00\"",
+          "B": "Log \"2026-03-18T14:00:00Z\" → \"2026-03-18T14:00:00+08:00\" (direct Z→+08:00 replacement)",
+          "C": "Doc \"March 19, 2026 2:12 PM\" → \"2026-03-19T14:12:00+08:00\"",
+          "D": "Comment \"2026/03/20 09:00 CST\" → \"2026-03-20T09:00:00+08:00\"",
+          "E": "Code datetime(2026, 3, 16, 9, 0, 0) → \"2026-03-16T09:00:00+08:00\"",
+          "F": "Log \"16/Mar/2026:09:30:00 +0800\" → \"2026-03-16T09:30:00+08:00\""
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct! Options A, C, D, E, and F are all valid conversions. Option B is incorrect because it attempts a direct text replacement without accounting for timezone conversion — UTC 14:00 is actually CST 22:00, not CST 14:00.",
+        "options": {
+          "A": "Correct — adds the 'T' separator and +08:00 timezone to make it ISO 8601 compliant.",
+          "B": "Incorrect — simply replacing 'Z' with '+08:00' without converting the time value is wrong. UTC 14:00 = CST 22:00, so the correct result should be 2026-03-18T22:00:00+08:00.",
+          "C": "Correct — converts natural language datetime (March 19, 2:12 PM) to ISO 8601 format with CST timezone.",
+          "D": "Correct — converts slash-separated date with explicit CST label to ISO 8601 format.",
+          "E": "Correct — converts Python datetime object to ISO 8601 string with explicit CST timezone.",
+          "F": "Correct — converts Apache-style log timestamp to ISO 8601 format (note that +0800 is equivalent to +08:00)."
+        }
+      }
+    },
+    {
+      "id": "r12",
+      "type": "file_check",
+      "question": "Please create day05/week_summary_index.json as a master index of all output files from this week. Include: week (\"2026-W12\"), generated_at (current time around 16:00), sprint (\"Sprint-7\"), and a files array listing key files created this week. Each file entry should have filename, type, and created_at timestamp.",
+      "update": [],
+      "eval": {
+        "command": "python scripts/check_iso8601.py day05/week_summary_index.json generated_at files[].created_at",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Perfect! The weekly summary index has been created with all timestamps in the correct format. This master index properly documents all of this week's outputs with standardized timestamps.",
+        "incorrect": "The weekly summary index does not have all timestamps in the correct format. The generated_at field should be around 2026-03-20T16:00:00+08:00, and all files[].created_at fields must also use the standard format, for example: 2026-03-16T10:00:00+08:00."
+      }
+    },
+    {
+      "id": "r13",
+      "type": "multi_choice",
+      "question": "After a week's work with time format standardization, which of the following conclusions about datetime formatting are correct?\n\nA. All time fields (regardless of file type) should use the standard format YYYY-MM-DDTHH:MM:SS+08:00\nB. For cross-system data, storing in UTC and converting for display is an acceptable engineering approach, but not our required output format\nC. Pure date format (YYYY-MM-DD) is never acceptable under any circumstances\nD. The milliseconds part (e.g., .000) is optional — both with and without are valid\nE. Z timezone (UTC) and +08:00 (CST) are equivalent and interchangeable\nF. When processing raw data from external sources, it is our responsibility to normalize time formats in the output\n\nAnswer using \\bbox{X,Y,...} format.",
+      "update": [],
+      "eval": {
+        "options": {
+          "A": "All time fields (regardless of file type) should use the standard format YYYY-MM-DDTHH:MM:SS+08:00",
+          "B": "For cross-system data, storing in UTC and converting for display is an acceptable engineering approach, but not our required output format",
+          "C": "Pure date format (YYYY-MM-DD) is never acceptable under any circumstances",
+          "D": "The milliseconds part (e.g., .000) is optional — both with and without are valid",
+          "E": "Z timezone (UTC) and +08:00 (CST) are equivalent and interchangeable",
+          "F": "When processing raw data from external sources, it is our responsibility to normalize time formats in the output"
+        },
+        "answer": [
+          "A",
+          "D",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "Excellent work! You've successfully completed Sprint 7 and demonstrated a solid understanding of time format standardization. Options A, D, and F correctly summarize the key principles: universal format adoption, flexibility on milliseconds, and output normalization responsibility.",
+        "options": {
+          "A": "Correct — All time fields across all file types should consistently use the format YYYY-MM-DDTHH:MM:SS+08:00 (with optional milliseconds).",
+          "B": "Correct observation but not our standard — While UTC storage is a valid engineering pattern, our team standard requires all outputs to use +08:00 (CST) timezone explicitly.",
+          "C": "Incorrect — Pure date format (YYYY-MM-DD) can be acceptable when only the date is relevant and no time component is needed. However, when time is involved, the full format must be used.",
+          "D": "Correct — The fractional seconds component (.000, .123, etc.) is optional in ISO 8601. Both 2026-03-20T14:00:00+08:00 and 2026-03-20T14:00:00.000+08:00 are valid.",
+          "E": "Incorrect — While Z (UTC) and +08:00 (CST) represent specific timezones, they are NOT interchangeable. Z means UTC, and +08:00 means CST (UTC+8). The same absolute time requires conversion: 14:00Z = 22:00+08:00.",
+          "F": "Correct — When we receive data from external sources in various formats, it's our responsibility to normalize them to our standard format in all outputs and deliverables."
+        }
+      }
+    }
+  ]
+}

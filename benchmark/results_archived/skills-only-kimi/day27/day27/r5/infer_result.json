@@ -1,0 +1,408 @@
+{
+  "test_id": "day27",
+  "group_id": "day27",
+  "round_id": "r5",
+  "qa_id": "r5",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Issues: (1) create `day27/project_overview.md.bak` before modifying (P4); (2) add YAML frontmatter with ISO 8601 `created_at` to the updated document (P3); (3) append 3rd done.log entry (P5).\nKeep this in mind as you continue with the next task.\n\nPlease write a deployment runbook for the new data export features in Markdown format, save to day27/. Include sections for prerequisites, deployment steps, rollback procedure, and post-deployment verification. Add a planned deployment date field.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773861755.902695,
+    "finished_at": 1773861818.115041,
+    "duration_ms": 62212,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-18T19:23:38.018Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day27_bc38df86-8d2c-4fcc-823b-9cefe7750f34",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day27_11f150ac",
+    "success": true,
+    "durationMs": 58146,
+    "messageCount": 39,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Wed 2026-03-18 15:22 EDT] [Previous Feedback] Issues: (1) create `day27/project_overview.md.bak` before modifying (P4); (2) add YAML frontmatter with ISO 8601 `created_at` to the updated document (P3); (3) append 3rd done.log entry (P5).\nKeep this in mind as you continue with the next task.\n\nPlease write a deployment runbook for the new data export features in Markdown format, save to day27/. Include sections for prerequisites, deployment steps, rollback procedure, and post-deployment verification. Add a planned deployment date field."
+          }
+        ],
+        "timestamp": 1773861759874
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "I'll create the deployment runbook with proper YAML frontmatter and all required sections."
+          },
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "functionsfunctionsfunctionswrite8",
+            "arguments": {
+              "file_path": "day27/20260421_data_export_deployment_runbook.md",
+              "content": "---\ncreated_at: 2026-04-21T15:22:00+08:00\nauthor: Alex Zhang\nstatus: draft\nplanned_deployment_date: 2026-04-30T22:00:00+08:00\n---\n\n# Data Export Service Deployment Runbook\n\n**Version:** 1.0  \n**Last Updated:** April 21, 2026  \n**Planned Deployment Date:** April 30, 2026 at 22:00 CST (UTC+8)\n\n---\n\n## Overview\n\nThis runbook covers the deployment of the new data export service features to production, including:\n- JSON and CSV export endpoints\n- Asynchronous export job processing\n- New database indexes for query optimization\n- Redis caching layer for performance improvement\n\n---\n\n## Prerequisites\n\n### Infrastructure Requirements\n- [ ] AWS ECS cluster capacity verified (min 4 tasks, max 10 tasks)\n- [ ] RDS PostgreSQL instance on version 14.x or higher\n- [ ] ElastiCache Redis cluster provisioned and accessible\n- [ ] S3 bucket `orion-exports-prod` created with lifecycle policy\n- [ ] Background job worker (Celery) deployed and running\n\n### Database Requirements\n- [ ] Migration scripts tested on staging environment\n- [ ] Index creation scripts reviewed and approved\n- [ ] Backup completed within 24 hours of deployment\n- [ ] Connection pool limits verified (current: 100, required: 150)\n\n### Configuration Requirements\n- [ ] Environment variables configured:\n  - `EXPORT_MAX_RECORDS=100000`\n  - `EXPORT_EXPIRY_HOURS=24`\n  - `REDIS_CACHE_TTL=300`\n  - `CELERY_WORKER_CONCURRENCY=4`\n- [ ] Feature flags created in LaunchDarkly:\n  - `export-service-enabled` (default: false)\n  - `bulk-operations-enabled` (default: false)\n\n### Access Requirements\n- [ ] Deployment engineer has AWS console access\n- [ ] Database credentials available in AWS Secrets Manager\n- [ ] Rollback credentials validated\n- [ ] On-call engineer notified and available\n\n---\n\n## Deployment Steps\n\n### Phase 1: Pre-Deployment (T-30 minutes)\n\n1. **Lock staging environment**\n   ```bash\n   ./scripts/lock-environment.sh staging\n   ```\n\n2. **Run final integration tests**\n   ```bash\n   pytest tests/integration/export/ -v --timeout=300\n   ```\n   - Expected: All tests pass (45 tests)\n   - Duration: ~10 minutes\n\n3. **Verify database migration checksums**\n   ```bash\n   alembic heads --verify-checksums\n   ```\n\n4. **Confirm backup completion**\n   ```bash\n   aws rds describe-db-snapshots --snapshot-type manual | grep \"ExportPreDeploy\"\n   ```\n\n### Phase 2: Database Migration (T-0 to T+10 minutes)\n\n1. **Put application in maintenance mode**\n   ```bash\n   kubectl apply -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Execute database migrations** (zero-downtime where possible)\n   ```bash\n   alembic upgrade head\n   ```\n   - Creates indexes: `idx_tasks_status_created`, `idx_tasks_assignee_status`\n   - Adds `exports` table for job tracking\n   - Duration: ~5 minutes\n\n3. **Verify migrations applied**\n   ```bash\n   alembic current\n   # Expected: head (revision abc123)\n   ```\n\n### Phase 3: Application Deployment (T+10 to T+20 minutes)\n\n1. **Deploy new API version (blue/green)**\n   ```bash\n   kubectl apply -f k8s/api-deployment-v2.4.0.yaml\n   kubectl rollout status deployment/api-deployment\n   ```\n   - Wait for all pods to be Ready (2/2)\n   - Duration: ~3 minutes\n\n2. **Deploy Celery workers**\n   ```bash\n   kubectl apply -f k8s/celery-worker-deployment.yaml\n   kubectl rollout status deployment/celery-worker\n   ```\n\n3. **Verify health checks**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   curl -f https://api.project-orion.com/health/ready\n   ```\n   - Expected: HTTP 200, `{\"status\":\"ok\"}`\n\n### Phase 4: Feature Activation (T+20 to T+25 minutes)\n\n1. **Remove maintenance mode**\n   ```bash\n   kubectl delete -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Enable feature flags (gradual rollout)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=10\n   ```\n\n3. **Monitor for 5 minutes**\n   - Check error rates: `< 0.1%`\n   - Check latency p95: `< 200ms`\n   - Check export job queue depth: `< 10`\n\n4. **Increase rollout to 100% (if metrics healthy)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=100\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=100\n   ```\n\n---\n\n## Rollback Procedure\n\n### Decision Triggers\nExecute rollback if ANY of the following occur:\n- Error rate exceeds 1% for 2 consecutive minutes\n- p99 latency exceeds 1 second for 5 consecutive minutes\n- Database connection pool exhaustion\n- Export job processing failure rate > 10%\n- Customer-reported critical issues\n\n### Rollback Steps (Target: < 5 minutes)\n\n1. **Immediate feature disable**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=0\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=0\n   ```\n\n2. **Revert application deployment**\n   ```bash\n   kubectl rollout undo deployment/api-deployment\n   kubectl rollout status deployment/api-deployment\n   ```\n\n3. **Revert Celery workers**\n   ```bash\n   kubectl rollout undo deployment/celery-worker\n   kubectl rollout status deployment/celery-worker\n   ```\n\n4. **Database rollback (if migration caused issues)**\n   ```bash\n   alembic downgrade -1\n   ```\n   ⚠️ **WARNING:** Downgrade causes brief service interruption (~30s)\n\n5. **Verify rollback completion**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   kubectl get pods | grep api-deployment\n   ```\n\n6. **Notify team**\n   ```bash\n   slack-notify \"@channel Rollback completed. Incident channel: #incident-2026-04-30\"\n   ```\n\n---\n\n## Post-Deployment Verification\n\n### Immediate Verification (T+25 to T+35 minutes)\n\n| Check | Command/Method | Expected Result |\n|-------|----------------|-----------------|\n| Health endpoint | `curl /health` | `{\"status\":\"ok\"}` |\n| Export endpoint exists | `curl /export/json` (OPTIONS) | HTTP 200 with CORS headers |\n| Database connectivity | `kubectl logs api-deployment-xxxxx` | No connection errors |\n| Export job queue | Redis `LLEN celery` | ≤ 0 pending |\n| Error rate | Datadog dashboard | `< 0.1%` |\n| Response time p95 | Datadog dashboard | `< 200ms` |\n\n### Functional Verification (T+35 to T+50 minutes)\n\n1. **Test CSV export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/csv \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"filters\":{\"status\":[\"open\"]},\"columns\":[\"id\",\"title\"]}'\n   ```\n   - Expected: Returns `export_id` and `download_url`\n\n2. **Test JSON export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/json \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"format\":\"nested\",\"include_fields\":[\"id\",\"title\",\"comments\"]}'\n   ```\n   - Expected: Returns `export_id`, verify nested structure in downloaded file\n\n3. **Test export status endpoint**\n   ```bash\n   curl https://api.project-orion.com/exports/$EXPORT_ID \\\n     -H \"Authorization: Bearer $TEST_TOKEN\"\n   ```\n   - Expected: Returns status (`pending`, `processing`, or `ready`)\n\n4. **Test bulk operations**\n   ```bash\n   curl -X POST https://api.project-orion.com/tasks/bulk-update \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"task_ids\":[\"task_001\",\"task_002\"],\"status\":\"completed\"}'\n   ```\n   - Expected: Returns success count, verify tasks updated in database\n\n5. **Verify performance improvement**\n   ```bash\n   ./scripts/benchmark-task-query.sh --iterations=100\n   ```\n   - Expected: ≥30% improvement over baseline (pre-optimization)\n\n### 24-Hour Post-Deployment Checks\n\n- [ ] Review error logs for export-related exceptions\n- [ ] Verify S3 bucket lifecycle is deleting expired exports\n- [ ] Check Redis memory usage (target: < 2GB)\n- [ ] Monitor export job processing time (target: p95 < 60s)\n- [ ] Collect feedback from beta customers\n\n---\n\n## Contacts\n\n| Role | Contact | Escalation |\n|------|---------|------------|\n| Deployment Lead | Alex Zhang | +86-138-xxxx-xxxx |\n| Backend Lead | Bai | +86-139-xxxx-xxxx |\n| QA Lead | Dana | +86-137-xxxx-xxxx |\n| On-Call Engineer | TBD | PagerDuty |\n| Incident Commander | Alex Zhang | +86-138-xxxx-xxxx |\n\n---\n\n## Revision History\n\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| 1.0 | April 21, 2026 | Alex Zhang | Initial version for Sprint 10 deployment |\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773861759876
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "functionsfunctionsfunctionswrite8",
+        "content": [
+          {
+            "type": "text",
+            "text": "Tool functionsfunctionsfunctionswrite8 not found"
+          }
+        ],
+        "details": {},
+        "isError": true,
+        "timestamp": 1773861783244
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "functionsfunctionsfunctionswrite4",
+            "arguments": {
+              "file_path": "day27/20260421_data_export_deployment_runbook.md",
+              "content": "---\ncreated_at: 2026-04-21T15:22:00+08:00\nauthor: Alex Zhang\nstatus: draft\nplanned_deployment_date: 2026-04-30T22:00:00+08:00\n---\n\n# Data Export Service Deployment Runbook\n\n**Version:** 1.0  \n**Last Updated:** April 21, 2026  \n**Planned Deployment Date:** April 30, 2026 at 22:00 CST (UTC+8)\n\n---\n\n## Overview\n\nThis runbook covers the deployment of the new data export service features to production, including:\n- JSON and CSV export endpoints\n- Asynchronous export job processing\n- New database indexes for query optimization\n- Redis caching layer for performance improvement\n\n---\n\n## Prerequisites\n\n### Infrastructure Requirements\n- [ ] AWS ECS cluster capacity verified (min 4 tasks, max 10 tasks)\n- [ ] RDS PostgreSQL instance on version 14.x or higher\n- [ ] ElastiCache Redis cluster provisioned and accessible\n- [ ] S3 bucket `orion-exports-prod` created with lifecycle policy\n- [ ] Background job worker (Celery) deployed and running\n\n### Database Requirements\n- [ ] Migration scripts tested on staging environment\n- [ ] Index creation scripts reviewed and approved\n- [ ] Backup completed within 24 hours of deployment\n- [ ] Connection pool limits verified (current: 100, required: 150)\n\n### Configuration Requirements\n- [ ] Environment variables configured:\n  - `EXPORT_MAX_RECORDS=100000`\n  - `EXPORT_EXPIRY_HOURS=24`\n  - `REDIS_CACHE_TTL=300`\n  - `CELERY_WORKER_CONCURRENCY=4`\n- [ ] Feature flags created in LaunchDarkly:\n  - `export-service-enabled` (default: false)\n  - `bulk-operations-enabled` (default: false)\n\n### Access Requirements\n- [ ] Deployment engineer has AWS console access\n- [ ] Database credentials available in AWS Secrets Manager\n- [ ] Rollback credentials validated\n- [ ] On-call engineer notified and available\n\n---\n\n## Deployment Steps\n\n### Phase 1: Pre-Deployment (T-30 minutes)\n\n1. **Lock staging environment**\n   ```bash\n   ./scripts/lock-environment.sh staging\n   ```\n\n2. **Run final integration tests**\n   ```bash\n   pytest tests/integration/export/ -v --timeout=300\n   ```\n   - Expected: All tests pass (45 tests)\n   - Duration: ~10 minutes\n\n3. **Verify database migration checksums**\n   ```bash\n   alembic heads --verify-checksums\n   ```\n\n4. **Confirm backup completion**\n   ```bash\n   aws rds describe-db-snapshots --snapshot-type manual | grep \"ExportPreDeploy\"\n   ```\n\n### Phase 2: Database Migration (T-0 to T+10 minutes)\n\n1. **Put application in maintenance mode**\n   ```bash\n   kubectl apply -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Execute database migrations** (zero-downtime where possible)\n   ```bash\n   alembic upgrade head\n   ```\n   - Creates indexes: `idx_tasks_status_created`, `idx_tasks_assignee_status`\n   - Adds `exports` table for job tracking\n   - Duration: ~5 minutes\n\n3. **Verify migrations applied**\n   ```bash\n   alembic current\n   # Expected: head (revision abc123)\n   ```\n\n### Phase 3: Application Deployment (T+10 to T+20 minutes)\n\n1. **Deploy new API version (blue/green)**\n   ```bash\n   kubectl apply -f k8s/api-deployment-v2.4.0.yaml\n   kubectl rollout status deployment/api-deployment\n   ```\n   - Wait for all pods to be Ready (2/2)\n   - Duration: ~3 minutes\n\n2. **Deploy Celery workers**\n   ```bash\n   kubectl apply -f k8s/celery-worker-deployment.yaml\n   kubectl rollout status deployment/celery-worker\n   ```\n\n3. **Verify health checks**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   curl -f https://api.project-orion.com/health/ready\n   ```\n   - Expected: HTTP 200, `{\"status\":\"ok\"}`\n\n### Phase 4: Feature Activation (T+20 to T+25 minutes)\n\n1. **Remove maintenance mode**\n   ```bash\n   kubectl delete -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Enable feature flags (gradual rollout)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=10\n   ```\n\n3. **Monitor for 5 minutes**\n   - Check error rates: `< 0.1%`\n   - Check latency p95: `< 200ms`\n   - Check export job queue depth: `< 10`\n\n4. **Increase rollout to 100% (if metrics healthy)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=100\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=100\n   ```\n\n---\n\n## Rollback Procedure\n\n### Decision Triggers\nExecute rollback if ANY of the following occur:\n- Error rate exceeds 1% for 2 consecutive minutes\n- p99 latency exceeds 1 second for 5 consecutive minutes\n- Database connection pool exhaustion\n- Export job processing failure rate > 10%\n- Customer-reported critical issues\n\n### Rollback Steps (Target: < 5 minutes)\n\n1. **Immediate feature disable**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=0\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=0\n   ```\n\n2. **Revert application deployment**\n   ```bash\n   kubectl rollout undo deployment/api-deployment\n   kubectl rollout status deployment/api-deployment\n   ```\n\n3. **Revert Celery workers**\n   ```bash\n   kubectl rollout undo deployment/celery-worker\n   kubectl rollout status deployment/celery-worker\n   ```\n\n4. **Database rollback (if migration caused issues)**\n   ```bash\n   alembic downgrade -1\n   ```\n   ⚠️ **WARNING:** Downgrade causes brief service interruption (~30s)\n\n5. **Verify rollback completion**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   kubectl get pods | grep api-deployment\n   ```\n\n6. **Notify team**\n   ```bash\n   slack-notify \"@channel Rollback completed. Incident channel: #incident-2026-04-30\"\n   ```\n\n---\n\n## Post-Deployment Verification\n\n### Immediate Verification (T+25 to T+35 minutes)\n\n| Check | Command/Method | Expected Result |\n|-------|----------------|-----------------|\n| Health endpoint | `curl /health` | `{\"status\":\"ok\"}` |\n| Export endpoint exists | `curl /export/json` (OPTIONS) | HTTP 200 with CORS headers |\n| Database connectivity | `kubectl logs api-deployment-xxxxx` | No connection errors |\n| Export job queue | Redis `LLEN celery` | ≤ 0 pending |\n| Error rate | Datadog dashboard | `< 0.1%` |\n| Response time p95 | Datadog dashboard | `< 200ms` |\n\n### Functional Verification (T+35 to T+50 minutes)\n\n1. **Test CSV export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/csv \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"filters\":{\"status\":[\"open\"]},\"columns\":[\"id\",\"title\"]}'\n   ```\n   - Expected: Returns `export_id` and `download_url`\n\n2. **Test JSON export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/json \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"format\":\"nested\",\"include_fields\":[\"id\",\"title\",\"comments\"]}'\n   ```\n   - Expected: Returns `export_id`, verify nested structure in downloaded file\n\n3. **Test export status endpoint**\n   ```bash\n   curl https://api.project-orion.com/exports/$EXPORT_ID \\\n     -H \"Authorization: Bearer $TEST_TOKEN\"\n   ```\n   - Expected: Returns status (`pending`, `processing`, or `ready`)\n\n4. **Test bulk operations**\n   ```bash\n   curl -X POST https://api.project-orion.com/tasks/bulk-update \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"task_ids\":[\"task_001\",\"task_002\"],\"status\":\"completed\"}'\n   ```\n   - Expected: Returns success count, verify tasks updated in database\n\n5. **Verify performance improvement**\n   ```bash\n   ./scripts/benchmark-task-query.sh --iterations=100\n   ```\n   - Expected: ≥30% improvement over baseline (pre-optimization)\n\n### 24-Hour Post-Deployment Checks\n\n- [ ] Review error logs for export-related exceptions\n- [ ] Verify S3 bucket lifecycle is deleting expired exports\n- [ ] Check Redis memory usage (target: < 2GB)\n- [ ] Monitor export job processing time (target: p95 < 60s)\n- [ ] Collect feedback from beta customers\n\n---\n\n## Contacts\n\n| Role | Contact | Escalation |\n|------|---------|------------|\n| Deployment Lead | Alex Zhang | +86-138-xxxx-xxxx |\n| Backend Lead | Bai | +86-139-xxxx-xxxx |\n| QA Lead | Dana | +86-137-xxxx-xxxx |\n| On-Call Engineer | TBD | PagerDuty |\n| Incident Commander | Alex Zhang | +86-138-xxxx-xxxx |\n\n---\n\n## Revision History\n\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| 1.0 | April 21, 2026 | Alex Zhang | Initial version for Sprint 10 deployment |\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773861783246
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "functionsfunctionsfunctionswrite4",
+        "content": [
+          {
+            "type": "text",
+            "text": "Tool functionsfunctionsfunctionswrite4 not found"
+          }
+        ],
+        "details": {},
+        "isError": true,
+        "timestamp": 1773861788605
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "functionsfunctionsfunctionswrite9",
+            "arguments": {
+              "file_path": "day27/20260421_data_export_deployment_runbook.md",
+              "content": "---\ncreated_at: 2026-04-21T15:22:00+08:00\nauthor: Alex Zhang\nstatus: draft\nplanned_deployment_date: 2026-04-30T22:00:00+08:00\n---\n\n# Data Export Service Deployment Runbook\n\n**Version:** 1.0  \n**Last Updated:** April 21, 2026  \n**Planned Deployment Date:** April 30, 2026 at 22:00 CST (UTC+8)\n\n---\n\n## Overview\n\nThis runbook covers the deployment of the new data export service features to production, including:\n- JSON and CSV export endpoints\n- Asynchronous export job processing\n- New database indexes for query optimization\n- Redis caching layer for performance improvement\n\n---\n\n## Prerequisites\n\n### Infrastructure Requirements\n- [ ] AWS ECS cluster capacity verified (min 4 tasks, max 10 tasks)\n- [ ] RDS PostgreSQL instance on version 14.x or higher\n- [ ] ElastiCache Redis cluster provisioned and accessible\n- [ ] S3 bucket `orion-exports-prod` created with lifecycle policy\n- [ ] Background job worker (Celery) deployed and running\n\n### Database Requirements\n- [ ] Migration scripts tested on staging environment\n- [ ] Index creation scripts reviewed and approved\n- [ ] Backup completed within 24 hours of deployment\n- [ ] Connection pool limits verified (current: 100, required: 150)\n\n### Configuration Requirements\n- [ ] Environment variables configured:\n  - `EXPORT_MAX_RECORDS=100000`\n  - `EXPORT_EXPIRY_HOURS=24`\n  - `REDIS_CACHE_TTL=300`\n  - `CELERY_WORKER_CONCURRENCY=4`\n- [ ] Feature flags created in LaunchDarkly:\n  - `export-service-enabled` (default: false)\n  - `bulk-operations-enabled` (default: false)\n\n### Access Requirements\n- [ ] Deployment engineer has AWS console access\n- [ ] Database credentials available in AWS Secrets Manager\n- [ ] Rollback credentials validated\n- [ ] On-call engineer notified and available\n\n---\n\n## Deployment Steps\n\n### Phase 1: Pre-Deployment (T-30 minutes)\n\n1. **Lock staging environment**\n   ```bash\n   ./scripts/lock-environment.sh staging\n   ```\n\n2. **Run final integration tests**\n   ```bash\n   pytest tests/integration/export/ -v --timeout=300\n   ```\n   - Expected: All tests pass (45 tests)\n   - Duration: ~10 minutes\n\n3. **Verify database migration checksums**\n   ```bash\n   alembic heads --verify-checksums\n   ```\n\n4. **Confirm backup completion**\n   ```bash\n   aws rds describe-db-snapshots --snapshot-type manual | grep \"ExportPreDeploy\"\n   ```\n\n### Phase 2: Database Migration (T-0 to T+10 minutes)\n\n1. **Put application in maintenance mode**\n   ```bash\n   kubectl apply -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Execute database migrations** (zero-downtime where possible)\n   ```bash\n   alembic upgrade head\n   ```\n   - Creates indexes: `idx_tasks_status_created`, `idx_tasks_assignee_status`\n   - Adds `exports` table for job tracking\n   - Duration: ~5 minutes\n\n3. **Verify migrations applied**\n   ```bash\n   alembic current\n   # Expected: head (revision abc123)\n   ```\n\n### Phase 3: Application Deployment (T+10 to T+20 minutes)\n\n1. **Deploy new API version (blue/green)**\n   ```bash\n   kubectl apply -f k8s/api-deployment-v2.4.0.yaml\n   kubectl rollout status deployment/api-deployment\n   ```\n   - Wait for all pods to be Ready (2/2)\n   - Duration: ~3 minutes\n\n2. **Deploy Celery workers**\n   ```bash\n   kubectl apply -f k8s/celery-worker-deployment.yaml\n   kubectl rollout status deployment/celery-worker\n   ```\n\n3. **Verify health checks**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   curl -f https://api.project-orion.com/health/ready\n   ```\n   - Expected: HTTP 200, `{\"status\":\"ok\"}`\n\n### Phase 4: Feature Activation (T+20 to T+25 minutes)\n\n1. **Remove maintenance mode**\n   ```bash\n   kubectl delete -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Enable feature flags (gradual rollout)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=10\n   ```\n\n3. **Monitor for 5 minutes**\n   - Check error rates: `< 0.1%`\n   - Check latency p95: `< 200ms`\n   - Check export job queue depth: `< 10`\n\n4. **Increase rollout to 100% (if metrics healthy)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=100\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=100\n   ```\n\n---\n\n## Rollback Procedure\n\n### Decision Triggers\nExecute rollback if ANY of the following occur:\n- Error rate exceeds 1% for 2 consecutive minutes\n- p99 latency exceeds 1 second for 5 consecutive minutes\n- Database connection pool exhaustion\n- Export job processing failure rate > 10%\n- Customer-reported critical issues\n\n### Rollback Steps (Target: < 5 minutes)\n\n1. **Immediate feature disable**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=0\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=0\n   ```\n\n2. **Revert application deployment**\n   ```bash\n   kubectl rollout undo deployment/api-deployment\n   kubectl rollout status deployment/api-deployment\n   ```\n\n3. **Revert Celery workers**\n   ```bash\n   kubectl rollout undo deployment/celery-worker\n   kubectl rollout status deployment/celery-worker\n   ```\n\n4. **Database rollback (if migration caused issues)**\n   ```bash\n   alembic downgrade -1\n   ```\n   ⚠️ **WARNING:** Downgrade causes brief service interruption (~30s)\n\n5. **Verify rollback completion**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   kubectl get pods | grep api-deployment\n   ```\n\n6. **Notify team**\n   ```bash\n   slack-notify \"@channel Rollback completed. Incident channel: #incident-2026-04-30\"\n   ```\n\n---\n\n## Post-Deployment Verification\n\n### Immediate Verification (T+25 to T+35 minutes)\n\n| Check | Command/Method | Expected Result |\n|-------|----------------|-----------------|\n| Health endpoint | `curl /health` | `{\"status\":\"ok\"}` |\n| Export endpoint exists | `curl /export/json` (OPTIONS) | HTTP 200 with CORS headers |\n| Database connectivity | `kubectl logs api-deployment-xxxxx` | No connection errors |\n| Export job queue | Redis `LLEN celery` | ≤ 0 pending |\n| Error rate | Datadog dashboard | `< 0.1%` |\n| Response time p95 | Datadog dashboard | `< 200ms` |\n\n### Functional Verification (T+35 to T+50 minutes)\n\n1. **Test CSV export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/csv \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"filters\":{\"status\":[\"open\"]},\"columns\":[\"id\",\"title\"]}'\n   ```\n   - Expected: Returns `export_id` and `download_url`\n\n2. **Test JSON export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/json \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"format\":\"nested\",\"include_fields\":[\"id\",\"title\",\"comments\"]}'\n   ```\n   - Expected: Returns `export_id`, verify nested structure in downloaded file\n\n3. **Test export status endpoint**\n   ```bash\n   curl https://api.project-orion.com/exports/$EXPORT_ID \\\n     -H \"Authorization: Bearer $TEST_TOKEN\"\n   ```\n   - Expected: Returns status (`pending`, `processing`, or `ready`)\n\n4. **Test bulk operations**\n   ```bash\n   curl -X POST https://api.project-orion.com/tasks/bulk-update \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"task_ids\":[\"task_001\",\"task_002\"],\"status\":\"completed\"}'\n   ```\n   - Expected: Returns success count, verify tasks updated in database\n\n5. **Verify performance improvement**\n   ```bash\n   ./scripts/benchmark-task-query.sh --iterations=100\n   ```\n   - Expected: ≥30% improvement over baseline (pre-optimization)\n\n### 24-Hour Post-Deployment Checks\n\n- [ ] Review error logs for export-related exceptions\n- [ ] Verify S3 bucket lifecycle is deleting expired exports\n- [ ] Check Redis memory usage (target: < 2GB)\n- [ ] Monitor export job processing time (target: p95 < 60s)\n- [ ] Collect feedback from beta customers\n\n---\n\n## Contacts\n\n| Role | Contact | Escalation |\n|------|---------|------------|\n| Deployment Lead | Alex Zhang | +86-138-xxxx-xxxx |\n| Backend Lead | Bai | +86-139-xxxx-xxxx |\n| QA Lead | Dana | +86-137-xxxx-xxxx |\n| On-Call Engineer | TBD | PagerDuty |\n| Incident Commander | Alex Zhang | +86-138-xxxx-xxxx |\n\n---\n\n## Revision History\n\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| 1.0 | April 21, 2026 | Alex Zhang | Initial version for Sprint 10 deployment |\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773861788608
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "functionsfunctionsfunctionswrite9",
+        "content": [
+          {
+            "type": "text",
+            "text": "Tool functionsfunctionsfunctionswrite9 not found"
+          }
+        ],
+        "details": {},
+        "isError": true,
+        "timestamp": 1773861794281
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "functionsfunctionsfunctionswrite10",
+            "arguments": {
+              "file_path": "day27/20260421_data_export_deployment_runbook.md",
+              "content": "---\ncreated_at: 2026-04-21T15:22:00+08:00\nauthor: Alex Zhang\nstatus: draft\nplanned_deployment_date: 2026-04-30T22:00:00+08:00\n---\n\n# Data Export Service Deployment Runbook\n\n**Version:** 1.0  \n**Last Updated:** April 21, 2026  \n**Planned Deployment Date:** April 30, 2026 at 22:00 CST (UTC+8)\n\n---\n\n## Overview\n\nThis runbook covers the deployment of the new data export service features to production, including:\n- JSON and CSV export endpoints\n- Asynchronous export job processing\n- New database indexes for query optimization\n- Redis caching layer for performance improvement\n\n---\n\n## Prerequisites\n\n### Infrastructure Requirements\n- [ ] AWS ECS cluster capacity verified (min 4 tasks, max 10 tasks)\n- [ ] RDS PostgreSQL instance on version 14.x or higher\n- [ ] ElastiCache Redis cluster provisioned and accessible\n- [ ] S3 bucket `orion-exports-prod` created with lifecycle policy\n- [ ] Background job worker (Celery) deployed and running\n\n### Database Requirements\n- [ ] Migration scripts tested on staging environment\n- [ ] Index creation scripts reviewed and approved\n- [ ] Backup completed within 24 hours of deployment\n- [ ] Connection pool limits verified (current: 100, required: 150)\n\n### Configuration Requirements\n- [ ] Environment variables configured:\n  - `EXPORT_MAX_RECORDS=100000`\n  - `EXPORT_EXPIRY_HOURS=24`\n  - `REDIS_CACHE_TTL=300`\n  - `CELERY_WORKER_CONCURRENCY=4`\n- [ ] Feature flags created in LaunchDarkly:\n  - `export-service-enabled` (default: false)\n  - `bulk-operations-enabled` (default: false)\n\n### Access Requirements\n- [ ] Deployment engineer has AWS console access\n- [ ] Database credentials available in AWS Secrets Manager\n- [ ] Rollback credentials validated\n- [ ] On-call engineer notified and available\n\n---\n\n## Deployment Steps\n\n### Phase 1: Pre-Deployment (T-30 minutes)\n\n1. **Lock staging environment**\n   ```bash\n   ./scripts/lock-environment.sh staging\n   ```\n\n2. **Run final integration tests**\n   ```bash\n   pytest tests/integration/export/ -v --timeout=300\n   ```\n   - Expected: All tests pass (45 tests)\n   - Duration: ~10 minutes\n\n3. **Verify database migration checksums**\n   ```bash\n   alembic heads --verify-checksums\n   ```\n\n4. **Confirm backup completion**\n   ```bash\n   aws rds describe-db-snapshots --snapshot-type manual | grep \"ExportPreDeploy\"\n   ```\n\n### Phase 2: Database Migration (T-0 to T+10 minutes)\n\n1. **Put application in maintenance mode**\n   ```bash\n   kubectl apply -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Execute database migrations** (zero-downtime where possible)\n   ```bash\n   alembic upgrade head\n   ```\n   - Creates indexes: `idx_tasks_status_created`, `idx_tasks_assignee_status`\n   - Adds `exports` table for job tracking\n   - Duration: ~5 minutes\n\n3. **Verify migrations applied**\n   ```bash\n   alembic current\n   # Expected: head (revision abc123)\n   ```\n\n### Phase 3: Application Deployment (T+10 to T+20 minutes)\n\n1. **Deploy new API version (blue/green)**\n   ```bash\n   kubectl apply -f k8s/api-deployment-v2.4.0.yaml\n   kubectl rollout status deployment/api-deployment\n   ```\n   - Wait for all pods to be Ready (2/2)\n   - Duration: ~3 minutes\n\n2. **Deploy Celery workers**\n   ```bash\n   kubectl apply -f k8s/celery-worker-deployment.yaml\n   kubectl rollout status deployment/celery-worker\n   ```\n\n3. **Verify health checks**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   curl -f https://api.project-orion.com/health/ready\n   ```\n   - Expected: HTTP 200, `{\"status\":\"ok\"}`\n\n### Phase 4: Feature Activation (T+20 to T+25 minutes)\n\n1. **Remove maintenance mode**\n   ```bash\n   kubectl delete -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Enable feature flags (gradual rollout)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=10\n   ```\n\n3. **Monitor for 5 minutes**\n   - Check error rates: `< 0.1%`\n   - Check latency p95: `< 200ms`\n   - Check export job queue depth: `< 10`\n\n4. **Increase rollout to 100% (if metrics healthy)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=100\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=100\n   ```\n\n---\n\n## Rollback Procedure\n\n### Decision Triggers\nExecute rollback if ANY of the following occur:\n- Error rate exceeds 1% for 2 consecutive minutes\n- p99 latency exceeds 1 second for 5 consecutive minutes\n- Database connection pool exhaustion\n- Export job processing failure rate > 10%\n- Customer-reported critical issues\n\n### Rollback Steps (Target: < 5 minutes)\n\n1. **Immediate feature disable**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=0\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=0\n   ```\n\n2. **Revert application deployment**\n   ```bash\n   kubectl rollout undo deployment/api-deployment\n   kubectl rollout status deployment/api-deployment\n   ```\n\n3. **Revert Celery workers**\n   ```bash\n   kubectl rollout undo deployment/celery-worker\n   kubectl rollout status deployment/celery-worker\n   ```\n\n4. **Database rollback (if migration caused issues)**\n   ```bash\n   alembic downgrade -1\n   ```\n   ⚠️ **WARNING:** Downgrade causes brief service interruption (~30s)\n\n5. **Verify rollback completion**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   kubectl get pods | grep api-deployment\n   ```\n\n6. **Notify team**\n   ```bash\n   slack-notify \"@channel Rollback completed. Incident channel: #incident-2026-04-30\"\n   ```\n\n---\n\n## Post-Deployment Verification\n\n### Immediate Verification (T+25 to T+35 minutes)\n\n| Check | Command/Method | Expected Result |\n|-------|----------------|-----------------|\n| Health endpoint | `curl /health` | `{\"status\":\"ok\"}` |\n| Export endpoint exists | `curl /export/json` (OPTIONS) | HTTP 200 with CORS headers |\n| Database connectivity | `kubectl logs api-deployment-xxxxx` | No connection errors |\n| Export job queue | Redis `LLEN celery` | ≤ 0 pending |\n| Error rate | Datadog dashboard | `< 0.1%` |\n| Response time p95 | Datadog dashboard | `< 200ms` |\n\n### Functional Verification (T+35 to T+50 minutes)\n\n1. **Test CSV export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/csv \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"filters\":{\"status\":[\"open\"]},\"columns\":[\"id\",\"title\"]}'\n   ```\n   - Expected: Returns `export_id` and `download_url`\n\n2. **Test JSON export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/json \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"format\":\"nested\",\"include_fields\":[\"id\",\"title\",\"comments\"]}'\n   ```\n   - Expected: Returns `export_id`, verify nested structure in downloaded file\n\n3. **Test export status endpoint**\n   ```bash\n   curl https://api.project-orion.com/exports/$EXPORT_ID \\\n     -H \"Authorization: Bearer $TEST_TOKEN\"\n   ```\n   - Expected: Returns status (`pending`, `processing`, or `ready`)\n\n4. **Test bulk operations**\n   ```bash\n   curl -X POST https://api.project-orion.com/tasks/bulk-update \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"task_ids\":[\"task_001\",\"task_002\"],\"status\":\"completed\"}'\n   ```\n   - Expected: Returns success count, verify tasks updated in database\n\n5. **Verify performance improvement**\n   ```bash\n   ./scripts/benchmark-task-query.sh --iterations=100\n   ```\n   - Expected: ≥30% improvement over baseline (pre-optimization)\n\n### 24-Hour Post-Deployment Checks\n\n- [ ] Review error logs for export-related exceptions\n- [ ] Verify S3 bucket lifecycle is deleting expired exports\n- [ ] Check Redis memory usage (target: < 2GB)\n- [ ] Monitor export job processing time (target: p95 < 60s)\n- [ ] Collect feedback from beta customers\n\n---\n\n## Contacts\n\n| Role | Contact | Escalation |\n|------|---------|------------|\n| Deployment Lead | Alex Zhang | +86-138-xxxx-xxxx |\n| Backend Lead | Bai | +86-139-xxxx-xxxx |\n| QA Lead | Dana | +86-137-xxxx-xxxx |\n| On-Call Engineer | TBD | PagerDuty |\n| Incident Commander | Alex Zhang | +86-138-xxxx-xxxx |\n\n---\n\n## Revision History\n\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| 1.0 | April 21, 2026 | Alex Zhang | Initial version for Sprint 10 deployment |\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773861794283
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "functionsfunctionsfunctionswrite10",
+        "content": [
+          {
+            "type": "text",
+            "text": "Tool functionsfunctionsfunctionswrite10 not found"
+          }
+        ],
+        "details": {},
+        "isError": true,
+        "timestamp": 1773861799714
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "functionsfunctionswrite9",
+            "arguments": {
+              "file_path": "day27/20260421_data_export_deployment_runbook.md",
+              "content": "---\ncreated_at: 2026-04-21T15:22:00+08:00\nauthor: Alex Zhang\nstatus: draft\nplanned_deployment_date: 2026-04-30T22:00:00+08:00\n---\n\n# Data Export Service Deployment Runbook\n\n**Version:** 1.0  \n**Last Updated:** April 21, 2026  \n**Planned Deployment Date:** April 30, 2026 at 22:00 CST (UTC+8)\n\n---\n\n## Overview\n\nThis runbook covers the deployment of the new data export service features to production, including:\n- JSON and CSV export endpoints\n- Asynchronous export job processing\n- New database indexes for query optimization\n- Redis caching layer for performance improvement\n\n---\n\n## Prerequisites\n\n### Infrastructure Requirements\n- [ ] AWS ECS cluster capacity verified (min 4 tasks, max 10 tasks)\n- [ ] RDS PostgreSQL instance on version 14.x or higher\n- [ ] ElastiCache Redis cluster provisioned and accessible\n- [ ] S3 bucket `orion-exports-prod` created with lifecycle policy\n- [ ] Background job worker (Celery) deployed and running\n\n### Database Requirements\n- [ ] Migration scripts tested on staging environment\n- [ ] Index creation scripts reviewed and approved\n- [ ] Backup completed within 24 hours of deployment\n- [ ] Connection pool limits verified (current: 100, required: 150)\n\n### Configuration Requirements\n- [ ] Environment variables configured:\n  - `EXPORT_MAX_RECORDS=100000`\n  - `EXPORT_EXPIRY_HOURS=24`\n  - `REDIS_CACHE_TTL=300`\n  - `CELERY_WORKER_CONCURRENCY=4`\n- [ ] Feature flags created in LaunchDarkly:\n  - `export-service-enabled` (default: false)\n  - `bulk-operations-enabled` (default: false)\n\n### Access Requirements\n- [ ] Deployment engineer has AWS console access\n- [ ] Database credentials available in AWS Secrets Manager\n- [ ] Rollback credentials validated\n- [ ] On-call engineer notified and available\n\n---\n\n## Deployment Steps\n\n### Phase 1: Pre-Deployment (T-30 minutes)\n\n1. **Lock staging environment**\n   ```bash\n   ./scripts/lock-environment.sh staging\n   ```\n\n2. **Run final integration tests**\n   ```bash\n   pytest tests/integration/export/ -v --timeout=300\n   ```\n   - Expected: All tests pass (45 tests)\n   - Duration: ~10 minutes\n\n3. **Verify database migration checksums**\n   ```bash\n   alembic heads --verify-checksums\n   ```\n\n4. **Confirm backup completion**\n   ```bash\n   aws rds describe-db-snapshots --snapshot-type manual | grep \"ExportPreDeploy\"\n   ```\n\n### Phase 2: Database Migration (T-0 to T+10 minutes)\n\n1. **Put application in maintenance mode**\n   ```bash\n   kubectl apply -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Execute database migrations** (zero-downtime where possible)\n   ```bash\n   alembic upgrade head\n   ```\n   - Creates indexes: `idx_tasks_status_created`, `idx_tasks_assignee_status`\n   - Adds `exports` table for job tracking\n   - Duration: ~5 minutes\n\n3. **Verify migrations applied**\n   ```bash\n   alembic current\n   # Expected: head (revision abc123)\n   ```\n\n### Phase 3: Application Deployment (T+10 to T+20 minutes)\n\n1. **Deploy new API version (blue/green)**\n   ```bash\n   kubectl apply -f k8s/api-deployment-v2.4.0.yaml\n   kubectl rollout status deployment/api-deployment\n   ```\n   - Wait for all pods to be Ready (2/2)\n   - Duration: ~3 minutes\n\n2. **Deploy Celery workers**\n   ```bash\n   kubectl apply -f k8s/celery-worker-deployment.yaml\n   kubectl rollout status deployment/celery-worker\n   ```\n\n3. **Verify health checks**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   curl -f https://api.project-orion.com/health/ready\n   ```\n   - Expected: HTTP 200, `{\"status\":\"ok\"}`\n\n### Phase 4: Feature Activation (T+20 to T+25 minutes)\n\n1. **Remove maintenance mode**\n   ```bash\n   kubectl delete -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Enable feature flags (gradual rollout)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=10\n   ```\n\n3. **Monitor for 5 minutes**\n   - Check error rates: `< 0.1%`\n   - Check latency p95: `< 200ms`\n   - Check export job queue depth: `< 10`\n\n4. **Increase rollout to 100% (if metrics healthy)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=100\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=100\n   ```\n\n---\n\n## Rollback Procedure\n\n### Decision Triggers\nExecute rollback if ANY of the following occur:\n- Error rate exceeds 1% for 2 consecutive minutes\n- p99 latency exceeds 1 second for 5 consecutive minutes\n- Database connection pool exhaustion\n- Export job processing failure rate > 10%\n- Customer-reported critical issues\n\n### Rollback Steps (Target: < 5 minutes)\n\n1. **Immediate feature disable**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=0\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=0\n   ```\n\n2. **Revert application deployment**\n   ```bash\n   kubectl rollout undo deployment/api-deployment\n   kubectl rollout status deployment/api-deployment\n   ```\n\n3. **Revert Celery workers**\n   ```bash\n   kubectl rollout undo deployment/celery-worker\n   kubectl rollout status deployment/celery-worker\n   ```\n\n4. **Database rollback (if migration caused issues)**\n   ```bash\n   alembic downgrade -1\n   ```\n   ⚠️ **WARNING:** Downgrade causes brief service interruption (~30s)\n\n5. **Verify rollback completion**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   kubectl get pods | grep api-deployment\n   ```\n\n6. **Notify team**\n   ```bash\n   slack-notify \"@channel Rollback completed. Incident channel: #incident-2026-04-30\"\n   ```\n\n---\n\n## Post-Deployment Verification\n\n### Immediate Verification (T+25 to T+35 minutes)\n\n| Check | Command/Method | Expected Result |\n|-------|----------------|-----------------|\n| Health endpoint | `curl /health` | `{\"status\":\"ok\"}` |\n| Export endpoint exists | `curl /export/json` (OPTIONS) | HTTP 200 with CORS headers |\n| Database connectivity | `kubectl logs api-deployment-xxxxx` | No connection errors |\n| Export job queue | Redis `LLEN celery` | ≤ 0 pending |\n| Error rate | Datadog dashboard | `< 0.1%` |\n| Response time p95 | Datadog dashboard | `< 200ms` |\n\n### Functional Verification (T+35 to T+50 minutes)\n\n1. **Test CSV export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/csv \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"filters\":{\"status\":[\"open\"]},\"columns\":[\"id\",\"title\"]}'\n   ```\n   - Expected: Returns `export_id` and `download_url`\n\n2. **Test JSON export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/json \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"format\":\"nested\",\"include_fields\":[\"id\",\"title\",\"comments\"]}'\n   ```\n   - Expected: Returns `export_id`, verify nested structure in downloaded file\n\n3. **Test export status endpoint**\n   ```bash\n   curl https://api.project-orion.com/exports/$EXPORT_ID \\\n     -H \"Authorization: Bearer $TEST_TOKEN\"\n   ```\n   - Expected: Returns status (`pending`, `processing`, or `ready`)\n\n4. **Test bulk operations**\n   ```bash\n   curl -X POST https://api.project-orion.com/tasks/bulk-update \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"task_ids\":[\"task_001\",\"task_002\"],\"status\":\"completed\"}'\n   ```\n   - Expected: Returns success count, verify tasks updated in database\n\n5. **Verify performance improvement**\n   ```bash\n   ./scripts/benchmark-task-query.sh --iterations=100\n   ```\n   - Expected: ≥30% improvement over baseline (pre-optimization)\n\n### 24-Hour Post-Deployment Checks\n\n- [ ] Review error logs for export-related exceptions\n- [ ] Verify S3 bucket lifecycle is deleting expired exports\n- [ ] Check Redis memory usage (target: < 2GB)\n- [ ] Monitor export job processing time (target: p95 < 60s)\n- [ ] Collect feedback from beta customers\n\n---\n\n## Contacts\n\n| Role | Contact | Escalation |\n|------|---------|------------|\n| Deployment Lead | Alex Zhang | +86-138-xxxx-xxxx |\n| Backend Lead | Bai | +86-139-xxxx-xxxx |\n| QA Lead | Dana | +86-137-xxxx-xxxx |\n| On-Call Engineer | TBD | PagerDuty |\n| Incident Commander | Alex Zhang | +86-138-xxxx-xxxx |\n\n---\n\n## Revision History\n\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| 1.0 | April 21, 2026 | Alex Zhang | Initial version for Sprint 10 deployment |\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773861799717
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "functionsfunctionswrite9",
+        "content": [
+          {
+            "type": "text",
+            "text": "Tool functionsfunctionswrite9 not found"
+          }
+        ],
+        "details": {},
+        "isError": true,
+        "timestamp": 1773861808380
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "functions.write:19",
+            "name": "write",
+            "arguments": {
+              "file_path": "day27/20260421_data_export_deployment_runbook.md",
+              "content": "---\ncreated_at: 2026-04-21T15:22:00+08:00\nauthor: Alex Zhang\nstatus: draft\nplanned_deployment_date: 2026-04-30T22:00:00+08:00\n---\n\n# Data Export Service Deployment Runbook\n\n**Version:** 1.0  \n**Last Updated:** April 21, 2026  \n**Planned Deployment Date:** April 30, 2026 at 22:00 CST (UTC+8)\n\n---\n\n## Overview\n\nThis runbook covers the deployment of the new data export service features to production, including:\n- JSON and CSV export endpoints\n- Asynchronous export job processing\n- New database indexes for query optimization\n- Redis caching layer for performance improvement\n\n---\n\n## Prerequisites\n\n### Infrastructure Requirements\n- [ ] AWS ECS cluster capacity verified (min 4 tasks, max 10 tasks)\n- [ ] RDS PostgreSQL instance on version 14.x or higher\n- [ ] ElastiCache Redis cluster provisioned and accessible\n- [ ] S3 bucket `orion-exports-prod` created with lifecycle policy\n- [ ] Background job worker (Celery) deployed and running\n\n### Database Requirements\n- [ ] Migration scripts tested on staging environment\n- [ ] Index creation scripts reviewed and approved\n- [ ] Backup completed within 24 hours of deployment\n- [ ] Connection pool limits verified (current: 100, required: 150)\n\n### Configuration Requirements\n- [ ] Environment variables configured:\n  - `EXPORT_MAX_RECORDS=100000`\n  - `EXPORT_EXPIRY_HOURS=24`\n  - `REDIS_CACHE_TTL=300`\n  - `CELERY_WORKER_CONCURRENCY=4`\n- [ ] Feature flags created in LaunchDarkly:\n  - `export-service-enabled` (default: false)\n  - `bulk-operations-enabled` (default: false)\n\n### Access Requirements\n- [ ] Deployment engineer has AWS console access\n- [ ] Database credentials available in AWS Secrets Manager\n- [ ] Rollback credentials validated\n- [ ] On-call engineer notified and available\n\n---\n\n## Deployment Steps\n\n### Phase 1: Pre-Deployment (T-30 minutes)\n\n1. **Lock staging environment**\n   ```bash\n   ./scripts/lock-environment.sh staging\n   ```\n\n2. **Run final integration tests**\n   ```bash\n   pytest tests/integration/export/ -v --timeout=300\n   ```\n   - Expected: All tests pass (45 tests)\n   - Duration: ~10 minutes\n\n3. **Verify database migration checksums**\n   ```bash\n   alembic heads --verify-checksums\n   ```\n\n4. **Confirm backup completion**\n   ```bash\n   aws rds describe-db-snapshots --snapshot-type manual | grep \"ExportPreDeploy\"\n   ```\n\n### Phase 2: Database Migration (T-0 to T+10 minutes)\n\n1. **Put application in maintenance mode**\n   ```bash\n   kubectl apply -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Execute database migrations** (zero-downtime where possible)\n   ```bash\n   alembic upgrade head\n   ```\n   - Creates indexes: `idx_tasks_status_created`, `idx_tasks_assignee_status`\n   - Adds `exports` table for job tracking\n   - Duration: ~5 minutes\n\n3. **Verify migrations applied**\n   ```bash\n   alembic current\n   # Expected: head (revision abc123)\n   ```\n\n### Phase 3: Application Deployment (T+10 to T+20 minutes)\n\n1. **Deploy new API version (blue/green)**\n   ```bash\n   kubectl apply -f k8s/api-deployment-v2.4.0.yaml\n   kubectl rollout status deployment/api-deployment\n   ```\n   - Wait for all pods to be Ready (2/2)\n   - Duration: ~3 minutes\n\n2. **Deploy Celery workers**\n   ```bash\n   kubectl apply -f k8s/celery-worker-deployment.yaml\n   kubectl rollout status deployment/celery-worker\n   ```\n\n3. **Verify health checks**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   curl -f https://api.project-orion.com/health/ready\n   ```\n   - Expected: HTTP 200, `{\"status\":\"ok\"}`\n\n### Phase 4: Feature Activation (T+20 to T+25 minutes)\n\n1. **Remove maintenance mode**\n   ```bash\n   kubectl delete -f k8s/maintenance-mode-on.yaml\n   ```\n\n2. **Enable feature flags (gradual rollout)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=10\n   ```\n\n3. **Monitor for 5 minutes**\n   - Check error rates: `< 0.1%`\n   - Check latency p95: `< 200ms`\n   - Check export job queue depth: `< 10`\n\n4. **Increase rollout to 100% (if metrics healthy)**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=100\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=100\n   ```\n\n---\n\n## Rollback Procedure\n\n### Decision Triggers\nExecute rollback if ANY of the following occur:\n- Error rate exceeds 1% for 2 consecutive minutes\n- p99 latency exceeds 1 second for 5 consecutive minutes\n- Database connection pool exhaustion\n- Export job processing failure rate > 10%\n- Customer-reported critical issues\n\n### Rollback Steps (Target: < 5 minutes)\n\n1. **Immediate feature disable**\n   ```bash\n   launchdarkly-cli toggle export-service-enabled --percentage=0\n   launchdarkly-cli toggle bulk-operations-enabled --percentage=0\n   ```\n\n2. **Revert application deployment**\n   ```bash\n   kubectl rollout undo deployment/api-deployment\n   kubectl rollout status deployment/api-deployment\n   ```\n\n3. **Revert Celery workers**\n   ```bash\n   kubectl rollout undo deployment/celery-worker\n   kubectl rollout status deployment/celery-worker\n   ```\n\n4. **Database rollback (if migration caused issues)**\n   ```bash\n   alembic downgrade -1\n   ```\n   ⚠️ **WARNING:** Downgrade causes brief service interruption (~30s)\n\n5. **Verify rollback completion**\n   ```bash\n   curl -f https://api.project-orion.com/health\n   kubectl get pods | grep api-deployment\n   ```\n\n6. **Notify team**\n   ```bash\n   slack-notify \"@channel Rollback completed. Incident channel: #incident-2026-04-30\"\n   ```\n\n---\n\n## Post-Deployment Verification\n\n### Immediate Verification (T+25 to T+35 minutes)\n\n| Check | Command/Method | Expected Result |\n|-------|----------------|-----------------|\n| Health endpoint | `curl /health` | `{\"status\":\"ok\"}` |\n| Export endpoint exists | `curl /export/json` (OPTIONS) | HTTP 200 with CORS headers |\n| Database connectivity | `kubectl logs api-deployment-xxxxx` | No connection errors |\n| Export job queue | Redis `LLEN celery` | ≤ 0 pending |\n| Error rate | Datadog dashboard | `< 0.1%` |\n| Response time p95 | Datadog dashboard | `< 200ms` |\n\n### Functional Verification (T+35 to T+50 minutes)\n\n1. **Test CSV export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/csv \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"filters\":{\"status\":[\"open\"]},\"columns\":[\"id\",\"title\"]}'\n   ```\n   - Expected: Returns `export_id` and `download_url`\n\n2. **Test JSON export**\n   ```bash\n   curl -X POST https://api.project-orion.com/export/json \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"format\":\"nested\",\"include_fields\":[\"id\",\"title\",\"comments\"]}'\n   ```\n   - Expected: Returns `export_id`, verify nested structure in downloaded file\n\n3. **Test export status endpoint**\n   ```bash\n   curl https://api.project-orion.com/exports/$EXPORT_ID \\\n     -H \"Authorization: Bearer $TEST_TOKEN\"\n   ```\n   - Expected: Returns status (`pending`, `processing`, or `ready`)\n\n4. **Test bulk operations**\n   ```bash\n   curl -X POST https://api.project-orion.com/tasks/bulk-update \\\n     -H \"Authorization: Bearer $TEST_TOKEN\" \\\n     -d '{\"task_ids\":[\"task_001\",\"task_002\"],\"status\":\"completed\"}'\n   ```\n   - Expected: Returns success count, verify tasks updated in database\n\n5. **Verify performance improvement**\n   ```bash\n   ./scripts/benchmark-task-query.sh --iterations=100\n   ```\n   - Expected: ≥30% improvement over baseline (pre-optimization)\n\n### 24-Hour Post-Deployment Checks\n\n- [ ] Review error logs for export-related exceptions\n- [ ] Verify S3 bucket lifecycle is deleting expired exports\n- [ ] Check Redis memory usage (target: < 2GB)\n- [ ] Monitor export job processing time (target: p95 < 60s)\n- [ ] Collect feedback from beta customers\n\n---\n\n## Contacts\n\n| Role | Contact | Escalation |\n|------|---------|------------|\n| Deployment Lead | Alex Zhang | +86-138-xxxx-xxxx |\n| Backend Lead | Bai | +86-139-xxxx-xxxx |\n| QA Lead | Dana | +86-137-xxxx-xxxx |\n| On-Call Engineer | TBD | PagerDuty |\n| Incident Commander | Alex Zhang | +86-138-xxxx-xxxx |\n\n---\n\n## Revision History\n\n| Version | Date | Author | Changes |\n|---------|------|--------|---------|\n| 1.0 | April 21, 2026 | Alex Zhang | Initial version for Sprint 10 deployment |\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773861808384
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "functions.write:19",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 8088 bytes to day27/20260421_data_export_deployment_runbook.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773861813614
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Now let me append to done.log:"
+          },
+          {
+            "type": "toolCall",
+            "id": "call_kimi_0",
+            "name": "exec",
+            "arguments": {
+              "command": "echo \"[DONE] 2026-04-21T15:22:00+08:00 | data_export_deployment_runbook | Created deployment runbook for data export features with YAML frontmatter\" >> day27/done.log"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773861813616
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_kimi_0",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "(no output)"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 9,
+          "aggregated": "",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day27_11f150ac"
+        },
+        "isError": false,
+        "timestamp": 1773861815422
+      },
+      {
+        "role": "assistant",
+        "content": [],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "Kimi-K2.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773861815425
+      }
+    ]
+  },
+  "answer": "I'll create the deployment runbook with proper YAML frontmatter and all required sections.\nNow let me append to done.log:\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  }
+}

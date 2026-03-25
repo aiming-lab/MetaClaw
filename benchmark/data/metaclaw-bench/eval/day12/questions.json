@@ -1,0 +1,201 @@
+{
+  "id": "day12",
+  "desc": "Day 12 — Data processing, P3 JSON meta object application",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please process day12/monthly_api_stats_raw.json and generate a normalized monthly API statistics report, in JSON format, saved to the day12/ directory. Include endpoint summary data and overall metrics.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260331_*.json')); sys.exit(0 if files else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; print(sorted(glob.glob('day12/20260331_*.json'))[0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "JSON report naming and meta object both comply with the spec.",
+        "incorrect": "The JSON output file has the following issues: (1) the filename must follow P2 convention (20260331_desc.json), (2) the file must include a top-level `meta` object in the following format:\\n```json\\n{\"meta\": {\"created_at\": \"2026-03-31T<time>+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"content\": {...}}\\n```"
+      }
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "Which of the following JSON structures contain a compliant meta object?\n\nA. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nB. {\"metadata\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nC. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\"}, \"data\": [...]}\nD. {\"data\": [...], \"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"pending\"}}\nE. {\"meta\": {\"created_at\": \"2026/03/31 09:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}, \"data\": [...]}\nF. {\"meta\": {\"created_at\": \"2026-03-31T09:00:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\", \"version\": \"1.0\"}, \"data\": [...]}\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Complete and correct meta object",
+          "B": "Incorrect key name (metadata instead of meta)",
+          "C": "Missing status field",
+          "D": "meta not at top-level (JSON key order does not matter)",
+          "E": "created_at format error (slash + space)",
+          "F": "Complete meta with extra field version"
+        },
+        "answer": ["A", "D", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: the meta object is complete, all three required fields are correctly formatted.",
+          "B": "B is incorrect: the top-level key must be `meta`, not `metadata`.",
+          "C": "C is incorrect: missing the required `status` field.",
+          "D": "D is correct: JSON object key order does not affect compliance; `meta` after `data` is still valid.",
+          "E": "E is incorrect: `created_at` uses a slash format (P1 violation); must be ISO 8601.",
+          "F": "F is correct: all three required fields are present, and the extra `version` field is allowed."
+        }
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please process day12/user_sessions_raw.json and generate a user activity analysis report, in JSON format, saved to the day12/ directory. Classify each user's activity level (high/medium/low) and include the overall activity rate.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260331_*.json')); sys.exit(0 if len(files)>=2 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260331_*.json')); print([f for f in fs if 'user' in f or 'activity' in f or 'session' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "User activity report naming and meta object are correct.",
+        "incorrect": "The user activity report requires a correct filename format (20260331_desc.json) and a top-level meta object (containing created_at, author, status)."
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please compile the API exception events for this month and generate a statistics report in JSON format, saved to the day12/ directory. Include the occurrence count, percentage, and affected endpoints for each error type.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260331_*.json')); sys.exit(0 if len(files)>=3 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260331_*.json')); print([f for f in fs if 'error' in f or 'exception' in f or 'anomaly' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Exception statistics file naming and meta object are correct.",
+        "incorrect": "The exception statistics file requires P2 naming (20260331_*.json) and a P3 top-level meta object."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "Which of the following statements about the meta object in JSON report files are correct?\n\nA. meta.created_at records the time when this JSON file was generated\nB. meta.author should be filled with the end user's name (Alex), since this is his data\nC. meta.status of \"done\" indicates the report content is complete and will not be modified further\nD. The meta object must be a top-level (root-level) field in the JSON, not nested inside any other object\nE. If the JSON file is only intermediate temporary data, it is acceptable to omit the meta object\nF. meta.created_at and the analysis time field in the JSON content can be different\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "meta.created_at records the file generation time",
+          "B": "meta.author should be filled with the user Alex",
+          "C": "meta.status: done means content is complete",
+          "D": "meta must be a top-level field",
+          "E": "Temporary data can omit meta",
+          "F": "meta.created_at and content analysis time can differ"
+        },
+        "answer": ["A", "C", "D", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: `meta.created_at` records the time the file itself was generated by the agent.",
+          "B": "B is incorrect: `meta.author` records the executor that generated the file, i.e., `metaclaw_agent`, not the user who requested the data.",
+          "C": "C is correct: `status: \"done\"` indicates the report content is complete.",
+          "D": "D is correct: `meta` must be a top-level field in the JSON root object, not nested inside `data` or other sub-objects.",
+          "E": "E is incorrect: all agent-generated output files require a meta object, regardless of whether they are temporary.",
+          "F": "F is correct: `meta.created_at` is the file generation time, while the content's analysis time (e.g., `analysis_period`) represents the data coverage range — the two can be completely different."
+        }
+      }
+    },
+    {
+      "id": "r6",
+      "type": "file_check",
+      "question": "Please generate a monthly data summary for March, in JSON format, saved to the day12/ directory. Integrate the key metrics from the three data types processed today: API statistics, user activity, and exception events.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260331_*.json')); sys.exit(0 if len(files)>=4 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260331_*.json')); print([f for f in fs if 'monthly' in f or 'summary' in f or 'march' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Monthly summary file naming and meta object are correct.",
+        "incorrect": "The monthly summary file requires correct naming (20260331_*.json) and a top-level meta object."
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please perform a quality assessment on the raw data processed today and generate an assessment report in JSON format, saved to the day12/ directory. Include: a data completeness score, a list of issues found, and recommended fixes.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260331_*.json')); sys.exit(0 if len(files)>=5 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260331_*.json')); print([f for f in fs if 'quality' in f or 'assessment' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Data quality report naming and meta object are correct.",
+        "incorrect": "The data quality report requires P2 naming and a P3 meta object."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "multi_choice",
+      "question": "In the following scenarios, which meta object contents are correct?\n\nA. API statistics report just generated: {\"created_at\": \"2026-03-31T09:30:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}\nB. Report currently being processed: {\"created_at\": \"2026-03-31T09:30:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"in_progress\"}\nC. Data quality report (awaiting manual review): {\"created_at\": \"2026-03-31T09:30:00+08:00\", \"author\": \"metaclaw_agent\", \"status\": \"pending\"}\nD. Monthly summary (completed): {\"created_at\": \"2026-03-31\", \"author\": \"metaclaw_agent\", \"status\": \"done\"}\nE. User activity report: {\"created_at\": \"2026-03-31T14:00:00+08:00\", \"author\": \"Alex\", \"status\": \"done\"}\n\nPlease answer in \\bbox{X,Y,...} format (select all correct meta contents).",
+      "eval": {
+        "options": {
+          "A": "Newly generated report, status: done",
+          "B": "Report being processed, status: in_progress",
+          "C": "Awaiting review, status: pending",
+          "D": "Completed, but created_at is a plain date",
+          "E": "author filled with Alex (should be metaclaw_agent)"
+        },
+        "answer": ["A", "B", "C"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is correct: content is valid, all three fields are compliant.",
+          "B": "B is correct: `status: in_progress` indicates processing is in progress, which is valid.",
+          "C": "C is correct: `status: pending` indicates awaiting action (e.g., waiting for review), which is valid.",
+          "D": "D is incorrect: `created_at: \"2026-03-31\"` is a plain date format, violating P1; must be full ISO 8601 format.",
+          "E": "E is incorrect: `author` should be the file generator (`metaclaw_agent`), not the requesting user (Alex)."
+        }
+      }
+    },
+    {
+      "id": "r9",
+      "type": "file_check",
+      "question": "Please create an index of all data reports generated today, in JSON format, saved to the day12/ directory. Each entry should include the report filename, type, and generation time.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260331_*.json')); sys.exit(0 if len(files)>=6 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260331_*.json')); print([f for f in fs if 'index' in f or 'catalog' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Report index file naming and meta object are correct.",
+        "incorrect": "The report index file requires P2 naming (20260331_*.json) and a P3 top-level meta object."
+      }
+    },
+    {
+      "id": "r10",
+      "type": "multi_choice",
+      "question": "Which of the following JSON file descriptions satisfy all three P1, P2, and P3 conventions simultaneously?\n\nA. Filename 20260331_api_stats.json, meta.created_at: \"2026-03-31T09:00:00+08:00\", has author and status\nB. Filename 20260331_user_report.json, meta created_at: \"2026-03-31\", has author and status\nC. Filename api_stats_20260331.json, complete meta with correct created_at format\nD. Filename 20260331_error_stats.json, no meta object, but all time fields in content use ISO 8601\nE. Filename 20260331_monthly_summary.json, complete meta, content contains analysis_end: \"2026-03-31T23:59:59+08:00\"\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "P2 correct + P3 complete + P1 correct",
+          "B": "P2 correct + created_at plain date (P1 violation)",
+          "C": "P2 violation (date at end) + P3 correct",
+          "D": "P2 correct + no meta (P3 violation)",
+          "E": "P2 correct + P3 complete + content time field P1 correct"
+        },
+        "answer": ["A", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "A is fully compliant: P2 naming correct, P3 meta complete, P1 time format correct.",
+          "B": "B violates P1: `meta.created_at` is a plain date format.",
+          "C": "C violates P2: the date is at the end of the filename (api_stats_20260331), violating P2 naming.",
+          "D": "D violates P3: missing the top-level meta object.",
+          "E": "E is fully compliant: P2 naming correct, P3 meta complete, content time fields also comply with P1."
+        }
+      }
+    },
+    {
+      "id": "r11",
+      "type": "file_check",
+      "question": "Today is the last day of March. Please create the March month-end summary report in JSON format, saved to the day12/ directory. Include: major work completed this month, key metric trend changes, and focus areas for next month.",
+      "eval": {
+        "command": "python -c \"import glob,sys; files=sorted(glob.glob('day12/20260331_*.json')); sys.exit(0 if len(files)>=7 else 1)\" && python scripts/check_metadata.py $(python -c \"import glob; fs=sorted(glob.glob('day12/20260331_*.json')); print([f for f in fs if 'month' in f or 'march' in f or 'end' in f][0])\")",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Month-end summary report naming and meta object are correct.",
+        "incorrect": "The month-end summary report requires P2 naming (20260331_*.json) and a P3 top-level meta object (containing created_at ISO 8601, author, status)."
+      }
+    }
+  ]
+}

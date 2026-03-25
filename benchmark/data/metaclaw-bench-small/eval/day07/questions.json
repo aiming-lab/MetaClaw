@@ -1,0 +1,109 @@
+{
+  "id": "day07",
+  "desc": "Day 07 — P4 first encounter — modify vs create boundary",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day07/api_docs.md to add documentation for the new /projects endpoint in v2.3.0, including request format, response examples, and error codes.",
+      "feedback": {
+        "correct": "Backup api_docs.md.bak was correctly created before modifying the file.",
+        "incorrect": "Before modifying day07/api_docs.md, you must first back it up as day07/api_docs.md.bak. Our operational standard requires creating a .bak copy before modifying any existing file, so the original content can be restored if needed."
+      },
+      "eval": {
+        "command": "python scripts/check_backup.py day07/api_docs.md",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r2",
+      "type": "multi_choice",
+      "question": "Which of the following statements about the \"backup before modifying\" rule are correct?\n\nA. A .bak backup is only required when modifying existing files\nB. A .bak backup is also required when creating new files\nC. The backup file should be named <original_filename>.bak, saved in the same directory\nD. The .bak file should contain the original content before modification, not after\nE. If the same file is modified twice, two .bak files are needed (.bak1 and .bak2)\nF. Overwriting the .bak file (keeping only the most recent backup) is acceptable\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — P4 only triggers when modifying existing files, not when creating new ones.",
+          "B": "Incorrect — New files have no original content to back up.",
+          "C": "Correct — The backup must be named `<original_filename>.bak` in the same directory.",
+          "D": "Correct — The .bak must be created before modification, containing the original content.",
+          "E": "Incorrect — Only the most recent .bak is required; overwrite on each subsequent modification.",
+          "F": "Correct — Overwriting the previous .bak on repeated modifications is the correct approach."
+        }
+      },
+      "eval": {
+        "options": {
+          "A": "Only required when modifying existing files",
+          "B": "Also required for new files",
+          "C": "Named <original>.bak in same directory",
+          "D": ".bak contains pre-modification content",
+          "E": "Two modifications require .bak1 and .bak2",
+          "F": "Overwriting .bak keeping latest is acceptable"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "F"
+        ]
+      }
+    },
+    {
+      "id": "r3",
+      "type": "file_check",
+      "question": "Please create a new API integration test document in Markdown format under the day07/ directory. The content should include test environment setup, test case list, and expected results.",
+      "feedback": {
+        "correct": "New document naming follows P2 convention correctly.",
+        "incorrect": "The new document must follow P2 naming convention (20260406_*.md). Note that this is a new file — no .bak required."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext md",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Based on the updated day07/api_docs.md, please create a supplementary onboarding document (do not modify the original onboarding file — create a new supplement) under day07/. Include the new features of v2.3.0.",
+      "feedback": {
+        "correct": "Onboarding supplement document naming follows P2 convention.",
+        "incorrect": "The supplement document must follow P2 naming convention (20260406_*.md), e.g. `20260406_onboarding_v230_supplement.md`."
+      },
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day07/ --ext md --min-count 2",
+        "expect_exit": 0
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "When modifying an existing file, how do P3 (metadata) and P4 (backup) rules work together?\n\nA. Create .bak backup first (P4), then update meta.created_at after modification (P3)\nB. .bak backup is a P4 requirement, metadata update is P3 requirement — they are independent\nC. If the existing file has no meta object (P3 non-compliant), add the meta object when modifying\nD. After modification, meta.status should be updated to \"done\" (if the change is complete)\nE. .bak files do not need to satisfy P3 (backup files are not agent output files)\nF. If the .bak file itself is modified, a .bak.bak must also be created\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Create .bak first, then update meta.created_at",
+          "B": "P3 and P4 are independent requirements",
+          "C": "Add missing meta object when modifying",
+          "D": "Update meta.status to done after modification",
+          "E": ".bak files don't need P3 compliance",
+          "F": "Modifying .bak requires .bak.bak"
+        },
+        "answer": [
+          "B",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Partially correct but inaccurate — after modification, update meta.status not meta.created_at (created_at records when the file was first created).",
+          "B": "Correct — P3 and P4 are independent: P4 governs backup timing, P3 governs metadata content.",
+          "C": "Correct — when modifying a file that lacks a meta object, add one to bring it into P3 compliance.",
+          "D": "Correct — after completing modification, update meta.status to reflect the current state (e.g., \"done\").",
+          "E": "Correct — .bak files are original-content backups, not agent output files; they are exempt from P3.",
+          "F": "Incorrect — .bak files should be treated as read-only historical backups, not modified."
+        }
+      }
+    }
+  ]
+}

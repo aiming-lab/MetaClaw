@@ -1,0 +1,197 @@
+{
+  "id": "day19",
+  "desc": "Day 19 — Project management, P1+P2+P4 combined validation",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day19/q2_project_plan.json: correct milestone 4's target_date from its current incorrect value to June 15, 2026 at 18:00 CST.",
+      "eval": {
+        "command": "python scripts/check_backup.py day19/q2_project_plan.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "q2_project_plan.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day19/q2_project_plan.json, you must first create a .bak backup (P4). Also, the corrected target_date must use ISO 8601 format: `2026-06-15T18:00:00+08:00` (P1)."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please update day19/risk_matrix.json: change risk-003's status to \"mitigated\" and update the last_reviewed field to the current time.",
+      "eval": {
+        "command": "python scripts/check_backup.py day19/risk_matrix.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "risk_matrix.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day19/risk_matrix.json, you must first create a .bak backup (P4). The updated last_reviewed must use ISO 8601 format (P1), e.g. `2026-04-09T10:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "When updating an existing JSON file, which of the following operation orders and rules are correct?\n\nA. Create .bak backup first, then modify the file content (including fixing timestamp fields to ISO 8601)\nB. Fix timestamp fields to ISO 8601 first, then create .bak backup\nC. P1 (timestamp format) and P4 (backup) are independent requirements; their order doesn't affect the final result\nD. The .bak file may retain the original incorrect timestamp format (because it's a copy of the original file)\nE. The modified file must satisfy P1 (ISO 8601 timestamps); the .bak preserves the original state\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "Backup first, then modify (including fixing timestamps)",
+          "B": "Fix timestamps first, then backup",
+          "C": "P1 and P4 are independent; order doesn't matter",
+          "D": ".bak may retain original incorrect timestamp format",
+          "E": "Modified file satisfies P1; .bak preserves original state"
+        },
+        "answer": ["A", "D", "E"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — the right order is: backup first (preserving original state), then modify (bringing file into P1 compliance).",
+          "B": "Incorrect — modifying before backing up means .bak captures the modified version, violating P4.",
+          "C": "Partially correct but misleading — while P1 and P4 are independent rules, the backup order matters critically (must be before modification). Saying \"order doesn't affect the result\" is wrong.",
+          "D": "Correct — .bak is an exact copy of the original file; if the original had incorrect timestamp formats, .bak preserves those incorrect formats. This is correct — .bak's purpose is to save the original state.",
+          "E": "Correct — the modified (output) file must satisfy P1; the .bak retains the original state (including any non-P1-compliant values)."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please update day19/sprint8_board.json: change task T-405 and T-406 status to \"done\", and add completed_at fields (T-405 completed at 11:00 AM today, T-406 completed at 2:30 PM today).",
+      "eval": {
+        "command": "python scripts/check_backup.py day19/sprint8_board.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "sprint8_board.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day19/sprint8_board.json, you must first create a .bak backup (P4). The completed_at fields must use ISO 8601 format (P1): T-405: `2026-04-09T11:00:00+08:00`, T-406: `2026-04-09T14:30:00+08:00`."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "file_check",
+      "question": "Please create this week's (April 6–10) progress report in JSON format, saved to the day19/ directory (create a new file). Include report_generated_at (current time), sprint_week (Sprint 9 Week 1), completed_tasks, in_progress_tasks, and blocked_tasks fields.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day19/ --ext json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Progress report file naming follows P2 convention correctly.",
+        "incorrect": "The progress report must follow P2 naming convention (20260409_*.json), e.g. `20260409_sprint9_week1_progress.json`. This is a new file — no .bak required."
+      }
+    },
+    {
+      "id": "r6",
+      "type": "multi_choice",
+      "question": "Today we need to modify the existing risk_matrix.json and create a new progress report file. Which of the following statements are correct?\n\nA. risk_matrix.json must have risk_matrix.json.bak created before modification\nB. The new progress report file must start with YYYYMMDD_ (P2) and does not need .bak (P4 not applicable)\nC. The modified risk_matrix.json does not need to follow P2 (it's not a new file; its filename already exists)\nD. If the new progress report file needs to be modified again the same day, a .bak must be created before that modification\nE. risk_matrix.json.bak does not need to follow P2 naming convention\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "risk_matrix.json requires .bak before modification",
+          "B": "New progress report: P2 naming required, no P4 backup needed",
+          "C": "Existing file modification not subject to P2 naming",
+          "D": "New file modified same day later requires .bak",
+          "E": ".bak file doesn't need P2 naming"
+        },
+        "answer": ["A", "B", "C", "D", "E"]
+      },
+      "feedback": {
+        "correct": "All correct!",
+        "options": {
+          "A": "Correct — modifying an existing file requires .bak (P4).",
+          "B": "Correct — new files need P2 naming, but don't trigger P4 (no original content to backup).",
+          "C": "Correct — P2 applies to the naming of agent-generated files; an existing file's name is not subject to P2 (since it already exists and wasn't named by the agent now).",
+          "D": "Correct — once a newly created file is later modified (even on the same day), it becomes an \"existing file\" and requires .bak before that modification.",
+          "E": "Correct — .bak files are derivative copies of the original, not agent output files; they are exempt from P2 naming rules."
+        }
+      }
+    },
+    {
+      "id": "r7",
+      "type": "file_check",
+      "question": "Please create a milestone completion confirmation record in JSON format, saved to the day19/ directory (create a new file). Record milestones completed this week: completion time, acceptance result, and owner sign-off (use a string to simulate).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day19/ --ext json --min-count 2",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "Milestone confirmation record naming follows P2 convention correctly.",
+        "incorrect": "The file must follow P2 naming convention (20260409_*.json), e.g. `20260409_milestone_completion_record.json`."
+      }
+    },
+    {
+      "id": "r8",
+      "type": "file_check",
+      "question": "There is a pre-existing resource_allocation.json file in day19/. Please update it to allocate resources for a new task T-410 next week: assignee \"Bai\", estimated_hours 8, and set the allocated_at field to today at 3:00 PM.",
+      "eval": {
+        "command": "python scripts/check_backup.py day19/resource_allocation.json",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "resource_allocation.json.bak was correctly created before modification.",
+        "incorrect": "Before modifying day19/resource_allocation.json, you must first create a .bak backup (P4). The allocated_at field must use ISO 8601 format (P1): `2026-04-09T15:00:00+08:00`."
+      }
+    },
+    {
+      "id": "r9",
+      "type": "multi_choice",
+      "question": "The following are records of today's operations. Which ones are fully compliant (P1 + P2 + P4 all satisfied)?\n\nA. When modifying sprint8_board.json, created sprint8_board.json.bak first; the modified completed_at value is \"2026-04-09T11:00:00+08:00\"\nB. Created a new progress report file named progress_report_20260409.json (no .bak, since it's a new file)\nC. When modifying risk_matrix.json, created .bak first; the modified last_reviewed value is \"2026-04-09\" (plain date)\nD. Created a new milestone record file named 20260409_milestone_record.json; it contains achieved_at: \"2026-04-09T10:00:00+08:00\"\n\nPlease answer in \\bbox{X,Y,...} format (select fully compliant operations).",
+      "eval": {
+        "options": {
+          "A": "Correct backup + ISO 8601 timestamp (compliant)",
+          "B": "New file, naming non-compliant (date at end)",
+          "C": "Correct backup + plain date timestamp (P1 violation)",
+          "D": "New file, correct naming + ISO 8601 timestamp (compliant)"
+        },
+        "answer": ["A", "D"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Fully compliant — backup (P4) is correct, timestamp format (P1) is correct.",
+          "B": "P2 violation — the new file's name has the date at the end (progress_report_20260409.json), violating P2 naming convention (date must come first).",
+          "C": "P1 violation — `last_reviewed: \"2026-04-09\"` is a plain date, violating P1 (must be full ISO 8601 format with time and timezone).",
+          "D": "Fully compliant — new file (P4 not applicable), P2 naming is correct, P1 timestamp is correct."
+        }
+      }
+    },
+    {
+      "id": "r10",
+      "type": "file_check",
+      "question": "Please create a daily wrap-up summary of project management work this week (April 6–9) in Markdown format, saved to the day19/ directory. Include: completed PM tasks, list of updated files, and next week's priorities.",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day19/ --ext md",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "PM work summary file naming follows P2 convention correctly.",
+        "incorrect": "The file must follow P2 naming convention (20260409_*.md), e.g. `20260409_pm_weekly_summary.md`."
+      }
+    },
+    {
+      "id": "r11",
+      "type": "multi_choice",
+      "question": "In today's PM work, P1, P2, and P4 were all involved. Which of the following statements correctly summarize the relationship and application of these three rules?\n\nA. P1 constrains file content (timestamp format); P2 constrains file names; P4 constrains operational behavior (backup timing)\nB. The three rules can all be violated or all satisfied independently — there is no dependency between them\nC. When modifying an existing file, P4 (backup) is the prerequisite step, before P1 (timestamp format) modifications can begin\nD. When creating a new file, P2 (naming) and P1 (timestamp content) both apply; P4 does not\nE. .bak files are not subject to P1 constraints (timestamp format), since they are original backups, not agent output\nF. All three rules are mandatory requirements with no priority order — all must be satisfied simultaneously\n\nPlease answer in \\bbox{X,Y,...} format.",
+      "eval": {
+        "options": {
+          "A": "P1 constrains content, P2 constrains names, P4 constrains behavior",
+          "B": "Three rules are fully independent with no dependencies",
+          "C": "When modifying, P4 (backup) is the prerequisite before P1 changes",
+          "D": "New file: P2+P1 apply, P4 does not",
+          "E": ".bak not subject to P1 constraints",
+          "F": "All three rules are mandatory"
+        },
+        "answer": ["A", "C", "D", "E", "F"]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Correct — accurately describes the different dimensions each rule governs.",
+          "B": "Incorrect — while P1 and P2 are independent in dimension, P4 has an operational ordering dependency (must backup before modifying), so saying \"no dependencies\" is wrong.",
+          "C": "Correct — when modifying an existing file, P4 (create .bak) must be the very first step, before beginning any P1 timestamp format corrections.",
+          "D": "Correct — when creating new files, P2 (naming) and P1 (content) both apply, but P4 is not triggered (no original file to backup).",
+          "E": "Correct — .bak files are original backups, not agent-generated output; they are not subject to P1 constraints and preserve the original state (including any non-compliant timestamp formats).",
+          "F": "Correct — all three rules are mandatory with no exemptions; they must all be satisfied simultaneously."
+        }
+      }
+    }
+  ]
+}

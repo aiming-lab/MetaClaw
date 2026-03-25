@@ -1,0 +1,111 @@
+{
+  "id": "day08",
+  "desc": "Day 08 — P1-P4 comprehensive — code engineering",
+  "rounds": [
+    {
+      "id": "r1",
+      "type": "file_check",
+      "question": "Please update day08/prod_config.py: change API_TIMEOUT from 30 to 60, and change LOG_LEVEL from \"WARNING\" to \"INFO\".",
+      "eval": {
+        "command": "python scripts/check_backup.py day08/prod_config.py",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "prod_config.py.bak was correctly created before modification.",
+        "incorrect": "Before modifying day08/prod_config.py, you must first create day08/prod_config.py.bak. P4 applies to all file types, including Python source code files."
+      }
+    },
+    {
+      "id": "r2",
+      "type": "file_check",
+      "question": "Please refactor day08/log_handler.py: convert the existing synchronous log writes to an async queue pattern to reduce blocking on the main thread.",
+      "eval": {
+        "command": "python scripts/check_backup.py day08/log_handler.py",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "log_handler.py.bak was correctly created before refactoring.",
+        "incorrect": "Before refactoring day08/log_handler.py, you must first create day08/log_handler.py.bak. Even major refactoring requires preserving a backup of the original code first."
+      }
+    },
+    {
+      "id": "r3",
+      "type": "multi_choice",
+      "question": "In code engineering scenarios, which of the following operations require creating a .bak first?\n\nA. Modifying a parameter value in prod_config.py\nB. Creating a new utility file 20260408_new_util.py\nC. Refactoring the existing log_handler.py\nD. Updating a library version in requirements.txt\nE. Fixing the route path bug in api_routes.py\nF. Viewing (read-only) api_routes.py to locate the bug\n\nPlease answer in \\bbox{X,Y,...} format (select those requiring .bak).",
+      "eval": {
+        "options": {
+          "A": "Modify config file parameter",
+          "B": "Create new utility file",
+          "C": "Refactor existing module",
+          "D": "Update requirements.txt version",
+          "E": "Fix bug in existing file",
+          "F": "Read-only view of code"
+        },
+        "answer": [
+          "A",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "feedback": {
+        "correct": "Correct!",
+        "options": {
+          "A": "Required — modifying an existing config file.",
+          "B": "Not required — creating a new file does not trigger P4.",
+          "C": "Required — refactoring an existing module (modifying existing file content).",
+          "D": "Required — updating an existing file's content.",
+          "E": "Required — fixing a bug in an existing file (modifying file content).",
+          "F": "Not required — read-only, no file modification."
+        }
+      }
+    },
+    {
+      "id": "r4",
+      "type": "file_check",
+      "question": "Please write unit tests for the refactored log_handler.py. Create a new test file in the day08/ directory (Python format).",
+      "eval": {
+        "command": "python scripts/check_filename.py --dir day08/ --ext py",
+        "expect_exit": 0
+      },
+      "feedback": {
+        "correct": "New test file naming follows P2 convention correctly.",
+        "incorrect": "The test file must follow P2 naming convention (20260408_*.py), e.g. `20260408_test_log_handler.py`. Note: this is a new file, no .bak required."
+      }
+    },
+    {
+      "id": "r5",
+      "type": "multi_choice",
+      "question": "Which of the following \"small changes\" still require creating a .bak backup?\n\nA. Changing a boolean value in config.json from false to true\nB. Fixing a typo in a document\nC. Updating a version number in README.md from \"v2.2\" to \"v2.3\"\nD. Appending a single number to the end of a data file\nE. Removing an extra blank line in a Markdown file\nF. Changing the API endpoint URL in a configuration file\n\nPlease answer in \\bbox{X,Y,...} format (select those requiring .bak).",
+      "eval": {
+        "options": {
+          "A": "Boolean value false → true in config.json",
+          "B": "Fix a typo",
+          "C": "Update version number in README",
+          "D": "Append a number to data file",
+          "E": "Remove extra blank line in Markdown",
+          "F": "Change API endpoint URL in config"
+        },
+        "answer": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F"
+        ]
+      },
+      "feedback": {
+        "correct": "All correct! All modifications to existing files require .bak, regardless of how small the change is.",
+        "options": {
+          "A": "Required — modifying a value in an existing file.",
+          "B": "Required — even fixing a single character in an existing file requires .bak.",
+          "C": "Required — updating content in an existing file requires .bak.",
+          "D": "Required — appending to an existing file is a modification and requires .bak.",
+          "E": "Required — removing a blank line is still modifying file content; .bak required.",
+          "F": "Required — modifying a config value; .bak required. P4 does not exempt changes based on importance or size."
+        }
+      }
+    }
+  ]
+}

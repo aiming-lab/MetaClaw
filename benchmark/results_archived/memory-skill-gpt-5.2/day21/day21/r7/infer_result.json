@@ -1,0 +1,274 @@
+{
+  "test_id": "day21",
+  "group_id": "day21",
+  "round_id": "r7",
+  "qa_id": "r7",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease write an integration guide for Orion API v2.3.0 in Markdown format and save it to the day21/ directory. Include the authentication flow, usage examples for key endpoints, and error handling recommendations.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773761327.8128831,
+    "finished_at": 1773761370.6363697,
+    "duration_ms": 42823,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-17T15:29:30.504Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day21_5f0f9db4-c575-438d-8140-045658d6676b",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9",
+    "success": true,
+    "durationMs": 38549,
+    "messageCount": 67,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Tue 2026-03-17 11:28 EDT] [Previous Feedback] Correct!\n\nPlease write an integration guide for Orion API v2.3.0 in Markdown format and save it to the day21/ directory. Include the authentication flow, usage examples for key endpoints, and error handling recommendations."
+          }
+        ],
+        "timestamp": 1773761331957
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_jx1UVLK2LBGkv3oXvXDtts5q",
+            "name": "write",
+            "arguments": {
+              "path": "day21/20260413_orion_api_v2_3_0_integration_guide.md",
+              "content": "---\ndate: 2026-04-13\nproduct: Project Orion\napi_version: v2.3.0\npurpose: Integration Guide\n---\n\n# Orion API v2.3.0 — Integration Guide\n\nThis guide describes how to integrate with **Orion API v2.3.0**, including authentication, common request patterns, usage examples for typical endpoints, and error-handling recommendations.\n\n> Note: Endpoint paths and payloads below are written as **representative examples**. For exact schemas, validate against your deployed OpenAPI/Swagger definition for v2.3.0.\n\n## 1) Base URL, Versioning, and Conventions\n\n- **Base URL (example):** `https://api.orion.example.com`\n- **Version prefix:** `/api/v2`\n- **Content type:** `application/json; charset=utf-8`\n- **Auth header:** `Authorization: Bearer <access_token>`\n- **Idempotency (recommended for writes):** `Idempotency-Key: <uuid>`\n\n### Common Headers\n```http\nAccept: application/json\nContent-Type: application/json\nAuthorization: Bearer <access_token>\nIdempotency-Key: 5b7d7f0f-7b9c-4f74-9a8a-2d1bca2b7c79\nX-Request-Id: <optional-client-generated-id>\n```\n\n### Pagination (Typical Pattern)\nMost list endpoints should support pagination.\n\n- Query params (example): `?limit=50&cursor=<cursor>`\n- Response (example): `items` + `next_cursor`\n\n## 2) Authentication\n\nOrion API v2.3.0 uses **OAuth 2.0 Bearer tokens** (recommended) or an equivalent token-based mechanism.\n\n### 2.1 OAuth 2.0 Authorization Code Flow (Recommended)\n\n**Step 1 — Redirect user to Authorization Endpoint**\n\n```\nGET https://auth.orion.example.com/oauth/authorize?\n  response_type=code&\n  client_id=<client_id>&\n  redirect_uri=<redirect_uri>&\n  scope=orion.read%20orion.write&\n  state=<random_state>\n```\n\n**Step 2 — Exchange code for tokens**\n\n```bash\ncurl -sS -X POST \"https://auth.orion.example.com/oauth/token\" \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\\n  -d 'grant_type=authorization_code' \\\n  -d 'code=<authorization_code>' \\\n  -d 'client_id=<client_id>' \\\n  -d 'client_secret=<client_secret>' \\\n  -d 'redirect_uri=<redirect_uri>'\n```\n\n**Response (example)**\n```json\n{\n  \"access_token\": \"<jwt-or-opaque>\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"refresh_token\": \"<refresh>\",\n  \"scope\": \"orion.read orion.write\"\n}\n```\n\n**Step 3 — Call Orion API with the access token**\n\n```bash\ncurl -sS \"https://api.orion.example.com/api/v2/me\" \\\n  -H \"Authorization: Bearer <access_token>\" \\\n  -H \"Accept: application/json\"\n```\n\n### 2.2 Refreshing Access Tokens\nRefresh before expiration (or on first `401` indicating token expiry).\n\n```bash\ncurl -sS -X POST \"https://auth.orion.example.com/oauth/token\" \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\\n  -d 'grant_type=refresh_token' \\\n  -d 'refresh_token=<refresh_token>' \\\n  -d 'client_id=<client_id>' \\\n  -d 'client_secret=<client_secret>'\n```\n\n### 2.3 Token Storage Recommendations\n- Store refresh tokens server-side (or in a secure secrets store) whenever possible.\n- If a client app must store tokens, use OS secure storage (Keychain/Keystore).\n- Never log tokens; redact in application logs.\n\n## 3) Key Endpoint Usage Examples\n\nThe examples below cover typical integrations: identify the caller, manage projects, manage tasks, and add comments.\n\n### 3.1 Get Current User\n```bash\ncurl -sS \"https://api.orion.example.com/api/v2/me\" \\\n  -H \"Authorization: Bearer <access_token>\"\n```\n\nResponse (example):\n```json\n{\n  \"id\": \"usr_123\",\n  \"email\": \"alex@example.com\",\n  \"display_name\": \"Alex Zhang\"\n}\n```\n\n### 3.2 List Projects\n```bash\ncurl -sS \"https://api.orion.example.com/api/v2/projects?limit=50\" \\\n  -H \"Authorization: Bearer <access_token>\"\n```\n\nResponse (example):\n```json\n{\n  \"items\": [{\"id\": \"prj_001\", \"name\": \"Project Orion\"}],\n  \"next_cursor\": null\n}\n```\n\n### 3.3 Create a Project (Idempotent Write)\n```bash\ncurl -sS -X POST \"https://api.orion.example.com/api/v2/projects\" \\\n  -H \"Authorization: Bearer <access_token>\" \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Idempotency-Key: 9b7f4b6b-6f2a-4c6f-a0d0-2ce4a2d5c4bf\" \\\n  -d '{\"name\":\"New Customer Rollout\",\"description\":\"Kickoff and tracking\"}'\n```\n\n### 3.4 List Tasks in a Project\n```bash\ncurl -sS \"https://api.orion.example.com/api/v2/projects/prj_001/tasks?limit=50\" \\\n  -H \"Authorization: Bearer <access_token>\"\n```\n\n### 3.5 Create / Update a Task\nCreate:\n```bash\ncurl -sS -X POST \"https://api.orion.example.com/api/v2/tasks\" \\\n  -H \"Authorization: Bearer <access_token>\" \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Idempotency-Key: 7a66df84-7c7b-4c3f-9b20-6f5b5b10a3c1\" \\\n  -d '{\n    \"project_id\":\"prj_001\",\n    \"title\":\"Implement webhook retries\",\n    \"assignee_id\":\"usr_123\",\n    \"due_date\":\"2026-04-17\"\n  }'\n```\n\nUpdate (PATCH example):\n```bash\ncurl -sS -X PATCH \"https://api.orion.example.com/api/v2/tasks/tsk_100\" \\\n  -H \"Authorization: Bearer <access_token>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"status\":\"in_progress\"}'\n```\n\n### 3.6 Add a Comment to a Task\n```bash\ncurl -sS -X POST \"https://api.orion.example.com/api/v2/tasks/tsk_100/comments\" \\\n  -H \"Authorization: Bearer <access_token>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"body\":\"Started implementing retry/backoff; will add metrics next.\"}'\n```\n\n### 3.7 Searching / Filtering (Recommended Practices)\nWhen supported, prefer explicit filter fields over free-text:\n- `status`, `assignee_id`, `updated_after`, `created_after`, `tag` (examples)\n\nExample:\n```bash\ncurl -sS \"https://api.orion.example.com/api/v2/tasks?status=open&assignee_id=usr_123\" \\\n  -H \"Authorization: Bearer <access_token>\"\n```\n\n## 4) Error Handling Recommendations\n\n### 4.1 Always Handle Non-2xx Responses\nTreat any non-2xx HTTP status as an error and parse the response body if present.\n\n**Typical error payload (example):**\n```json\n{\n  \"error\": {\n    \"code\": \"validation_error\",\n    \"message\": \"title is required\",\n    \"details\": [{\"field\":\"title\",\"issue\":\"missing\"}],\n    \"request_id\": \"req_abc123\"\n  }\n}\n```\n\n### 4.2 Status-Code Specific Guidance\n- **400 Bad Request**: Client error; do not retry automatically.\n- **401 Unauthorized**: Refresh token and retry once; otherwise re-authenticate.\n- **403 Forbidden**: Permission issue; do not retry.\n- **404 Not Found**: Resource missing; treat as terminal unless you expect eventual consistency.\n- **409 Conflict**: Concurrency/idempotency conflict; re-fetch state and resolve.\n- **422 Unprocessable Entity**: Validation failed; show field-level errors.\n- **429 Too Many Requests**: Respect `Retry-After` if present; apply exponential backoff.\n- **5xx**: Retry with exponential backoff + jitter; cap retries and surface alerts.\n\n### 4.3 Retry Strategy (Suggested Default)\n- Use **exponential backoff with jitter** for `429` and `5xx`.\n- Example schedule: 0.5s, 1s, 2s, 4s, 8s (max 5 attempts)\n- Add a hard timeout per request and an overall deadline per user action.\n\n### 4.4 Idempotency for Safe Retries\nFor POST/PUT/PATCH that create or mutate state:\n- Send a stable `Idempotency-Key` per logical operation.\n- On retry, reuse the same key to avoid duplicates.\n\n### 4.5 Observability\n- Log `request_id` from error responses.\n- Track: latency, error rate by status code, retry counts, and timeouts.\n\n## 5) Security & Operational Checklist\n\n- Use TLS only; validate certificates.\n- Rotate client secrets; store in a secrets manager.\n- Apply least-privilege OAuth scopes.\n- Rate-limit outbound calls from your service to avoid cascading failures.\n- Implement circuit breakers when Orion API is degraded.\n\n## 6) Quick Reference (Copy/Paste)\n\n**Get token:** OAuth Authorization Code → `/oauth/token`\n\n**Call API:**\n```bash\ncurl -sS \"https://api.orion.example.com/api/v2/projects\" \\\n  -H \"Authorization: Bearer <access_token>\"\n```\n\n**Retry:** 429/5xx with exponential backoff + jitter; use `Idempotency-Key` for writes.\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761331960
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_jx1UVLK2LBGkv3oXvXDtts5q",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 7730 bytes to day21/20260413_orion_api_v2_3_0_integration_guide.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773761361742
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_4yChwUX6W9iJV1VGfbaV9vZA",
+            "name": "exec",
+            "arguments": {
+              "command": "TZ=Asia/Shanghai date '+%Y-%m-%dT%H:%M:%S+08:00'"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761361748
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_4yChwUX6W9iJV1VGfbaV9vZA",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "2026-03-17T23:29:23+08:00"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 11,
+          "aggregated": "2026-03-17T23:29:23+08:00",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9"
+        },
+        "isError": false,
+        "timestamp": 1773761363908
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_qoNQlYYsd5XY92ua026TSM44",
+            "name": "exec",
+            "arguments": {
+              "command": "python - <<'PY'\nline='[DONE] 2026-03-17T23:29:23+08:00 | day21_api_v2_3_0_guide | Wrote Orion API v2.3.0 integration guide (auth, examples, errors).'\nsummary=line.split(' | ',2)[2]\nprint(len(summary), summary)\nPY"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761363911
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_qoNQlYYsd5XY92ua026TSM44",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "66 Wrote Orion API v2.3.0 integration guide (auth, examples, errors)."
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 48,
+          "aggregated": "66 Wrote Orion API v2.3.0 integration guide (auth, examples, errors).",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9"
+        },
+        "isError": false,
+        "timestamp": 1773761366633
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_9UJH5sdcyGiNAgPZn4Tmhn65",
+            "name": "exec",
+            "arguments": {
+              "command": "printf '%s\n' \"[DONE] 2026-03-17T23:29:23+08:00 | day21_api_v2_3_0_guide | Wrote Orion API v2.3.0 integration guide (auth, examples, errors).\" >> done.log"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773761366635
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_9UJH5sdcyGiNAgPZn4Tmhn65",
+        "toolName": "exec",
+        "content": [
+          {
+            "type": "text",
+            "text": "(no output)"
+          }
+        ],
+        "details": {
+          "status": "completed",
+          "exitCode": 0,
+          "durationMs": 9,
+          "aggregated": "",
+          "cwd": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day21_607711b9"
+        },
+        "isError": false,
+        "timestamp": 1773761368661
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Saved integration guide to:\n- `day21/20260413_orion_api_v2_3_0_integration_guide.md`\n\nAppended to `done.log`:\n- `[DONE] 2026-03-17T23:29:23+08:00 | day21_api_v2_3_0_guide | Wrote Orion API v2.3.0 integration guide (auth, examples, errors).`"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773761368665
+      }
+    ]
+  },
+  "answer": "Saved integration guide to:\n- `day21/20260413_orion_api_v2_3_0_integration_guide.md`\n\nAppended to `done.log`:\n- `[DONE] 2026-03-17T23:29:23+08:00 | day21_api_v2_3_0_guide | Wrote Orion API v2.3.0 integration guide (auth, examples, errors).`\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: expected >= 3 P2-compliant .md file(s) in day21/, found 1\n",
+    "stderr": ""
+  }
+}

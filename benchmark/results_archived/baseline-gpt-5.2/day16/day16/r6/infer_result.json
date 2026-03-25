@@ -1,0 +1,118 @@
+{
+  "test_id": "day16",
+  "group_id": "day16",
+  "round_id": "r6",
+  "qa_id": "r6",
+  "question_type": "file_check",
+  "question": "[Previous Feedback] Correct!\n\nPlease create a new API integration test document in Markdown format under the day16/ directory. The content should include test environment setup, test case list, and expected results.",
+  "status": "success",
+  "run_metadata": {
+    "started_at": 1773900866.010854,
+    "finished_at": 1773900984.3930871,
+    "duration_ms": 118382,
+    "retry_count": 3
+  },
+  "llm_log": {
+    "stage": "agent_end",
+    "timestamp": "2026-03-19T06:16:24.316Z",
+    "agentId": "metaclaw_agent",
+    "sessionId": "day16_1744a6fe-cb81-4c59-bc6e-868ebb861b10",
+    "workspaceDir": "/home/xkaiwen/workspace/metaclaw-test/benchmark/data/metaclaw-bench/work/workspace_day16_4b548285",
+    "success": true,
+    "durationMs": 114953,
+    "messageCount": 50,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "[Thu 2026-03-19 02:14 EDT] [Previous Feedback] Correct!\n\nPlease create a new API integration test document in Markdown format under the day16/ directory. The content should include test environment setup, test case list, and expected results."
+          }
+        ],
+        "timestamp": 1773900869364
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call_TMvnisfqTxto7JMAyKKXsqpp",
+            "name": "write",
+            "arguments": {
+              "path": "day16/api_integration_tests.md",
+              "content": "# API Integration Tests — v2.3.0\n\n**Document Purpose:** Define end-to-end integration tests for MetaClaw API v2.3.0, covering authentication, core resources, and the new `/projects` endpoints.\n\n## 1) Test Environment Setup\n\n### 1.1 Prerequisites\n- API base URL: `https://api.metaclaw.io/v2`\n- A valid API token with appropriate permissions\n- Ability to run HTTP requests (curl, Postman, or automated runner)\n\n### 1.2 Required Headers\nAll requests must include:\n```http\nAuthorization: Bearer YOUR_API_TOKEN\nContent-Type: application/json\nAccept: application/json\n```\n\n### 1.3 Test Data Requirements\nCreate or identify the following entities before executing the test suite:\n- **User (owner):** `usr_abc123` (or equivalent)\n- **Assignee user:** `usr_def456` (or equivalent)\n- **Seed project name:** Use a unique value per run (e.g., `Integration Test Project <timestamp>`)\n\n### 1.4 Notes on Idempotency / Cleanup\n- Prefer creating resources with unique names and deleting/archiving them at the end.\n- Where `DELETE` is a soft delete (archive), confirm status changes rather than expecting hard removal.\n\n---\n\n## 2) Test Case List\n\n### TC-01 — Authentication: Missing Token\n**Goal:** Verify requests without auth are rejected.\n\n**Request:**\n```http\nGET /users\n```\n\n**Expected Result:**\n- Status: `401 Unauthorized`\n- Body matches error format:\n```json\n{\n  \"error\": {\n    \"code\": \"...\",\n    \"message\": \"...\",\n    \"details\": {}\n  }\n}\n```\n\n---\n\n### TC-02 — Users: List Users\n**Goal:** Verify `/users` returns paginated results.\n\n**Request:**\n```http\nGET /users?page=1&limit=20\n```\n\n**Expected Result:**\n- Status: `200 OK`\n- Response includes:\n  - `data` as an array\n  - `pagination.page`, `pagination.limit`, `pagination.total`\n- Each user includes `id`, `email`, `name`, `role`, `created_at`\n\n---\n\n### TC-03 — Projects: Create Project\n**Goal:** Verify `POST /projects` creates a project.\n\n**Request:**\n```http\nPOST /projects\n\n{\n  \"name\": \"Integration Test Project 2026-04-06T09:00:00\",\n  \"description\": \"Created by integration test suite\",\n  \"owner_id\": \"usr_abc123\"\n}\n```\n\n**Expected Result:**\n- Status: `201 Created`\n- Response body includes `data.id` (capture as `project_id`)\n- `data.name` matches request\n- `data.status` is `active`\n- `data.owner.id` matches `owner_id`\n\n---\n\n### TC-04 — Projects: Get Project by ID\n**Goal:** Verify `GET /projects/{project_id}` returns the created project.\n\n**Request:**\n```http\nGET /projects/{project_id}\n```\n\n**Expected Result:**\n- Status: `200 OK`\n- `data.id == {project_id}`\n- `data.status == active`\n\n---\n\n### TC-05 — Projects: List Projects (Filter)\n**Goal:** Verify `GET /projects` supports filtering.\n\n**Request:**\n```http\nGET /projects?status=active&owner=usr_abc123&page=1&limit=20\n```\n\n**Expected Result:**\n- Status: `200 OK`\n- Response includes `pagination`\n- `data` contains the newly created project (by `id` or unique `name`)\n\n---\n\n### TC-06 — Projects: Update Project (PATCH)\n**Goal:** Verify partial update works.\n\n**Request:**\n```http\nPATCH /projects/{project_id}\n\n{\n  \"description\": \"Updated by integration test suite\"\n}\n```\n\n**Expected Result:**\n- Status: `200 OK`\n- `data.id == {project_id}`\n- `data.description` matches updated value\n- `data.updated_at` is present\n\n---\n\n### TC-07 — Tasks: Create/Update Flow (Existing Endpoint Check)\n**Goal:** Validate task update endpoint works end-to-end (if task exists).\n\n**Request:**\n```http\nPUT /tasks/tsk_001\n\n{\n  \"status\": \"completed\",\n  \"notes\": \"Completed by integration test suite\"\n}\n```\n\n**Expected Result:**\n- Status: `200 OK` (or `404 Not Found` if `tsk_001` is not present in the environment)\n- If `200`, response includes:\n  - `data.id == \"tsk_001\"`\n  - `data.status == \"completed\"`\n  - `data.updated_at` present\n\n---\n\n### TC-08 — Validation: Invalid Project Payload\n**Goal:** Verify validation errors are surfaced.\n\n**Request:**\n```http\nPOST /projects\n\n{\n  \"name\": \"\",\n  \"owner_id\": \"usr_abc123\"\n}\n```\n\n**Expected Result:**\n- Status: `400 Bad Request` or `422 Unprocessable Entity`\n- Error body uses standard error format and indicates `name` is invalid\n\n---\n\n### TC-09 — Not Found: Unknown Project ID\n**Goal:** Verify 404 behavior.\n\n**Request:**\n```http\nGET /projects/prj_does_not_exist\n```\n\n**Expected Result:**\n- Status: `404 Not Found`\n- Error body follows standard error format\n\n---\n\n### TC-10 — Projects: Archive Project (DELETE)\n**Goal:** Verify soft delete/archival.\n\n**Request:**\n```http\nDELETE /projects/{project_id}\n```\n\n**Expected Result:**\n- Status: `204 No Content`\n- Subsequent `GET /projects/{project_id}` should either:\n  - Return `200` with `status: \"archived\"`, **or**\n  - Return `404` if archived projects are hidden (implementation-dependent)\n\n---\n\n## 3) Expected Results Summary\n\n| Test Case | Endpoint | Expected Status |\n|----------|----------|-----------------|\n| TC-01 | `GET /users` (no token) | 401 |\n| TC-02 | `GET /users` | 200 |\n| TC-03 | `POST /projects` | 201 |\n| TC-04 | `GET /projects/{id}` | 200 |\n| TC-05 | `GET /projects` | 200 |\n| TC-06 | `PATCH /projects/{id}` | 200 |\n| TC-07 | `PUT /tasks/{id}` | 200 (or 404 if test task absent) |\n| TC-08 | `POST /projects` (invalid) | 400 or 422 |\n| TC-09 | `GET /projects/{bad-id}` | 404 |\n| TC-10 | `DELETE /projects/{id}` | 204 |\n\n## 4) Cleanup Checklist\n- Archive (DELETE) the test project created in TC-03\n- Confirm project is archived/hidden per TC-10 expectations\n- Remove any temporary test data if your environment supports hard deletes\n"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "timestamp": 1773900869365
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "call_TMvnisfqTxto7JMAyKKXsqpp",
+        "toolName": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote 5432 bytes to day16/api_integration_tests.md"
+          }
+        ],
+        "isError": false,
+        "timestamp": 1773900950670
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Created the new Markdown document: `day16/api_integration_tests.md`.\n\nIt includes:\n- **Test environment setup** (base URL, headers, prerequisites, test data, cleanup notes)\n- **Test case list** (auth, users, full `/projects` CRUD flow, validation, 404 behavior)\n- **Expected results** for each test case (status codes + key response checks)"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "metaclaw-bench",
+        "model": "gpt-5.2",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1773900950673
+      }
+    ]
+  },
+  "answer": "Created the new Markdown document: `day16/api_integration_tests.md`.\n\nIt includes:\n- **Test environment setup** (base URL, headers, prerequisites, test data, cleanup notes)\n- **Test case list** (auth, users, full `/projects` CRUD flow, validation, 404 behavior)\n- **Expected results** for each test case (status codes + key response checks)\n",
+  "inline_score": {
+    "passed": false,
+    "exit_code": 1,
+    "stdout": "FAIL: expected >= 2 P2-compliant .md file(s) in day16/, found 0\n",
+    "stderr": ""
+  }
+}

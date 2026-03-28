@@ -20,6 +20,9 @@
   <a href="https://arxiv.org/abs/2603.17187"><img src="https://img.shields.io/badge/📄_Technical_Report-purple?style=flat-square" alt="Tech Report" /></a>
   <a href="https://github.com/aiming-lab/MetaClaw"><img src="https://img.shields.io/badge/github-MetaClaw-181717?style=flat&labelColor=555&logo=github&logoColor=white" alt="GitHub"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat&labelColor=555" alt="License MIT"></a>
+  <a href="https://gitcgr.com/aiming-lab/MetaClaw" target="_blank" rel="noopener noreferrer">
+    <img src="https://gitcgr.com/badge/aiming-lab/MetaClaw.svg" alt="gitcgr" />
+  </a>
   <img src="https://img.shields.io/badge/⚡_Fully_Async-yellow?style=flat&labelColor=555" alt="Fully Async" />
   <img src="https://img.shields.io/badge/☁️_No_GPU_Cluster-blue?style=flat&labelColor=555" alt="No GPU Cluster" />
   <img src="https://img.shields.io/badge/🛠️_Skill_Evolution-orange?style=flat&labelColor=555" alt="Skill Evolution" />

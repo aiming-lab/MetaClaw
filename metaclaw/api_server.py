@@ -285,6 +285,84 @@ def _extract_tool_calls_from_text(text: str) -> tuple[str, list[dict], str]:
     return clean, tool_calls, reasoning_content
 
 
+def _normalize_tool_calls_for_template(tool_calls: list) -> list[dict]:
+    """Ensure tool_calls are plain OpenAI-compatible dicts with string arguments.
+
+    Handles cases where function.arguments is a dict instead of a JSON string,
+    or where individual tool_call entries are non-dict objects (e.g. Pydantic models).
+    """
+    normalized: list[dict] = []
+    for i, tc in enumerate(tool_calls):
+        if not isinstance(tc, dict):
+            try:
+                tc = dict(tc)  # type: ignore[call-overload]
+            except Exception:
+                continue
+        func = tc.get("function")
+        if func is None:
+            continue
+        if not isinstance(func, dict):
+            try:
+                func = dict(func)  # type: ignore[call-overload]
+            except Exception:
+                func = {"name": str(func), "arguments": "{}"}
+        else:
+            func = dict(func)  # shallow copy so we don't mutate original
+        args = func.get("arguments")
+        if not isinstance(args, str):
+            func["arguments"] = json.dumps(args, ensure_ascii=False) if args is not None else "{}"
+        normalized.append({
+            "id": tc.get("id") or f"call_{i}",
+            "type": tc.get("type", "function"),
+            "function": func,
+        })
+    return normalized
+
+
+def _normalize_tools_for_template(tools) -> list | None:
+    """Convert tools from Anthropic format to OpenAI format expected by chat templates.
+
+    Anthropic format:  {"name": ..., "description": ..., "input_schema": {...}}
+    OpenAI format:     {"type": "function", "function": {"name": ..., "parameters": {...}}}
+
+    The Qwen3 (and other) chat templates use ``tool.function.parameters | items``
+    which raises TypeError if the tool is in Anthropic format.
+    """
+    if not tools:
+        return tools
+    out: list[dict] = []
+    for tool in tools:
+        if not isinstance(tool, dict):
+            out.append(tool)
+            continue
+        # Already in OpenAI format
+        if tool.get("type") == "function" and "function" in tool:
+            func = tool["function"]
+            if isinstance(func, dict):
+                out.append(tool)
+            else:
+                out.append(tool)
+            continue
+        # Anthropic format: top-level name + input_schema
+        name = tool.get("name") or ""
+        if name:
+            out.append({
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": tool.get("description", ""),
+                    "parameters": (
+                        tool.get("input_schema")
+                        or tool.get("parameters")
+                        or {"type": "object", "properties": {}}
+                    ),
+                },
+            })
+        else:
+            out.append(tool)
+    return out
+
+
 def _normalize_messages_for_template(messages: list[dict]) -> list[dict]:
     """Normalize OpenClaw-style messages into chat-template-compatible format."""
     out = []
@@ -320,6 +398,13 @@ def _normalize_messages_for_template(messages: list[dict]) -> list[dict]:
                 m["tool_calls"] = tool_calls
         elif not isinstance(raw, str) and raw is not None:
             m["content"] = _flatten_message_content(raw)
+
+        # Ensure any existing tool_calls are proper plain dicts with string arguments
+        # so that Jinja2 chat templates don't fail with "Can only get item pairs from a mapping"
+        if role == "assistant":
+            existing_tcs = m.get("tool_calls")
+            if existing_tcs and isinstance(existing_tcs, list):
+                m["tool_calls"] = _normalize_tool_calls_for_template(existing_tcs)
 
         out.append(m)
     return out
@@ -1109,7 +1194,7 @@ class MetaClawAPIServer:
                     if isinstance(m, dict) and m.get("role") == "system":
                         m["content"] = cached_system
 
-        tools = body.get("tools")
+        tools = _normalize_tools_for_template(body.get("tools"))
 
         effective_memory_scope = memory_scope or self._get_memory_scope(session_id)
         if effective_memory_scope:
@@ -1493,6 +1578,10 @@ class MetaClawAPIServer:
         headers: dict[str, str] = {}
         if self.config.llm_api_key:
             headers["Authorization"] = f"Bearer {self.config.llm_api_key}"
+        # OpenRouter requires HTTP-Referer and X-Title for free-tier model access
+        if "openrouter.ai" in api_base:
+            headers.setdefault("HTTP-Referer", "https://github.com/qwibitai/metaclaw")
+            headers.setdefault("X-Title", "MetaClaw")
 
         try:
             async with httpx.AsyncClient(timeout=600.0) as client:

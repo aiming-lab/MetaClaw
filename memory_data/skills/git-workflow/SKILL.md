@@ -1,7 +1,6 @@
 ---
 name: git-workflow
-description: Use this skill when working with git — making commits, creating branches, resolving merge conflicts, opening pull requests, or reviewing diffs. Apply whenever the user asks about version control operations.
-category: coding
+description: "Use this skill when making commits, creating branches, opening pull requests, resolving merge conflicts, or reviewing diffs. Enforces imperative commit messages, focused single-purpose PRs, and safe staging practices — never force-pushing to shared branches or skipping hooks."
 ---
 
 # Git Workflow Best Practices

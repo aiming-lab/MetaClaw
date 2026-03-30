@@ -1,7 +1,6 @@
 ---
 name: sql-best-practices
-description: Use this skill when writing SQL queries — selects, joins, aggregations, window functions, or schema modifications. Apply whenever SQL is needed to ensure correctness, safety, and performance.
-category: data_analysis
+description: "Use this skill when writing or reviewing SQL queries including SELECT statements, JOINs, aggregations, window functions, or DDL/DML like CREATE, UPDATE, DELETE. Use when someone asks to 'write a query', 'optimize this SQL', or 'is this query safe'. Enforces column-explicit selects, CTE usage, parameterized queries, transaction wrapping for destructive ops, and EXPLAIN-driven optimization."
 ---
 
 # SQL Best Practices

@@ -1,7 +1,6 @@
 ---
 name: test-before-ship
-description: Use this skill when implementing a new feature or fixing a bug. Write or update tests before marking the task done. Never consider code complete without verifying it works through automated tests.
-category: coding
+description: "Use this skill when implementing a feature, fixing a bug, or reviewing a pull request. Ensures code is covered by unit, integration, and end-to-end tests using a test pyramid — validates tests actually fail when code breaks, covers error cases, and requires a regression test before fixing any bug."
 ---
 
 # Test Before Ship

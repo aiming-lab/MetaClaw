@@ -1,7 +1,6 @@
 ---
 name: structured-progress-update
-description: Use this skill when summarizing progress on an ongoing project or multi-step task. Give a clear, scannable status report whenever asked for an update or at the end of a work session.
-category: productivity
+description: "Use this skill when reporting on the status of an ongoing project, sprint, or multi-step task. Use when someone says 'give me an update', 'what's the status', 'summarize progress', or 'end of day report'. Produces a scannable Done/In-progress/Blocked/Next format that surfaces blockers proactively."
 ---
 
 # Structured Progress Update

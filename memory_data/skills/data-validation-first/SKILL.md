@@ -1,7 +1,6 @@
 ---
 name: data-validation-first
-description: Use this skill before any data analysis, transformation, or modeling. Always inspect and validate the data before drawing conclusions or writing transformations.
-category: data_analysis
+description: "Use this skill when starting any data analysis, ETL pipeline, or machine learning task. Before writing transformations or drawing conclusions, inspect shape, types, nulls, and duplicates to surface hidden data quality issues early."
 ---
 
 # Data Validation First

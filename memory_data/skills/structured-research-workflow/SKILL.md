@@ -1,7 +1,6 @@
 ---
 name: structured-research-workflow
-description: Use this skill when conducting research on a topic from scratch — literature review, competitive analysis, technical due diligence, or fact-finding. Apply before starting any open-ended research task.
-category: research
+description: "Use this skill when asked to research a topic, do a literature review, competitive analysis, technical due diligence, or fact-finding. Provides a scoped, step-by-step process to search broadly, filter sources ruthlessly, synthesize findings by theme, and flag uncertainty — preventing shallow first-result reporting."
 ---
 
 # Structured Research Workflow

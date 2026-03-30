@@ -1,7 +1,6 @@
 ---
 name: auth-and-authorization-patterns
-description: Use this skill when implementing authentication (login, token issuance) or authorization (access control, permissions). Apply whenever the task involves login flows, JWT, OAuth2, session management, or RBAC.
-category: security
+description: "Use this skill when implementing login flows, JWT token issuance, OAuth2/OIDC integrations, session management, or role-based access control (RBAC). Covers password hashing, token lifetimes, PKCE, claim validation, and least-privilege enforcement."
 ---
 
 # Auth & Authorization Patterns

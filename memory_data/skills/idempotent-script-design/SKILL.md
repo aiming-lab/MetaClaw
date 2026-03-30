@@ -1,7 +1,6 @@
 ---
 name: idempotent-script-design
-description: Use this skill when writing scripts, cron jobs, data pipelines, or any automated process that may be run multiple times. Design every operation to be safely re-runnable without side effects.
-category: automation
+description: "Use this skill when writing scripts, cron jobs, data pipelines, or database migrations that may run more than once. Apply check-before-create guards, upsert patterns, and atomic writes so that re-running the script never causes duplicate data, partial writes, or crashes."
 ---
 
 # Idempotent Script Design

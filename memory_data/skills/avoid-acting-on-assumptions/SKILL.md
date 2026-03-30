@@ -1,7 +1,6 @@
 ---
 name: avoid-acting-on-assumptions
-description: Common mistake — proceeding with assumptions about ambiguous requirements instead of asking a clarifying question first. This skill reminds you to stop and ask before acting on uncertain interpretations.
-category: common_mistakes
+description: "Use this skill when a request leaves the target language, framework, file behavior, or environment unstated and you are about to guess. Prompts you to pause and ask one clarifying question rather than proceeding with an assumption that could produce the wrong result."
 ---
 
 # Avoid Acting on Assumptions

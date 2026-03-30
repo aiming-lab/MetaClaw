@@ -1,7 +1,6 @@
 ---
 name: input-validation-and-sanitization
-description: Use this skill when implementing any endpoint, form handler, CLI tool, or function that accepts external input. Validate and sanitize all untrusted data before processing — never assume input is safe.
-category: security
+description: "Use this skill when building API endpoints, form handlers, CLI tools, or any function that accepts user-supplied data. Validate type, range, length, and format at the system boundary; prevent SQL injection with parameterized queries; prevent XSS with HTML escaping; prevent path traversal with canonical path checks."
 ---
 
 # Input Validation and Sanitization

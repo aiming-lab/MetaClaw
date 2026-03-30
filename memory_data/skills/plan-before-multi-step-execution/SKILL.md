@@ -1,7 +1,6 @@
 ---
 name: plan-before-multi-step-execution
-description: Use this skill before executing a sequence of 3 or more steps, especially when steps are irreversible or depend on each other. Write out the plan and verify it before starting execution.
-category: agentic
+description: "Use this skill before executing a sequence of 3 or more steps, especially when steps are irreversible, depend on each other, or could leave state in a broken intermediate condition. Decompose into ordered steps, flag irreversible actions for confirmation, and verify each step's output before proceeding to the next."
 ---
 
 # Plan Before Multi-Step Execution

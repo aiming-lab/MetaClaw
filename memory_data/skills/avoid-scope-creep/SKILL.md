@@ -1,7 +1,6 @@
 ---
 name: avoid-scope-creep
-description: Common mistake — doing unrequested work (refactoring, adding extra features, cleaning up style) when the user asked for a specific, targeted change. Only change what was explicitly asked.
-category: common_mistakes
+description: "Use this skill when completing a targeted bug fix, small edit, or focused change where you notice other issues and feel the urge to also refactor, rename, or clean up. Enforces the rule of changing only what was explicitly requested and surfacing other issues as notes instead."
 ---
 
 # Avoid Scope Creep

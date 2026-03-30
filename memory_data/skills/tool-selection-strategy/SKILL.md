@@ -1,7 +1,6 @@
 ---
 name: tool-selection-strategy
-description: Use this skill when deciding which tools to call in an agentic workflow. Always choose the minimal, most direct tool for each step and avoid redundant or speculative tool calls.
-category: agentic
+description: "Use this skill when deciding which tool to call next in an agentic workflow — e.g. choosing between Bash, Grep, Read, or a dedicated tool. Applies the least-tool principle: answer from context first, prefer specific tools over heavy ones like Bash or Agent, read before writing, avoid speculative calls, and parallelize independent reads."
 ---
 
 # Tool Selection Strategy

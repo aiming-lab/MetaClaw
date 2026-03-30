@@ -1,7 +1,6 @@
 ---
 name: visualization-selection
-description: Use this skill when creating charts, plots, or dashboards. Choose the visualization type that best communicates the data relationship before writing any plotting code.
-category: data_analysis
+description: "Use this skill when asked to create a chart, plot, graph, or dashboard — e.g. 'visualize this data', 'make a chart of trends', or 'show this distribution'. Provides a lookup table mapping data goals (compare categories, show distribution, trend over time, correlation, part-to-whole) to the right chart type, plus principles for axes, color, and avoiding misleading 3D or truncated charts."
 ---
 
 # Visualization Selection Guide

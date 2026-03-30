@@ -1,7 +1,6 @@
 ---
 name: context-window-management
-description: Use this skill in long conversations or multi-turn agentic sessions where context may be lost or the conversation is approaching token limits. Summarize, prioritize, and compact context proactively before it becomes a problem.
-category: agentic
+description: "Use this skill when a conversation is getting long, a session is approaching token limits, or key decisions risk being lost in a multi-turn agentic task. Proactively summarize state, prioritize active context, and offload resolved information to file-based memory to keep the working context focused."
 ---
 
 # Context Window Management

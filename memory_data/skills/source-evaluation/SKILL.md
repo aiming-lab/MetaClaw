@@ -1,7 +1,6 @@
 ---
 name: source-evaluation
-description: Use this skill when presenting information from external sources, citing research, or answering factual questions. Assess source credibility and recency before relying on it.
-category: research
+description: "Use this skill when assessing the credibility or reliability of an external source, citation, article, study, or dataset. Use when someone asks 'is this source reliable', 'can I trust this article', or 'how good is this reference'. Applies the CRAAP criteria (currency, relevance, authority, accuracy, purpose) and flags red flags like missing citations or anonymous authorship."
 ---
 
 # Source Evaluation

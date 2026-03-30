@@ -1,7 +1,6 @@
 ---
 name: do-not-retry-without-diagnosis
-description: Common mistake — retrying the same failing command or API call without understanding why it failed. Always diagnose the root cause before retrying anything.
-category: common_mistakes
+description: "Use this skill when a command, tool call, or API request fails. Stop before retrying — read the error message, classify it as transient or permanent, and fix the root cause first. Prevents wasted retries on errors that will never self-resolve."
 ---
 
 # Do Not Retry Without Diagnosis

@@ -1,7 +1,6 @@
 ---
 name: robust-error-handling-in-scripts
-description: Use this skill when writing shell scripts, Python automation, or any unattended batch job. Ensure failures are detected, logged, and handled — never silently ignored.
-category: automation
+description: "Use this skill when writing or reviewing shell scripts, Python automation scripts, cron jobs, or any unattended batch process. Apply when someone asks to 'add error handling', 'make this script fail safely', or 'handle failures in my automation'. Ensures failures are detected with set -euo pipefail, logged with tracebacks, and retried where appropriate."
 ---
 
 # Robust Error Handling in Scripts

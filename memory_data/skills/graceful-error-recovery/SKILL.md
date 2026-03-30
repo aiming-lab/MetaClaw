@@ -1,7 +1,6 @@
 ---
 name: graceful-error-recovery
-description: Use this skill when a tool call, command, or API request fails. Diagnose the root cause systematically before retrying or changing approach. Do not retry the same failing call without first understanding why it failed.
-category: general
+description: "Use this skill when a tool call, shell command, or API request returns an error or unexpected result. Read the full error message and stack trace, identify the root cause (typo, missing dependency, permission, network, logic bug), fix it, then retry — never swallow errors silently or loop on the same failing call."
 ---
 
 # Graceful Error Recovery

@@ -167,6 +167,7 @@ class PRMScorer:
         temperature: float = 0.6,
         max_new_tokens: int = 1024,
         llm_client=None,
+        timeout: float = 120.0,
     ):
         if llm_client is not None:
             self._client = llm_client
@@ -180,6 +181,7 @@ class PRMScorer:
         self.prm_m = prm_m
         self.temperature = temperature
         self.max_new_tokens = max_new_tokens
+        self.timeout = timeout
 
     async def evaluate(
         self,
@@ -225,15 +227,21 @@ class PRMScorer:
         self, messages: list[dict], vote_id: int
     ) -> tuple[Optional[int], str]:
         try:
-            completion = await asyncio.to_thread(
-                self._client.chat.completions.create,
-                model=self.prm_model,
-                messages=messages,
-                temperature=self.temperature,
-                max_completion_tokens=self.max_new_tokens,
+            completion = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self._client.chat.completions.create,
+                    model=self.prm_model,
+                    messages=messages,
+                    temperature=self.temperature,
+                    max_completion_tokens=self.max_new_tokens,
+                ),
+                timeout=self.timeout,
             )
             content = completion.choices[0].message.content or ""
             return _parse_prm_score(content), content
+        except asyncio.TimeoutError:
+            logger.warning("[PRMScorer] query timed out after %.0fs (vote %d)", self.timeout, vote_id)
+            return None, ""
         except Exception as e:
             logger.warning("[PRMScorer] query failed (vote %d): %s", vote_id, e)
             return None, ""

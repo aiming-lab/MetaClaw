@@ -357,6 +357,19 @@ class MetaClawLauncher:
     def _configure_openclaw(self, cfg):
         """Auto-configure OpenClaw to use the MetaClaw proxy."""
         model_id = cfg.llm_model_id or cfg.served_model_name or "metaclaw-model"
+
+        # Skip if already configured — avoid unnecessary gateway restarts
+        try:
+            cur = subprocess.run(
+                ["openclaw", "config", "get", "agents.defaults.model.primary"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if cur.returncode == 0 and f"metaclaw/{model_id}" in cur.stdout:
+                logger.info("[Launcher] openclaw already configured for metaclaw — skipping auto-config")
+                return
+        except Exception:
+            pass
+
         provider_json = json.dumps({
             "api": "openai-completions",
             "baseUrl": f"http://127.0.0.1:{cfg.proxy_port}/v1",

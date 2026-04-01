@@ -450,84 +450,14 @@ function runVenvSetupThenMaybeStart(api: OpenClawPluginApi, full: MetaClawPlugin
 
   const installedVersion = versionCheck.status === 0 ? versionCheck.stdout.trim() : null;
 
-  if (installedVersion) {
-    // Check if PyPI has a newer version — quick pip index check
-    const indexCheck = spawnSync(venvPy, [
-      "-m", "pip", "index", "versions", full.pipInstallSpec.replace(/\[.*\]$/, ""),
-      "--index-url", "https://pypi.org/simple/",
-      "--extra-index-url", "https://pypi.tuna.tsinghua.edu.cn/simple/",
-    ], { encoding: "utf8", timeout: 30_000 });
-
-    let latestVersion: string | null = null;
-    if (indexCheck.status === 0 && indexCheck.stdout) {
-      // Output format: "aiming-metaclaw (0.4.0)\nAvailable versions: ..."
-      const m = indexCheck.stdout.match(/\(([^)]+)\)/);
-      if (m) latestVersion = m[1];
-    }
-
-    if (!latestVersion || latestVersion === installedVersion) {
-      // Already up-to-date — skip pip, still run post-install steps
-      api.logger.debug?.(`metaclaw-openclaw: already up-to-date (${installedVersion})`);
-      installMetaclawWrapper(api, full.venvPath);
-      if (full.autoStartMetaclaw) {
-        trySpawnMetaclaw(api, full, venvPy);
-      }
-      return;
-    }
-
-    api.logger.info(
-      `metaclaw-openclaw: upgrade available (${installedVersion} → ${latestVersion}), updating…`,
-    );
+  // Already installed — run post-install steps
+  api.logger.debug?.(`metaclaw-openclaw: metaclaw already installed`);
+  installMetaclawWrapper(api, full.venvPath);
+  if (full.autoStartMetaclaw) {
+    trySpawnMetaclaw(api, full, venvPy);
   }
+  return;
 
-  // Install or upgrade via pip
-  const args = [
-    "-m",
-    "pip",
-    "install",
-    "--upgrade",
-    "--quiet",
-    "--index-url", "https://pypi.org/simple/",
-    "--extra-index-url", "https://pypi.tuna.tsinghua.edu.cn/simple/",
-    ...full.pipExtraArgs,
-    full.pipInstallSpec,
-  ];
-  api.logger.info(installedVersion ? "metaclaw-openclaw: upgrading…" : "metaclaw-openclaw: installing…");
-
-  const pip = spawn(venvPy, args, {
-    shell: process.platform === "win32",
-    stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env, PYTHONUNBUFFERED: "1" },
-  });
-
-  let errTail = "";
-  pip.stderr?.on("data", (chunk: Buffer) => {
-    errTail = (errTail + chunk.toString()).slice(-2000);
-  });
-  pip.stdout?.on("data", () => {});
-
-  pip.on("error", (err) => {
-    api.logger.warn(
-      `metaclaw-openclaw: could not run pip in venv (${String(err)}). Install Python 3.11+ and python3-venv, or install MetaClaw manually (see extension README).`,
-    );
-    if (full.autoStartMetaclaw) {
-      trySpawnMetaclaw(api, full, venvPy);
-    }
-  });
-
-  pip.on("close", (code) => {
-    if (code === 0) {
-      api.logger.info("metaclaw-openclaw: installed");
-      installMetaclawWrapper(api, full.venvPath);
-    } else {
-      api.logger.warn(
-        `metaclaw-openclaw: pip install exited ${code}. stderr tail:\n${errTail}`,
-      );
-    }
-    if (full.autoStartMetaclaw) {
-      setTimeout(() => trySpawnMetaclaw(api, full, venvPy), 800);
-    }
-  });
 }
 
 // ─── WeChat ──────────────────────────────────────────────────────────

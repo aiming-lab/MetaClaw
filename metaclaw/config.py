@@ -168,6 +168,20 @@ class MetaClawConfig:
     skill_evolution_history_path: str = "memory_data/skills/evolution_history.jsonl"
 
     # ------------------------------------------------------------------ #
+    # Per-Agent Isolation                                                 #
+    # ------------------------------------------------------------------ #
+    # Map agent_id → per-agent overrides. Keys: mode, skills_dir, lora_output.
+    # Missing agents fall back to top-level config.
+    # Example YAML:
+    #   agents:
+    #     doctor:
+    #       mode: rl
+    #       lora_output: ~/.metaclaw/lora/doctor/
+    #     main:
+    #       mode: skills_only
+    agents: dict = field(default_factory=dict)
+
+    # ------------------------------------------------------------------ #
     # WeChat (official openclaw-weixin plugin, auto-installed)           #
     # ------------------------------------------------------------------ #
     wechat_enabled: bool = False

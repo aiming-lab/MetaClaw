@@ -152,9 +152,11 @@ function patchFetchForTrainingHeaders(
   api.on("before_prompt_build", (_event, ctx) => {
     const sessionId = ctx.sessionId ?? "";
     const turnType = SIDE_TRIGGERS.has(ctx.trigger ?? "") ? "side" : "main";
+    const agentId = ctx.agentId ?? "";
     pendingHeaders = {
       [config.sessionIdHeader]: sessionId,
       [config.turnTypeHeader]: turnType,
+      "X-Agent-Id": agentId,
     };
     return {};
   });

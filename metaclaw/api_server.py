@@ -430,6 +430,31 @@ def _extract_logprobs_from_chat_response(choice: dict[str, Any]) -> list[float]:
     return [float(item.get("logprob", 0.0)) for item in content if isinstance(item, dict)]
 
 
+
+def _extract_untrusted_metadata(messages: list[dict]) -> dict:
+    import re
+    import json
+    meta = {}
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") == "user":
+            text = msg.get("content", "")
+            if isinstance(text, list):
+                text = "\n".join([b.get("text", "") for b in text if isinstance(b, dict) and b.get("type") == "text"])
+            if not isinstance(text, str):
+                continue
+            
+            blocks = re.findall(r'\(untrusted metadata\):\s*```json\s*(.*?)\s*```', text, re.DOTALL | re.IGNORECASE)
+            for block in blocks:
+                try:
+                    parsed = json.loads(block)
+                    if isinstance(parsed, dict):
+                        meta.update(parsed)
+                except Exception:
+                    pass
+    return meta
+
 def _rewrite_new_session_bootstrap_prompt(messages: list[dict]) -> tuple[list[dict], int]:
     """Rewrite OpenClaw /new bootstrap user prompt to a safer variant.
 
@@ -668,6 +693,15 @@ class MetaClawAPIServer:
             _explicit_scope = (x_memory_scope or "") or str(body.get("memory_scope", "") or "")
             _explicit_user = (x_user_id or "") or str(body.get("user_id", "") or "")
             _explicit_workspace = (x_workspace_id or "") or str(body.get("workspace_id", "") or "")
+            
+            if isinstance(incoming_messages, list):
+                untrusted_meta = _extract_untrusted_metadata(incoming_messages)
+                if not _explicit_user and "sender_id" in untrusted_meta:
+                    _explicit_user = str(untrusted_meta["sender_id"])
+                if not _explicit_workspace and "workspace_id" in untrusted_meta:
+                    _explicit_workspace = str(untrusted_meta["workspace_id"])
+                elif not _explicit_workspace and "group_id" in untrusted_meta:
+                    _explicit_workspace = str(untrusted_meta["group_id"])
             _cached = owner._session_memory_scopes.get(session_id, "")
             if _cached and not _explicit_scope and not _explicit_user and not _explicit_workspace:
                 memory_scope = _cached

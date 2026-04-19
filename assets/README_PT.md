@@ -51,6 +51,7 @@ metaclaw start --mode skills_only  # apenas Skills, sem RL (sem necessidade de T
 
 ## 🔥 Novidades
 
+- **[19/04/2026]** **v0.4.2** — Integracao context-engine OpenClaw: o plugin de memoria registra-se como context-engine (ciclo assemble/compact) no OpenClaw v2026.4.10+, eliminando a dupla injeção de memorias. Adiciona captura incremental por turno com flush final, secao de configuracao de compatibilidade OpenClaw e supressao de memoria ativa para injeção de skills no lado do proxy.
 - **[11/04/2026]** **v0.4.1** — Ingestao incremental de memoria: a camada de memoria agora extrai e persiste turnos a cada N turnos (padrao 5) em vez de apenas no final da sessao, reduzindo o blackout de memoria no meio da sessao. Adiciona os novos endpoints sidecar `/buffer_turn` e `/flush_session`, um harness de benchmark com a flag `--buffer-turns` e relatorios comparativos de experimentos.
 - **[25/03/2026]** **v0.4.0** — Contexture layer: MetaClaw agora persiste a memoria entre sessoes para usuarios e projetos. Fatos relevantes, preferencias e historico do projeto sao recuperados automaticamente e injetados nos prompts. Inclui politica de memoria adaptativa, consolidacao em segundo plano e servico sidecar de memoria opcional.
 - **[16/03/2026]** **v0.3.2** Suporte multi-Claw: IronClaw, PicoClaw, ZeroClaw, CoPaw, NanoClaw e NemoClaw agora sao suportados junto ao OpenClaw. NanoClaw via novo endpoint compativel com Anthropic `/v1/messages`; NemoClaw via roteamento de inferencia OpenShell. OpenRouter adicionado como plataforma LLM.

@@ -622,6 +622,7 @@ class MetaClawAPIServer:
             x_memory_scope: Optional[str] = Header(default=None),
             x_user_id: Optional[str] = Header(default=None),
             x_workspace_id: Optional[str] = Header(default=None),
+            x_metaclaw_contextengine: Optional[str] = Header(default=None),
         ):
             owner: MetaClawAPIServer = request.app.state.owner
             # Update idle tracker so the scheduler knows the user is active
@@ -687,6 +688,7 @@ class MetaClawAPIServer:
                 turn_type=turn_type,
                 session_done=session_done,
                 memory_scope=memory_scope,
+                context_engine_active=x_metaclaw_contextengine == "1",
             )
             if stream:
                 return StreamingResponse(
@@ -1194,6 +1196,7 @@ class MetaClawAPIServer:
         turn_type: str,
         session_done: bool,
         memory_scope: str = "",
+        context_engine_active: bool = False,
     ) -> dict[str, Any]:
         messages = body.get("messages")
         if not isinstance(messages, list) or not messages:
@@ -1252,7 +1255,19 @@ class MetaClawAPIServer:
 
         # Inject memory and skills into system message for main turns
         if turn_type == "main":
-            if (
+            if context_engine_active and self.config.openclaw_context_engine_enabled:
+                if (
+                    self.config.openclaw_prefer_proxy_synergy
+                    and self.memory_manager
+                    and self.skill_manager
+                    and self.config.synergy_enabled
+                ):
+                    # User opted into proxy-side synergy even with context-engine active
+                    messages = await self._inject_augmentation(messages, scope_id=effective_memory_scope)
+                elif self.skill_manager:
+                    # Context-engine injected memories at gateway — skills only
+                    messages = self._inject_skills(messages)
+            elif (
                 self.memory_manager
                 and self.skill_manager
                 and self.config.synergy_enabled

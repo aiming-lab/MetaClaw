@@ -77,8 +77,13 @@ def _configure_openclaw(cfg: "MetaClawConfig") -> None:
         ["openclaw", "config", "set", "agents.defaults.model.primary",
          f"metaclaw/{model_id}"],
         ["openclaw", "config", "set", "agents.defaults.sandbox.mode", "off"],
-        ["openclaw", "gateway", "restart"],
     ]
+    # Suppress built-in Active Memory — MetaClaw handles memory via context-engine
+    if cfg.openclaw_active_memory_compat:
+        commands.append(
+            ["openclaw", "config", "set", "plugins.slots.memory", "metaclaw-memory"],
+        )
+    commands.append(["openclaw", "gateway", "restart"])
     _run_commands("openclaw", commands)
 
 

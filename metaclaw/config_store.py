@@ -79,6 +79,12 @@ _DEFAULTS: dict = {
     "wechat": {
         "enabled": False,
     },
+    "openclaw_compat": {
+        "context_engine_enabled": True,
+        "active_memory_compat": True,
+        "prefer_proxy_synergy": False,
+        "min_version": "2026.4.10",
+    },
 }
 
 
@@ -185,6 +191,7 @@ class ConfigStore:
         sched = data.get("scheduler", {})
         sched_cal = sched.get("calendar", {})
         wx = data.get("wechat", {})
+        oc = data.get("openclaw_compat", {})
         mode = data.get("mode", "auto")
         rl_enabled = mode in ("rl", "auto") or bool(rl.get("enabled", False))
 
@@ -315,8 +322,12 @@ class ConfigStore:
                 sched_cal.get("token_path", "")
                 or str(Path.home() / ".metaclaw" / "calendar_token.json")
             ),
-            # WeChat (official openclaw-weixin plugin)
             wechat_enabled=_yaml_bool(wx.get("enabled"), False),
+            # OpenClaw Compatibility (v2026.4.10+)
+            openclaw_context_engine_enabled=_yaml_bool(oc.get("context_engine_enabled"), True),
+            openclaw_active_memory_compat=_yaml_bool(oc.get("active_memory_compat"), True),
+            openclaw_prefer_proxy_synergy=_yaml_bool(oc.get("prefer_proxy_synergy"), False),
+            openclaw_min_version=str(oc.get("min_version", "2026.4.10")),
         )
 
     def describe(self) -> str:
@@ -358,4 +369,12 @@ class ConfigStore:
             f"memory.stale_h:  {memory.get('review_stale_after_hours', 72)}",
             f"wechat.enabled:  {wx.get('enabled', False)}",
         ]
+        oc = data.get("openclaw_compat", {})
+        if oc:
+            lines += [
+                f"openclaw.context_engine: {oc.get('context_engine_enabled', True)}",
+                f"openclaw.active_memory:  {oc.get('active_memory_compat', True)}",
+                f"openclaw.proxy_synergy:  {oc.get('prefer_proxy_synergy', False)}",
+                f"openclaw.min_version:    {oc.get('min_version', '2026.4.10')}",
+            ]
         return "\n".join(lines)

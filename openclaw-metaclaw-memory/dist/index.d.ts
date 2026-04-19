@@ -2,7 +2,7 @@ declare const _default: {
     id: string;
     name: string;
     description: string;
-    kind: "memory";
+    kind: readonly ["memory", "context-engine"];
     configSchema: import("@sinclair/typebox").TObject<{
         autoRecall: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TBoolean>;
         autoCapture: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TBoolean>;

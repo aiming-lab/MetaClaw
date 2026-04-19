@@ -9,12 +9,13 @@ import { registerMemoryForgetTool } from "./tools/memory-forget.js";
 import { registerMemoryStatusTool } from "./tools/memory-status.js";
 import { registerCli } from "./commands/cli.js";
 import { registerSlashCommands } from "./commands/slash.js";
+import { createMetaClawContextEngine } from "./context-engine.js";
 import { configSchema } from "./config-schema.js";
 export default {
     id: "metaclaw-memory",
     name: "MetaClaw Memory",
     description: "Self-evolving local-first memory with hybrid retrieval, 6 structured types, and adaptive policy — no cloud required.",
-    kind: "memory",
+    kind: ["memory", "context-engine"],
     configSchema,
     register(api) {
         const cfg = parseConfig(api.pluginConfig ?? {});
@@ -44,8 +45,24 @@ export default {
             }
             return client;
         };
-        // Hooks
-        registerAutoRecall(api, getClient, cfg);
+        // ContextEngine registration (OpenClaw v2026.4.10+)
+        // If context-engine API is available, register and skip auto-recall
+        // to prevent double-injection (assemble + prependContext both injecting memories).
+        let contextEngineActive = false;
+        try {
+            if (typeof api.registerContextEngine === "function") {
+                api.registerContextEngine("metaclaw-memory", () => createMetaClawContextEngine(getClient, cfg, api.logger));
+                contextEngineActive = true;
+                api.logger.info("metaclaw-memory: context-engine registered (assemble/compact lifecycle)");
+            }
+        }
+        catch {
+            api.logger.info("metaclaw-memory: context-engine registration skipped (API not available)");
+        }
+        // Hooks — skip auto-recall if context-engine handles memory injection
+        if (!contextEngineActive) {
+            registerAutoRecall(api, getClient, cfg);
+        }
         registerAutoCapture(api, getClient, cfg);
         // AI tools
         registerMemorySearchTool(api, getClient, cfg);

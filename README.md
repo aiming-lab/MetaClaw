@@ -93,6 +93,7 @@ Configure once with `metaclaw setup`, then `metaclaw start` brings up the proxy,
 | Mode | Default | What it does |
 |------|---------|--------------|
 | `skills_only` | | Proxy your LLM API. Skills injected and auto-summarized after each session. No GPU/Tinker required. |
+| `verified_skills` | | Same as `skills_only`, but skill promotion is gated by a pluggable verifier (local by default, no network required). |
 | `rl` | | Skills + RL training (GRPO). Trains immediately when a batch is full. Optional OPD for teacher distillation. |
 | `auto` | ✅ | Skills + RL + smart scheduler. RL weight updates only run during sleep/idle/meeting windows. |
 
@@ -285,7 +286,7 @@ When you start MetaClaw, the command waits until the local proxy becomes healthy
 <summary><b>Full config reference (click to expand)</b></summary>
 
 ```yaml
-mode: auto                 # "auto" | "rl" | "skills_only"
+mode: auto                 # "auto" | "rl" | "skills_only" | "verified_skills"
 claw_type: openclaw        # "openclaw" | "copaw" | "ironclaw" | "picoclaw" | "zeroclaw" | "nanoclaw" | "nemoclaw" | "hermes" | "none"
 
 llm:
@@ -574,3 +575,20 @@ MetaClaw builds on top of the following open-source projects:
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
+
+### Verified skills (optional)
+
+`verified_skills` adds a verifier gate before a generated skill is persisted. By default, use:
+
+```yaml
+mode: verified_skills
+verification:
+  enabled: true
+  verifier: local
+  require_pass_for_promotion: true
+  allow_indeterminate_promotion: false
+  redact_inputs: true
+```
+
+Remote verifiers are optional (`remote_http` and `settlement_witness`). SettlementWitness is supported as an adapter only and is **not required**.

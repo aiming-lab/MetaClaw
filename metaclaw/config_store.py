@@ -79,6 +79,19 @@ _DEFAULTS: dict = {
     "wechat": {
         "enabled": False,
     },
+    "verification": {
+        "enabled": False,
+        "verifier": "local",
+        "require_pass_for_promotion": True,
+        "allow_indeterminate_promotion": False,
+        "rollback_threshold": 3,
+        "store_receipts": True,
+        "redact_inputs": True,
+        "endpoint": "",
+        "agent_id": "",
+        "timeout_seconds": 10,
+        "allow_fallback_promotion_on_config_error": False,
+    },
 }
 
 
@@ -185,6 +198,7 @@ class ConfigStore:
         sched = data.get("scheduler", {})
         sched_cal = sched.get("calendar", {})
         wx = data.get("wechat", {})
+        verification = data.get("verification", {})
         mode = data.get("mode", "auto")
         rl_enabled = mode in ("rl", "auto") or bool(rl.get("enabled", False))
 
@@ -236,6 +250,7 @@ class ConfigStore:
             except Exception:
                 pass
 
+        from .config import VerificationConfig
         return MetaClawConfig(
             # Mode
             mode=mode,
@@ -329,6 +344,7 @@ class ConfigStore:
         rl = data.get("rl", {})
         memory = data.get("memory", {})
         wx = data.get("wechat", {})
+        verification = data.get("verification", {})
         mode = data.get("mode", "auto")
         lines = [
             f"mode:            {mode}",

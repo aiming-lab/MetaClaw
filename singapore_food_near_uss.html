@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新加坡环球影城附近美食指南 · 人均 ≤ S$80</title>
+<style>
+  :root {
+    --primary: #e63946;
+    --secondary: #f4a261;
+    --dark: #1d3557;
+    --light: #f1faee;
+    --accent: #2a9d8f;
+    --gray: #6c757d;
+    --bg: #fafafa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    color: #222;
+    background: var(--bg);
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+    padding: 60px 20px 40px;
+    text-align: center;
+  }
+  header h1 { font-size: 2.4em; margin-bottom: 12px; }
+  header .sub { font-size: 1.1em; opacity: 0.95; }
+  header .meta {
+    margin-top: 16px;
+    font-size: 0.9em;
+    opacity: 0.85;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 30px 20px 60px;
+  }
+  .tldr {
+    background: white;
+    border-left: 5px solid var(--accent);
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .tldr h2 { color: var(--dark); margin-bottom: 10px; font-size: 1.2em; }
+  .tldr ul { padding-left: 20px; }
+  .tldr li { margin-bottom: 4px; }
+
+  .zone {
+    margin-top: 40px;
+  }
+  .zone-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 8px;
+  }
+  .zone-header h2 {
+    color: var(--dark);
+    font-size: 1.6em;
+  }
+  .zone-header .badge {
+    background: var(--primary);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+  }
+  .zone-desc {
+    color: var(--gray);
+    margin-bottom: 18px;
+    font-size: 0.95em;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  }
+  .card h3 {
+    color: var(--dark);
+    font-size: 1.15em;
+    margin-bottom: 6px;
+  }
+  .card .type {
+    color: var(--accent);
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .card .desc {
+    font-size: 0.92em;
+    color: #444;
+    margin-bottom: 12px;
+    flex-grow: 1;
+  }
+  .card .recommend {
+    background: #fff8e1;
+    border-left: 3px solid var(--secondary);
+    padding: 8px 12px;
+    font-size: 0.88em;
+    margin-bottom: 12px;
+    border-radius: 4px;
+  }
+  .card .recommend strong { color: #b85c00; }
+  .card .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.88em;
+    padding-top: 10px;
+    border-top: 1px dashed #ddd;
+  }
+  .card .price {
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .card .location {
+    color: var(--gray);
+  }
+
+  .tag {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    margin-right: 4px;
+    margin-bottom: 4px;
+  }
+  .tag.halal { background: #d4edda; color: #155724; }
+  .tag.veg { background: #d1ecf1; color: #0c5460; }
+  .tag.budget { background: #ffeaa7; color: #6c4a00; }
+  .tag.signature { background: #f8d7da; color: #721c24; }
+
+  .tips {
+    background: var(--dark);
+    color: var(--light);
+    padding: 28px;
+    border-radius: 10px;
+    margin-top: 40px;
+  }
+  .tips h2 { margin-bottom: 14px; color: white; }
+  .tips ul { padding-left: 24px; }
+  .tips li { margin-bottom: 8px; }
+
+  footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--gray);
+    font-size: 0.85em;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 20px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.8em; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎢 新加坡环球影城附近美食指南</h1>
+  <div class="sub">USS · 圣淘沙 · 怡丰城 — 人均 ≤ S$80</div>
+  <div class="meta">最后更新：2026年5月 · 价格仅供参考，以餐厅实际收费为准（部分餐厅另收 ++ 服务费及消费税）</div>
+</header>
+
+<div class="container">
+
+  <div class="tldr">
+    <h2>📌 快速建议（TL;DR）</h2>
+    <ul>
+      <li><strong>预算 S$10–25：</strong>怡丰城 Food Republic 大食代、Sentosa Beach Station 的 Good Old Days 食阁、USS 园内 Discovery Food Court。</li>
+      <li><strong>预算 S$25–50：</strong>圣淘沙名胜世界 (RWS) 沿街的 Sen of Japan、Hard Rock Cafe、Bikini Bar、Coastes 海边餐厅。</li>
+      <li><strong>预算 S$50–80（小奢）：</strong>RWS 的 Syun（日料）午餐套餐、TungLok Heen（中餐）商务午餐、Greenwood Fish Market（海鲜）。</li>
+      <li><strong>清真选择：</strong>Good Old Days、Malay Food Street、Kurry Korner 都是清真认证。</li>
+    </ul>
+  </div>
+
+  <!-- ZONE 1: USS 园内 -->
+  <section class="zone">
+    <div class="zone-header">
+      <h2>🎡 USS 园内 (Universal Studios Singapore)</h2>
+      <span class="badge">最方便 · 不出园</span>
+    </div>
+    <p class="zone-desc">玩到一半饿了直接就近解决。主题餐厅气氛好，但价格偏景区。一般主餐 S$15–25，套餐 S$20–35。</p>
+    <div class="grid">
+
+      <div class="card">
+        <h3>Discovery Food Court</h3>
+        <div class="type">食阁 · 多国菜</div>
+        <div class="desc">USS 园内最实惠的食阁，集合本地和印度风味，含素食和非素食选项。套餐 S$16 左右，是园内填饱肚子的性价比之王。</div>
+        <div class="recommend"><strong>推荐：</strong>套餐配可乐 / 海南鸡饭 / 印度咖喱套餐</div>
+        <div>
+          <span class="tag veg">有素食</span>
+          <span class="tag budget">实惠</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$15–25</span>
+          <span class="location">失落的世界区</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Mel's Drive-In</h3>
+        <div class="type">美式快餐 · 主题餐厅</div>
+        <div class="desc">复古 50 年代美式 Diner 风格，汉堡、薯条、奶昔，孩子最爱拍照。氛围加分，分量足。</div>
+        <div class="recommend"><strong>推荐：</strong>经典芝士汉堡 + 奶昔套餐</div>
+        <div>
+          <span class="tag">家庭友好</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$15–25</span>
+          <span class="location">好莱坞区</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Oasis Spice Café</h3>
+        <div class="type">中东菜 · 清真</div>
+        <div class="desc">古埃及主题区内的清真餐厅，提供中东风味烤鸡、咖喱饭等。是穆斯林游客或想换口味的好选择。</div>
+        <div class="recommend"><strong>推荐：</strong>烤鸡套餐 / 羊肉咖喱饭</div>
+        <div>
+          <span class="tag halal">清真</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$18–28</span>
+          <span class="location">古埃及区</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>KT's Grill</h3>
+        <div class="type">西式烧烤</div>
+        <div class="desc">园内偏正式的烧烤餐厅，提供烤肉拼盘、牛排、海鲜，是园区内升级版选择。</div>
+        <div class="recommend"><strong>推荐：</strong>烤肋排 / 商务午餐</div>
+        <div>
+          <span class="tag">坐下来吃</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$25–40</span>
+          <span class="location">纽约区</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Loui's NY Pizza Parlor</h3>
+        <div class="type">纽约披萨</div>
+        <div class="desc">现切大块纽约披萨，方便快速。一个人吃一片 + 一杯饮料就够。</div>
+        <div class="recommend"><strong>推荐：</strong>意式辣肠披萨</div>
+        <div>
+          <span class="tag budget">快餐</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$12–20</span>
+          <span class="location">纽约区</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ZONE 2: RWS 圣淘沙名胜世界 -->
+  <section class="zone">
+    <div class="zone-header">
+      <h2>🏨 圣淘沙名胜世界 (Resorts World Sentosa)</h2>
+      <span class="badge">USS 出门即到</span>
+    </div>
+    <p class="zone-desc">就在 USS 大门外，步行 1–5 分钟。从食阁到名厨餐厅都有，选择最多。<strong>注意：</strong>原 Malaysian Food Street 已于 2025 年 2 月闭店重装，目前正在以新概念回归，到访前请确认营业状态。</p>
+    <div class="grid">
+
+      <div class="card">
+        <h3>Syun (午餐套餐)</h3>
+        <div class="type">日料 · 名厨主理</div>
+        <div class="desc">山下春幸 (Hal Yamashita) 主理的新和食，环境精致。<strong>独家午餐便当 S$46++</strong> 是体验高端日料的高性价比方式，含茶碗蒸 + 味噌汤。</div>
+        <div class="recommend"><strong>必点：</strong>独家午市便当套餐（仅午餐供应）</div>
+        <div>
+          <span class="tag signature">名厨</span>
+        </div>
+        <div class="footer">
+          <span class="price">午餐 S$55–70（含税服）</span>
+          <span class="location">RWS Festive Walk</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>TungLok Heen</h3>
+        <div class="type">中餐 · 港粤创意菜</div>
+        <div class="desc">名厨 Susur Lee 主理，迈克尔酒店内。点心和商务午餐性价比不错，正餐人均较高。</div>
+        <div class="recommend"><strong>推荐：</strong>商务午市套餐 / 周末点心</div>
+        <div>
+          <span class="tag signature">名厨</span>
+        </div>
+        <div class="footer">
+          <span class="price">午餐人均 S$45–75</span>
+          <span class="location">Hotel Michael, RWS</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Hard Rock Cafe Sentosa</h3>
+        <div class="type">美式 · 摇滚主题</div>
+        <div class="desc">老牌摇滚主题餐厅，汉堡、肋排、鸡翅分量大。环境吵但氛围好，适合一群人来庆祝。</div>
+        <div class="recommend"><strong>推荐：</strong>Legendary Burger / BBQ 烟熏肋排</div>
+        <div>
+          <span class="tag">家庭友好</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$35–60</span>
+          <span class="location">RWS 沿街</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Sen of Japan</h3>
+        <div class="type">日料 · 寿司料理</div>
+        <div class="desc">来自拉斯维加斯的 omakase 风格小店，午市套餐相对亲民，新鲜度高。</div>
+        <div class="recommend"><strong>推荐：</strong>午市散寿司 / 寿司拼盘套餐</div>
+        <div>
+          <span class="tag">海鲜控</span>
+        </div>
+        <div class="footer">
+          <span class="price">午餐 S$35–60</span>
+          <span class="location">RWS Festive Walk</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Malaysian Food Street（重装中 / 新概念）</h3>
+        <div class="type">食阁 · 马来街食</div>
+        <div class="desc">老牌马来街头美食食阁，2025 年 2 月起重装，预计以新名字+新概念回归。原招牌：槟城炒粿条 S$5.5、KL Hokkien Mee S$6.6、马六甲鸡饭团 S$5。<strong>请到 RWS 官网确认是否已重新开放。</strong></div>
+        <div class="recommend"><strong>提示：</strong>如未开放，可去怡丰城 Food Republic 替代</div>
+        <div>
+          <span class="tag budget">实惠</span>
+          <span class="tag halal">部分清真</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$8–15</span>
+          <span class="location">RWS Bull Ring</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Osia Steak & Seafood Grill（建议拼套餐）</h3>
+        <div class="type">澳式扒房</div>
+        <div class="desc">来自澳洲的食材和酒。<strong>单点超预算</strong>（和牛肋眼 S$140++），但 <strong>3 道菜午市套餐</strong> 通常 S$58–78，能在预算内体验名厨澳菜。</div>
+        <div class="recommend"><strong>提示：</strong>只考虑 Set Lunch / Pre-theatre Menu</div>
+        <div>
+          <span class="tag signature">名厨</span>
+        </div>
+        <div class="footer">
+          <span class="price">午市套餐 S$58–78</span>
+          <span class="location">RWS Ave8</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ZONE 3: 圣淘沙岛其他区 -->
+  <section class="zone">
+    <div class="zone-header">
+      <h2>🏖️ 圣淘沙岛其他区域</h2>
+      <span class="badge">沙滩 / 海景</span>
+    </div>
+    <p class="zone-desc">玩完 USS 想换个氛围？乘 Sentosa Express 几分钟就到 Beach Station 一带，海边餐厅 + 食阁组合很丰富。</p>
+    <div class="grid">
+
+      <div class="card">
+        <h3>Good Old Days Food Court</h3>
+        <div class="type">食阁 · 本地美食 · 清真</div>
+        <div class="desc">Beach Station 外，10am–10pm 营业，清真认证。海南鸡饭套餐 S$7.8、印尼炸鸡 S$7.8、沙爹 S$7.8，甚至有 S$22.8 的 NZ 安格斯牛排。圣淘沙岛上性价比之王。</div>
+        <div class="recommend"><strong>必点：</strong>海南鸡饭套餐 / Ayam Penyet / 沙爹</div>
+        <div>
+          <span class="tag halal">清真</span>
+          <span class="tag budget">实惠</span>
+          <span class="tag">家庭友好</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$10–15</span>
+          <span class="location">60 Siloso Beach Walk</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Coastes</h3>
+        <div class="type">海边餐厅 · 西餐 Brunch</div>
+        <div class="desc">Siloso Beach 沙滩躺椅旁的餐厅，氛围满分。早午餐 Eggs Benedict S$18、希腊酸奶水果 S$12，主菜 S$22–32。</div>
+        <div class="recommend"><strong>推荐：</strong>Brunch 时段最舒服 / 看日落配啤酒</div>
+        <div>
+          <span class="tag">海景</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$30–55</span>
+          <span class="location">Siloso Beach</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Bikini Bar</h3>
+        <div class="type">海边休闲餐吧</div>
+        <div class="desc">Siloso Beach 沙滩边小酒吧，下酒菜小份多样：辣椒蟹蘸馒头 S$15、烤鸡塔可 S$14。适合两人小酌分享。</div>
+        <div class="recommend"><strong>推荐：</strong>辣椒蟹蘸馒头 + 啤酒</div>
+        <div>
+          <span class="tag">海景</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$25–45</span>
+          <span class="location">Siloso Beach</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Kurry Korner</h3>
+        <div class="type">印度菜 · 清真</div>
+        <div class="desc">Siloso Beach 沙滩附近的印度小馆，鸡饭、咖喱、烤饼、Lassi 价格平易近人。换口味的好去处。</div>
+        <div class="recommend"><strong>推荐：</strong>鸡肉印度香饭 / 牛油咖喱 + 烤饼</div>
+        <div>
+          <span class="tag halal">清真</span>
+          <span class="tag veg">有素食</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$15–25</span>
+          <span class="location">Siloso Beach</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Greenwood Fish Market (Quayside Isle)</h3>
+        <div class="type">海鲜餐厅</div>
+        <div class="desc">圣淘沙湾 Quayside Isle 的实惠海鲜，鲜活鱼贝直送。Fish & Chips、生蚝、鱼汤通心粉是招牌。需从 Beach Station 搭岛上巴士。</div>
+        <div class="recommend"><strong>推荐：</strong>Fish & Chips / 三文鱼套餐</div>
+        <div>
+          <span class="tag">海景</span>
+          <span class="tag">海鲜</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$40–70</span>
+          <span class="location">Quayside Isle</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Miska Café (Quayside Isle)</h3>
+        <div class="type">地中海 / 亚洲融合</div>
+        <div class="desc">Quayside Isle 海边咖啡馆，价格友好：鹰嘴豆泥 S$16、Carbonara S$25、Bulgogi 三明治 S$22、照烧鸡饭 S$29。</div>
+        <div class="recommend"><strong>推荐：</strong>鹰嘴豆泥 + 主菜 + 饮料</div>
+        <div>
+          <span class="tag">海景</span>
+          <span class="tag">下午茶</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$30–50</span>
+          <span class="location">Quayside Isle</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ZONE 4: 怡丰城 VivoCity -->
+  <section class="zone">
+    <div class="zone-header">
+      <h2>🛍️ 怡丰城 VivoCity（圣淘沙岛外）</h2>
+      <span class="badge">岛外更实惠</span>
+    </div>
+    <p class="zone-desc">圣淘沙跨海地铁的对岸，就是 Sentosa Express 起点站。岛外价格更亲民，是入岛前 / 出岛后的最优正餐选择。</p>
+    <div class="grid">
+
+      <div class="card">
+        <h3>Food Republic 大食代</h3>
+        <div class="type">食阁 · 全亚洲菜</div>
+        <div class="desc">3 楼超大食阁，约 40 个摊位，1900 年代怀旧装修。海南鸡饭、福建虾面、叻沙、台湾牛肉面、日韩简餐都有，价格 S$6–15。</div>
+        <div class="recommend"><strong>必点：</strong>新加坡叻沙 / 福建虾面 / 鸡饭</div>
+        <div>
+          <span class="tag budget">实惠</span>
+          <span class="tag">本地体验</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$8–18</span>
+          <span class="location">VivoCity L3</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Kopitiam 食阁</h3>
+        <div class="type">食阁 · 本地咖啡店</div>
+        <div class="desc">老字号连锁食阁，更接地气更便宜。早餐 Kaya 吐司、咖啡、本地小炒一应俱全。</div>
+        <div class="recommend"><strong>推荐：</strong>新加坡早餐 Set / 椰浆饭</div>
+        <div>
+          <span class="tag budget">实惠</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$6–12</span>
+          <span class="location">VivoCity B2</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Paradise Classic</h3>
+        <div class="type">中餐 · 港式茶餐厅升级版</div>
+        <div class="desc">新加坡本地连锁，环境舒适。招牌大虾鲜虾汤河粉 S$13.9 / S$20.9，比单独点海鲜便宜不少。</div>
+        <div class="recommend"><strong>推荐：</strong>大虾鲜虾汤河粉 + 小炒</div>
+        <div>
+          <span class="tag">家庭友好</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$25–45</span>
+          <span class="location">VivoCity</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Streats Asian Café</h3>
+        <div class="type">茶餐厅 · 100+ 选项</div>
+        <div class="desc">超多选项亚洲茶餐厅，盐蛋黄流沙包 S$4.2、重庆鸡 S$8.8、Mee Goreng + 沙爹 S$13.8、椰浆饭 Set A S$14.5。点单像在自助餐厅。</div>
+        <div class="recommend"><strong>推荐：</strong>椰浆饭 + 流沙包 + 拉茶</div>
+        <div>
+          <span class="tag budget">实惠</span>
+          <span class="tag">家庭友好</span>
+        </div>
+        <div class="footer">
+          <span class="price">人均 S$15–25</span>
+          <span class="location">VivoCity</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TIPS -->
+  <section class="tips">
+    <h2>💡 实用 Tips</h2>
+    <ul>
+      <li><strong>预算守门员：</strong>新加坡餐厅标 "++" 表示需额外 +10% 服务费 +9% GST，合计 ~19.6%。S$80 预算下，单点上限建议在 <strong>S$66</strong> 左右。</li>
+      <li><strong>性价比最高的策略：</strong>园内吃简餐（Discovery Food Court 套餐 S$16），晚上出 USS 后去 Good Old Days 或回怡丰城 Food Republic 吃一顿正餐，全天人均轻松控制在 S$40–60。</li>
+      <li><strong>小奢策略：</strong>把一天的主餐放在 Syun 午市便当（S$46++ ≈ S$55）或 Osia 三道菜套餐（S$58–78），其余两餐控制在 S$15 以内。</li>
+      <li><strong>避坑：</strong>Sentosa 岛上的海边度假村式餐厅（如 Tanjong Beach Club）单菜常 S$30+ 且需加服务费，超预算风险高。</li>
+      <li><strong>支付：</strong>新加坡刷卡 / Apple Pay / 支付宝（部分商家）通用；带少量现金给小食阁。</li>
+      <li><strong>交通：</strong>USS → Good Old Days 步行约 10 分钟（经 Beach Station）；USS → VivoCity 搭 Sentosa Express 约 5 分钟，每人 S$4 入岛费（出岛免费）。</li>
+      <li><strong>素食 / 清真：</strong>Discovery Food Court、Oasis Spice Café、Good Old Days、Kurry Korner 都有清真或素食选项。</li>
+      <li><strong>排队提示：</strong>周末 RWS 名店建议提前用官网或 Chope/Tabletop 预订；食阁是抢座制，建议错峰 (11:30 前或 14:00 后)。</li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  <p>📚 资料来源：RWSentosa 官网 · Sentosa.com.sg · EatBook · Tripadvisor · FoodAdvisor · skyticket Travel Guide · Klook · 各餐厅 2026 年公开菜单信息。</p>
+  <p>本指南仅供参考，价格与营业状态请以餐厅实际为准。生成于 2026-05。</p>
+</footer>
+
+</body>
+</html>

@@ -147,8 +147,12 @@ metaclaw setup
 
 交互式向导会引导你完成：
 1. **选择个人 Agent** — `openclaw`、`copaw`、`ironclaw`、`picoclaw`、`zeroclaw`、`nanoclaw`、`nemoclaw` 或 `none`（`metaclaw start` 时会自动配置）
-2. **选择 LLM 提供商** — Kimi、Qwen、OpenAI、Volcano Engine、自定义等
-3. **填写 API Key**，并可选择是否启用 RL 训练
+2. **选择认证方式** — `api_key`（直连 API）或 `oauth_token`（CLI 子进程）
+3. **选择 LLM 提供商**
+   - **api_key**：Kimi、Qwen、OpenAI、Minimax、Novita、OpenRouter、Volcengine、BytePlus 或自定义
+   - **Volcengine / BytePlus**：再选择 `standard` 或 `coding-plan` 变体，并填写对应 API Key
+   - **oauth_token**：Anthropic（Claude Code）、OpenAI Codex 或 Gemini CLI
+4. **填写模型 ID**，并可选择是否启用 RL 训练
 
 MetaClaw 的 RL 路径可以显式切换 `tinker`、`mint` 和 `weaver`。推荐默认值是 `auto`；当环境里安装了 MinT 或 Weaver 兼容包时,它仍然可以根据对应风格的凭证或 base URL 自动识别。
 
@@ -222,7 +226,8 @@ claw_type: openclaw        # "openclaw" | "copaw" | "ironclaw" | "picoclaw" | "z
 
 llm:
   auth_method: api_key      # "api_key" | "oauth_token"
-  provider: kimi            # kimi | qwen | openai | minimax | novita | openrouter | volcengine | custom
+  provider: kimi            # kimi | qwen | openai | minimax | novita | openrouter | volcengine | byteplus | custom
+  plan_variant: ""          # 仅 volcengine/byteplus 使用："standard" | "coding-plan"
   model_id: moonshotai/Kimi-K2.5
   api_base: https://api.moonshot.cn/v1
   api_key: sk-...

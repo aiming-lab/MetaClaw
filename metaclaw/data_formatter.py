@@ -219,6 +219,12 @@ def compute_advantages(batch: list[ConversationSample]) -> list[float]:
     Centre-and-scale rewards within the batch (GRPO style: (r - mean) / (std + eps)).
 
     Returns a list of float advantages, one per sample.
+
+    When the batch contains only one sample (or all rewards are identical),
+    std is 0 and the normalised advantage collapses to 0 for every sample,
+    producing no gradient signal at all.  In that case we fall back to
+    returning the raw (centred) rewards so the training step still gets a
+    meaningful update.
     """
     if not batch:
         return []
@@ -226,5 +232,6 @@ def compute_advantages(batch: list[ConversationSample]) -> list[float]:
     mean_r = sum(rewards) / len(rewards)
     variance = sum((r - mean_r) ** 2 for r in rewards) / len(rewards)
     std_r = variance ** 0.5
-    eps = 1e-8
-    return [(r - mean_r) / (std_r + eps) for r in rewards]
+    if std_r < 1e-8:
+        return [r - mean_r if len(batch) > 1 else r for r in rewards]
+    return [(r - mean_r) / std_r for r in rewards]

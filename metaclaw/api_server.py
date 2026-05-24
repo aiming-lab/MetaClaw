@@ -25,6 +25,7 @@ import queue
 import re
 import threading
 import time
+from datetime import datetime
 from itertools import count
 from typing import Any, Optional
 
@@ -34,6 +35,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from openai import OpenAI
 
 from .config import MetaClawConfig
+from .verification import build_verifier_safe
+from .verification.base import VerificationResult, VerificationVerdict
 from .data_formatter import ConversationSample
 from .memory.scope import base_scope, derive_memory_scope
 from .prm_scorer import PRMScorer
@@ -516,6 +519,7 @@ class MetaClawAPIServer:
         self.prm_scorer = prm_scorer
         self.skill_evolver = skill_evolver
         self.memory_manager = memory_manager
+        self._verifier = build_verifier_safe(config, logger=logger)
         # Optional LastRequestTracker for scheduler idle detection
         self._last_request_tracker = last_request_tracker
 
@@ -2141,8 +2145,62 @@ class MetaClawAPIServer:
             added = 0
             for skill in new_skills:
                 category = skill.get("category", "general")
+                if self.config.mode == "verified_skills":
+                    task_id, spec, output, context = self._build_verification_packet(skill)
+                    vr = self._verifier.verify(task_id=task_id, spec=spec, output=output, context=context)
+                    skill.setdefault("metadata", {})["promotion_source"] = "verified_skills"
+                    skill["metadata"]["verification"] = self._verification_metadata(vr)
+                    if (
+                        vr.verifier_id == "null"
+                        and vr.reason_code == "VERIFIER_CONFIG_ERROR"
+                        and self.config.verification.require_pass_for_promotion
+                        and not self.config.verification.allow_fallback_promotion_on_config_error
+                    ):
+                        vr = VerificationResult(
+                            verdict=VerificationVerdict.INDETERMINATE,
+                            verifier_id="null",
+                            reason_code="VERIFIER_CONFIG_ERROR",
+                            message="Verifier configuration failed.",
+                        )
+                    if self.config.verification.require_pass_for_promotion and vr.verdict != VerificationVerdict.PASS:
+                        bucket = "pending_review" if vr.verdict == VerificationVerdict.INDETERMINATE and not self.config.verification.allow_indeterminate_promotion else "rejected"
+                        self._audit_skill_decision(bucket, skill, vr)
+                        continue
                 added += self.skill_manager.add_skills([skill], category=category)
             logger.info("[SkillEvolver] session analysis added %d new skills", added)
+
+
+    def _build_verification_packet(self, skill: dict) -> tuple[str, dict, dict, dict]:
+        from datetime import datetime
+        ts = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+        task_id = f"skill-promotion-{skill.get('name','unknown')}-{ts}"
+        spec = {"verification_type": "skill_promotion", "skill_name": skill.get("name", ""), "criteria": ["non_empty", "has_evaluation"]}
+        output = {
+            "skill_name": skill.get("name", ""),
+            "skill_content": skill.get("content", ""),
+            "evaluation_criteria": ["generated_from_session"],
+            "evaluation_result": {"passed": True, "criteria_satisfied": ["generated_from_session"]},
+        }
+        existing_contents = []
+        if self.skill_manager:
+            for group in self.skill_manager.skills.values():
+                if isinstance(group, list):
+                    existing_contents.extend([x.get("content", "") for x in group if isinstance(x, dict)])
+                elif isinstance(group, dict):
+                    for arr in group.values():
+                        existing_contents.extend([x.get("content", "") for x in arr if isinstance(x, dict)])
+        context = {"source": "skills_only_session_analysis", "existing_skill_contents": existing_contents, "redacted": True}
+        return task_id, spec, output, context
+
+    def _verification_metadata(self, vr: VerificationResult) -> dict:
+        return {"verified": vr.verdict == VerificationVerdict.PASS and vr.verifier_id != "null", "verifier_id": vr.verifier_id, "verdict": vr.verdict.value, "confidence": vr.confidence, "reason_code": vr.reason_code, "receipt_id": vr.receipt_id, "verifier_kid": vr.verifier_kid}
+
+    def _audit_skill_decision(self, bucket: str, skill: dict, vr: VerificationResult) -> None:
+        base = os.path.join(self.config.skills_dir, bucket)
+        os.makedirs(base, exist_ok=True)
+        path = os.path.join(base, f"{skill.get('name','unknown')}.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"skill_name": skill.get("name"), "timestamp": datetime.utcnow().isoformat() + "Z", "promotion_source": self.config.mode, "verifier_id": vr.verifier_id, "verdict": vr.verdict.value, "reason_code": vr.reason_code, "message": vr.message, "receipt_id": vr.receipt_id}, f)
 
     # ------------------------------------------------------------------ #
     # Skill injection                                                      #

@@ -29,6 +29,7 @@ Valid categories: general, coding, research, data_analysis, security,
 import glob
 import logging
 import os
+import json
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -127,12 +128,15 @@ def _parse_skill_md(path: str) -> Optional[Dict[str, Any]]:
         logger.warning("[SkillManager] skipping %s — missing name or description", path)
         return None
 
-    return {
-        "name": name,
-        "description": description,
-        "category": category,
-        "content": body,
-    }
+    result = {"name": name, "description": description, "category": category, "content": body}
+    meta_path = os.path.join(os.path.dirname(path), "metadata.json")
+    if os.path.exists(meta_path):
+        try:
+            with open(meta_path, encoding="utf-8") as mf:
+                result["metadata"] = json.load(mf)
+        except Exception:
+            pass
+    return result
 
 
 # ------------------------------------------------------------------ #
@@ -495,6 +499,10 @@ class SkillManager:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(text)
             logger.info("[SkillManager] wrote skill file: %s", path)
+            metadata = skill.get("metadata")
+            if isinstance(metadata, dict):
+                with open(os.path.join(skill_dir, "metadata.json"), "w", encoding="utf-8") as mf:
+                    json.dump(metadata, mf, ensure_ascii=False, indent=2)
         except OSError as e:
             logger.warning("[SkillManager] could not write %s: %s", path, e)
 

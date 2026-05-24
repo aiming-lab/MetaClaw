@@ -176,3 +176,11 @@ class MetaClawConfig:
     # WeChat (official openclaw-weixin plugin, auto-installed)           #
     # ------------------------------------------------------------------ #
     wechat_enabled: bool = False
+
+    # ------------------------------------------------------------------ #
+    # OpenClaw Compatibility                                              #
+    # ------------------------------------------------------------------ #
+    openclaw_context_engine_enabled: bool = True       # Use context-engine lifecycle (v2026.4.10+)
+    openclaw_active_memory_compat: bool = True         # Suppress OpenClaw built-in Active Memory
+    openclaw_prefer_proxy_synergy: bool = False        # Force proxy-side synergy when context-engine active
+    openclaw_min_version: str = "2026.4.10"            # Minimum OpenClaw version for full integration

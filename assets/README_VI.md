@@ -51,6 +51,7 @@ metaclaw start --mode skills_only  # chi Skills, khong RL (khong can Tinker)
 
 ## 🔥 Tin moi
 
+- **[19/04/2026]** **v0.4.2** — Tich hop context-engine OpenClaw: plugin bo nho dang ky la context-engine (vong doi assemble/compact) tren OpenClaw v2026.4.10+, loai bo su trung lap bo nho. Them capture tang dan moi luot voi flush cuoi phien, phan cau hinh tuong thich OpenClaw va che active memory cho injection skill tai proxy.
 - **[11/04/2026]** **v0.4.1** — Nap bo nho tang dan: lop bo nho gio trich xuat va luu moi N luot (mac dinh 5) thay vi chi cuoi phien, giam thoi gian bo nho bi trong giua phien. Them cac endpoint sidecar moi `/buffer_turn` va `/flush_session`, benchmark voi co `--buffer-turns` va bao cao so sanh thuc nghiem.
 - **[25/03/2026]** **v0.4.0** — Contexture layer: MetaClaw gio day luu tru bo nho xuyen phien lam viec cho nguoi dung va du an. Cac su kien, so thich va lich su du an lien quan duoc tu dong truy xuat va them vao prompt. Bao gom chinh sach bo nho thich ung, hop nhat nen va dich vu sidecar bo nho tuy chon.
 - **[16/03/2026]** **v0.3.2** Ho tro da Claw: IronClaw, PicoClaw, ZeroClaw, CoPaw, NanoClaw va NemoClaw nay duoc ho tro cung voi OpenClaw. NanoClaw qua endpoint tuong thich Anthropic `/v1/messages` moi; NemoClaw qua dinh tuyen suy luan OpenShell. Them OpenRouter lam nen tang LLM.

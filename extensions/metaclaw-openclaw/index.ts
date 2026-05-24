@@ -133,6 +133,11 @@ function patchFetchForTrainingHeaders(
   let pendingHeaders: Record<string, string> | null = null;
   const originalFetch = globalThis.fetch;
 
+  // Detect if OpenClaw supports context-engine API (v2026.4.10+)
+  // When available, the metaclaw-memory plugin registers as context-engine,
+  // and memories are injected at gateway level via assemble().
+  const contextEngineAvailable = typeof api.registerContextEngine === "function";
+
   globalThis.fetch = function metaclawPatchedFetch(
     input: RequestInfo | URL,
     init?: RequestInit,
@@ -153,10 +158,15 @@ function patchFetchForTrainingHeaders(
   api.on("before_prompt_build", (_event, ctx) => {
     const sessionId = ctx.sessionId ?? "";
     const turnType = SIDE_TRIGGERS.has(ctx.trigger ?? "") ? "side" : "main";
-    pendingHeaders = {
+    const headers: Record<string, string> = {
       [config.sessionIdHeader]: sessionId,
       [config.turnTypeHeader]: turnType,
     };
+    // Signal proxy that context-engine may have injected memories at gateway level
+    if (contextEngineAvailable) {
+      headers["x-metaclaw-contextengine"] = "1";
+    }
+    pendingHeaders = headers;
     return {};
   });
 

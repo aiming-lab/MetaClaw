@@ -51,6 +51,7 @@ metaclaw start --mode skills_only  # 스킬만, RL 없음 (Tinker 불필요)
 
 ## 🔥 새소식
 
+- **[2026/04/19]** **v0.4.2** — OpenClaw 컨텍스트 엔진 통합: 메모리 플러그인이 OpenClaw v2026.4.10+의 컨텍스트 엔진(assemble/compact 라이프사이클)으로 등록되어 메모리 이중 주입을 제거. 턴별 증분 캡처와 세션 종료 플러시, OpenClaw 호환성 설정 섹션, 프록시 측 스킬 주입을 위한 활성 메모리 억제 추가.
 - **[2026/04/11]** **v0.4.1** — 증분 메모리 수집: 메모리 레이어가 세션 종료 시점뿐 아니라 N 턴(기본 5)마다 추출하고 저장하도록 변경되어 세션 중간의 메모리 공백 구간이 줄어듦. 새로운 `/buffer_turn`·`/flush_session` 사이드카 엔드포인트, `--buffer-turns` 플래그를 지원하는 벤치마크, 실험 비교 리포트 추가.
 - **[2026/03/25]** **v0.4.0** — Contexture layer（컨텍스처 레이어）：MetaClaw가 사용자와 프로젝트의 메모리를 세션을 넘어 지속적으로 저장. 관련 사실, 선호도, 프로젝트 히스토리를 자동으로 검색해 프롬프트에 주입. 적응형 메모리 정책, 백그라운드 통합, 선택적 메모리 사이드카 서비스 포함.
 - **[2026/03/16]** **v0.3.2** 멀티 Claw 지원: IronClaw, PicoClaw, ZeroClaw, CoPaw, NanoClaw, NemoClaw가 OpenClaw와 함께 지원됨. NanoClaw는 새로운 `/v1/messages` Anthropic 호환 엔드포인트를 통해, NemoClaw는 OpenShell 추론 라우팅을 통해 연결. OpenRouter를 LLM 플랫폼으로 추가.

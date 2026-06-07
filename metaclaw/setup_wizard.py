@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .config_store import CONFIG_DIR, ConfigStore
+from .config_store import CONFIG_DIR, ConfigStore, _deep_merge
 
 _API_KEY_PROVIDERS = {
     "kimi": {
@@ -34,14 +34,39 @@ _API_KEY_PROVIDERS = {
         "model_id": "",
     },
     "volcengine": {
-        "api_base": "https://ark.cn-beijing.volces.com/api/v3",
-        "model_id": "doubao-seed-2-0-pro-260215",
+        "auth_label": "Volcengine API Key",
+        "variants": {
+            "standard": {
+                "api_base": "https://ark.cn-beijing.volces.com/api/v3",
+                "model_id": "doubao-seed-2-0-pro-260215",
+            },
+            "coding-plan": {
+                "api_base": "https://ark.cn-beijing.volces.com/api/coding/v3",
+                "model_id": "doubao-seed-2.0-code",
+            },
+        },
+    },
+    "byteplus": {
+        "auth_label": "BytePlus API Key",
+        "variants": {
+            "standard": {
+                "api_base": "https://ark.ap-southeast.bytepluses.com/api/v3",
+                "model_id": "seed-2-0-pro-260328",
+            },
+            "coding-plan": {
+                "api_base": "https://ark.ap-southeast.bytepluses.com/api/coding/v3",
+                "model_id": "dola-seed-2.0-pro",
+            },
+        },
     },
     "custom": {
         "api_base": "",
         "model_id": "",
     },
 }
+
+_PLAN_VARIANT_PROVIDERS = {"volcengine", "byteplus"}
+_PLAN_VARIANTS = ["standard", "coding-plan"]
 
 _OAUTH_TOKEN_PROVIDERS = {
     "anthropic": {
@@ -63,6 +88,35 @@ _OAUTH_TOKEN_PROVIDERS = {
         "hint": "Gemini CLI (npm install -g @anthropic-ai/gemini-cli)",
     },
 }
+
+
+def _resolve_api_key_preset(provider: str, plan_variant: str = "") -> dict[str, str]:
+    preset = _API_KEY_PROVIDERS[provider]
+    variants = preset.get("variants")
+    if not isinstance(variants, dict):
+        return preset
+
+    variant = plan_variant if plan_variant in variants else "standard"
+    resolved = {k: v for k, v in preset.items() if k != "variants"}
+    resolved.update(variants[variant])
+    return resolved
+
+
+def _infer_plan_variant(provider: str, current_llm: dict) -> str:
+    if provider not in _PLAN_VARIANT_PROVIDERS:
+        return ""
+
+    configured = current_llm.get("plan_variant", "")
+    if configured in _PLAN_VARIANTS:
+        return configured
+
+    api_base = current_llm.get("api_base", "")
+    for variant in _PLAN_VARIANTS:
+        preset = _resolve_api_key_preset(provider, variant)
+        if api_base == preset.get("api_base", ""):
+            return variant
+
+    return "standard"
 
 
 def _prompt(msg: str, default: str = "", hide: bool = False) -> str:
@@ -144,6 +198,7 @@ class SetupWizard:
         )
 
         provider = ""
+        plan_variant = ""
         api_base = ""
         api_key = ""
         model_id = ""
@@ -210,11 +265,24 @@ class SetupWizard:
                 current_provider = "custom"
 
             provider = _prompt_choice(
-                "Provider",
+                "LLM provider",
                 list(_API_KEY_PROVIDERS.keys()),
                 default=current_provider,
             )
-            preset = _API_KEY_PROVIDERS[provider]
+            if provider in _PLAN_VARIANT_PROVIDERS:
+                default_plan_variant = _infer_plan_variant(provider, current_llm)
+                plan_variant = _prompt_choice(
+                    "Plan variant",
+                    _PLAN_VARIANTS,
+                    default=default_plan_variant,
+                )
+
+            preset = _resolve_api_key_preset(provider, plan_variant)
+            current_plan_variant = _infer_plan_variant(current_provider, current_llm)
+            same_variant = (
+                provider not in _PLAN_VARIANT_PROVIDERS
+                or current_plan_variant == plan_variant
+            )
 
             if provider == "custom":
                 api_base = _prompt(
@@ -227,10 +295,14 @@ class SetupWizard:
 
             model_id = _prompt(
                 "Model ID",
-                default=current_llm.get("model_id") or preset["model_id"],
+                default=(
+                    current_llm.get("model_id")
+                    if current_provider == provider and same_variant and current_llm.get("model_id")
+                    else preset["model_id"]
+                ),
             )
             api_key = _prompt(
-                "API key",
+                preset.get("auth_label", "API key"),
                 default=current_llm.get("api_key", ""),
                 hide=True,
             )
@@ -413,28 +485,35 @@ class SetupWizard:
                 scheduler_config = {"enabled": False, "calendar": {"enabled": False}}
 
         # ---- Write config ----
-        data = {
-            "mode": mode,
-            "llm": {
-                "provider": provider,
-                "auth_method": auth_method,
-                "model_id": model_id,
-                "api_base": api_base,
-                "api_key": api_key,
+        data = _deep_merge(
+            existing,
+            {
+                "mode": mode,
+                "llm": {
+                    "provider": provider,
+                    "plan_variant": plan_variant,
+                    "auth_method": auth_method,
+                    "model_id": model_id,
+                    "api_base": api_base,
+                    "api_key": api_key,
+                },
+                "proxy": {
+                    "port": proxy_port,
+                    "host": current_proxy.get("host", "0.0.0.0"),
+                },
+                "skills": {
+                    "enabled": skills_enabled,
+                    "dir": skills_dir,
+                    "retrieval_mode": current_skills.get("retrieval_mode", "template"),
+                    "top_k": current_skills.get("top_k", 6),
+                    "task_specific_top_k": current_skills.get("task_specific_top_k", 10),
+                    "auto_evolve": auto_evolve,
+                    "evolution_every_n_turns": current_skills.get("evolution_every_n_turns", 10),
+                },
+                "rl": rl_config,
+                "scheduler": scheduler_config,
             },
-            "proxy": {"port": proxy_port, "host": "0.0.0.0"},
-            "skills": {
-                "enabled": skills_enabled,
-                "dir": skills_dir,
-                "retrieval_mode": current_skills.get("retrieval_mode", "template"),
-                "top_k": current_skills.get("top_k", 6),
-                "task_specific_top_k": current_skills.get("task_specific_top_k", 10),
-                "auto_evolve": auto_evolve,
-                "evolution_every_n_turns": current_skills.get("evolution_every_n_turns", 10),
-            },
-            "rl": rl_config,
-            "scheduler": scheduler_config,
-        }
+        )
 
         cs.save(data)
         Path(skills_dir).expanduser().mkdir(parents=True, exist_ok=True)

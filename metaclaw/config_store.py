@@ -18,6 +18,7 @@ _DEFAULTS: dict = {
     "mode": "auto",
     "llm": {
         "provider": "custom",
+        "plan_variant": "",
         "auth_method": "api_key",   # "api_key" | "oauth_token"
         "model_id": "",
         "api_base": "",
@@ -343,6 +344,8 @@ class ConfigStore:
             f"skills.evolution_every_n_turns: {skills.get('evolution_every_n_turns', 10)}",
             f"rl.enabled:      {rl.get('enabled', False)}",
         ]
+        if llm.get("provider") in ("volcengine", "byteplus"):
+            lines.insert(2, f"llm.plan_variant: {llm.get('plan_variant', 'standard')}")
         if rl.get("enabled"):
             lines += [
                 f"rl.model:        {rl.get('model', '?')}",

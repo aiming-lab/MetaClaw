@@ -156,7 +156,8 @@ The interactive wizard will ask you to:
 1. **Choose your personal agent** — `openclaw`, `copaw`, `ironclaw`, `picoclaw`, `zeroclaw`, `nanoclaw`, `nemoclaw`, or `none` (MetaClaw will auto-configure it on start)
 2. **Choose your auth method** — `api_key` (direct API) or `oauth_token` (CLI subprocess)
 3. **Choose your LLM provider**:
-   - **api_key**: Kimi, Qwen, OpenAI, Volcano Engine, or custom → enter API base + API key
+   - **api_key**: Kimi, Qwen, OpenAI, Minimax, Novita, OpenRouter, Volcengine, BytePlus, or custom
+   - **Volcengine / BytePlus**: choose `standard` or `coding-plan`, then enter the matching API key
    - **oauth_token**: Anthropic (Claude Code), OpenAI Codex, or Gemini CLI → paste OAuth token
 4. **Enter your model ID** and optionally enable RL training
 
@@ -290,7 +291,8 @@ claw_type: openclaw        # "openclaw" | "copaw" | "ironclaw" | "picoclaw" | "z
 
 llm:
   auth_method: api_key      # "api_key" | "oauth_token"
-  provider: kimi            # kimi | qwen | openai | minimax | novita | openrouter | volcengine | custom
+  provider: kimi            # kimi | qwen | openai | minimax | novita | openrouter | volcengine | byteplus | custom
+  plan_variant: ""          # volcengine/byteplus only: "standard" | "coding-plan"
   model_id: moonshotai/Kimi-K2.5
   api_base: https://api.moonshot.cn/v1
   api_key: sk-...

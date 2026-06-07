@@ -5,6 +5,19 @@ Dataclass-based config compatible with command-line overrides.
 """
 
 from dataclasses import dataclass, field
+@dataclass
+class VerificationConfig:
+    enabled: bool = False
+    verifier: str = "local"
+    require_pass_for_promotion: bool = True
+    allow_indeterminate_promotion: bool = False
+    rollback_threshold: int = 3
+    store_receipts: bool = True
+    redact_inputs: bool = True
+    endpoint: str = ""
+    agent_id: str = ""
+    timeout_seconds: int = 10
+    allow_fallback_promotion_on_config_error: bool = False
 
 
 @dataclass
@@ -130,6 +143,7 @@ class MetaClawConfig:
     # "auto"        — v0.3: RL + scheduler (trains during idle/sleep windows)
     # "rl"          — v0.2: RL without scheduler (trains immediately on full batch)
     # "skills_only" — proxy + skill injection only (no Tinker, no RL)
+    # "verified_skills" — like skills_only, but gate promotion via verifier
     mode: str = "auto"
     # When True (RL/auto mode only), the trainer does NOT run its own
     # collection loop.  Instead it waits for ``metaclaw train-step`` CLI
@@ -176,3 +190,5 @@ class MetaClawConfig:
     # WeChat (official openclaw-weixin plugin, auto-installed)           #
     # ------------------------------------------------------------------ #
     wechat_enabled: bool = False
+
+    verification: VerificationConfig = field(default_factory=VerificationConfig)

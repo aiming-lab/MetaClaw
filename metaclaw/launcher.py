@@ -63,7 +63,7 @@ class MetaClawLauncher:
         if mode == "auto":
             cfg.scheduler_enabled = True
             await self._start_rl(cfg)
-        elif mode == "skills_only":
+        elif mode in ("skills_only", "verified_skills"):
             await self._start_skills_only(cfg)
         else:
             await self._start_rl(cfg)
@@ -341,7 +341,7 @@ class MetaClawLauncher:
         pre-existing OPENAI_* env vars (force-assign).  In other modes the
         existing env vars win (setdefault), preserving previous behaviour.
         """
-        force = cfg.mode == "skills_only"
+        force = cfg.mode in ("skills_only", "verified_skills")
         _set = (lambda k, v: os.environ.__setitem__(k, v)) if force else os.environ.setdefault
         if cfg.evolver_api_base:
             _set("OPENAI_BASE_URL", cfg.evolver_api_base)

@@ -128,7 +128,7 @@ class SetupWizard:
         current_mode = existing.get("mode", "auto")
         mode = _prompt_choice(
             "Operating mode",
-            ["auto", "skills_only", "rl"],
+            ["auto", "skills_only", "verified_skills", "rl"],
             default=current_mode,
         )
 

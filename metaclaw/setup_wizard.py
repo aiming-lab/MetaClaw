@@ -412,6 +412,49 @@ class SetupWizard:
             else:
                 scheduler_config = {"enabled": False, "calendar": {"enabled": False}}
 
+
+        # ---- OpenClaw Compatibility (advanced) ----
+        current_oc = existing.get("openclaw_compat", {})
+        show_oc = _prompt_bool(
+            "Configure OpenClaw compatibility settings (advanced)",
+            default=False,
+        )
+        if show_oc:
+            print("\n--- OpenClaw Compatibility ---")
+            print(
+                "MetaClaw integrates with OpenClaw v2026.4.10+ via context-engine lifecycle\n"
+                "and can suppress built-in Active Memory to avoid duplicate injections."
+            )
+            oc_context_engine = _prompt_bool(
+                "Enable context-engine integration (memory via assemble/compact lifecycle)",
+                default=current_oc.get("context_engine_enabled", True),
+            )
+            oc_active_memory = _prompt_bool(
+                "Suppress OpenClaw built-in Active Memory",
+                default=current_oc.get("active_memory_compat", True),
+            )
+            oc_proxy_synergy = _prompt_bool(
+                "Force proxy-side synergy (memory+skills) even with context-engine active",
+                default=current_oc.get("prefer_proxy_synergy", False),
+            )
+            oc_min_version = _prompt(
+                "Minimum OpenClaw version",
+                default=current_oc.get("min_version", "2026.4.10"),
+            )
+            openclaw_compat_config = {
+                "context_engine_enabled": oc_context_engine,
+                "active_memory_compat": oc_active_memory,
+                "prefer_proxy_synergy": oc_proxy_synergy,
+                "min_version": oc_min_version,
+            }
+        else:
+            openclaw_compat_config = current_oc or {
+                "context_engine_enabled": True,
+                "active_memory_compat": True,
+                "prefer_proxy_synergy": False,
+                "min_version": "2026.4.10",
+            }
+
         # ---- Write config ----
         data = {
             "mode": mode,
@@ -434,6 +477,7 @@ class SetupWizard:
             },
             "rl": rl_config,
             "scheduler": scheduler_config,
+            "openclaw_compat": openclaw_compat_config,
         }
 
         cs.save(data)

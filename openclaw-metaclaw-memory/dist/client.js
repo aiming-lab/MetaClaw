@@ -35,6 +35,20 @@ export class SidecarClient {
             ...(scopeId && { scope_id: scopeId }),
         });
     }
+    async bufferTurn(sessionId, turn, scopeId) {
+        return this.request("/buffer_turn", {
+            session_id: sessionId,
+            turn,
+            ...(scopeId && { scope_id: scopeId }),
+        });
+    }
+    async flushSession(sessionId, scopeId, final = true) {
+        return this.request("/flush_session", {
+            session_id: sessionId,
+            final,
+            ...(scopeId && { scope_id: scopeId }),
+        });
+    }
     async search(query, scopeId, limit) {
         const resp = await this.request("/search", {
             query,

@@ -43,6 +43,13 @@ export interface RetrieveResponse {
 export interface IngestResponse {
     added: number;
 }
+export interface BufferTurnResponse {
+    flushed: boolean;
+    added: number | null;
+}
+export interface FlushSessionResponse {
+    added: number;
+}
 export interface StoreResponse {
     memory_id: string;
 }

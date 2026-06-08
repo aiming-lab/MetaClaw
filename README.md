@@ -56,6 +56,7 @@ metaclaw start --mode skills_only  # skills only, no RL (no Tinker needed)
 
 ## 🔥 News
 
+- **[04/19/2026]** **v0.4.2** — OpenClaw context-engine integration: memory plugin registers as a context-engine (assemble/compact lifecycle) on OpenClaw v2026.4.10+, eliminating double-injection of memories. Adds incremental per-turn capture with session-end final flush, OpenClaw compatibility config section, and active memory suppression for seamless proxy-side skill injection.
 - **[04/11/2026]** **v0.4.1** — Incremental memory ingestion: the memory layer now extracts and persists turns every N turns (default 5) instead of only at session end, shrinking the mid-session memory blackout window. 
 - **[03/25/2026]** **v0.4.0** — Contexture layer: MetaClaw now persists cross-session memory for users and projects. Relevant facts, preferences, and project history are automatically retrieved and injected into prompts. Includes adaptive memory policy, background consolidation, and an optional memory sidecar service.
 - **[03/24/2026]** **v0.3.3** — One-click OpenClaw plugin: MetaClaw now ships as a native OpenClaw extension — drop the folder into OpenClaw's extensions, run one command, and everything is set up automatically.

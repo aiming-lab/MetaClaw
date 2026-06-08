@@ -23,7 +23,7 @@ _API_KEY_PROVIDERS = {
     },
     "minimax": {
         "api_base": "https://api.minimax.chat/v1",
-        "model_id": "",
+        "model_id": "MiniMax-M3",
     },
     "novita": {
         "api_base": "https://api.novita.ai/v3/openai",

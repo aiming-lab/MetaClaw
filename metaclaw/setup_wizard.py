@@ -22,8 +22,8 @@ _API_KEY_PROVIDERS = {
         "model_id": "gpt-4o",
     },
     "minimax": {
-        "api_base": "https://api.minimax.chat/v1",
-        "model_id": "",
+        "api_base": "https://api.minimax.io/v1",
+        "model_id": "MiniMax-M3",
     },
     "novita": {
         "api_base": "https://api.novita.ai/v3/openai",

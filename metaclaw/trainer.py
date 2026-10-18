@@ -449,6 +449,7 @@ class MetaClawTrainer:
                     split=self.config.openclaw_env_split,
                     concurrency=self.config.openclaw_env_concurrency,
                     max_steps_per_episode=self.config.openclaw_env_max_steps,
+                    web_enabled=self.config.openclaw_env_web_enabled,
                     temperature=0.6,
                     model_id=self.config.served_model_name,
                 )
@@ -557,6 +558,7 @@ class MetaClawTrainer:
                     split=self.config.openclaw_env_split,
                     concurrency=self.config.openclaw_env_concurrency,
                     max_steps_per_episode=self.config.openclaw_env_max_steps,
+                    web_enabled=self.config.openclaw_env_web_enabled,
                     temperature=0.6,
                     model_id=self.config.served_model_name,
                 )

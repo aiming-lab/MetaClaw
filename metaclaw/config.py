@@ -122,6 +122,7 @@ class MetaClawConfig:
     openclaw_env_split: str = "train"         # jsonl split name
     openclaw_env_concurrency: int = 4         # parallel episodes
     openclaw_env_max_steps: int = 15          # max turns per episode
+    openclaw_env_web_enabled: bool = True    # keyless web tools; False forbids their use
     openclaw_env_python_path: str = ""        # unused (kept for compatibility)
 
     # ------------------------------------------------------------------ #

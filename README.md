@@ -424,6 +424,16 @@ A dedicated evolver LLM also extracts new skills from failed episodes, feeding t
 {"task_id": "task_1", "instruction": "Register the webhook at https://example.com/hook"}
 ```
 
+The programmatic agent can use `web_search` and `web_fetch` to consult current documentation before running commands.
+These tools connect to [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) at
+`https://search.parallel.ai/mcp`, with free search in Fast mode and page excerpts, without an account or API key.
+They are available by default in programmatic rollouts. Queries and requested URLs are sent to Parallel only when the
+agent calls a web tool; service limits or connection failures are returned to the agent as errors.
+
+To forbid web tools in a programmatic rollout, set `MetaClawConfig(openclaw_env_web_enabled=False, ...)` in your Python
+configuration (or `web_enabled=False` when calling `run_task_episode` / `rollout_loop` directly). This removes both tools
+and rejects attempted web calls. Personal agents connected through the proxy keep their own tool configuration.
+
 ### On-Policy Distillation (OPD)
 
 OPD is an optional add-on for RL Mode. It distills a larger teacher model into the student on-policy: the student generates responses as usual, and the teacher provides per-token log-probabilities on those same responses. A KL penalty steers the student toward the teacher's distribution.

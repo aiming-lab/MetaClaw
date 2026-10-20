@@ -22,8 +22,8 @@ _API_KEY_PROVIDERS = {
         "model_id": "gpt-4o",
     },
     "minimax": {
-        "api_base": "https://api.minimax.chat/v1",
-        "model_id": "",
+        "api_base": "https://api.minimax.io/v1",
+        "model_id": "MiniMax-M3.1-Flash",
     },
     "novita": {
         "api_base": "https://api.novita.ai/v3/openai",
@@ -216,14 +216,19 @@ class SetupWizard:
             )
             preset = _API_KEY_PROVIDERS[provider]
 
-            if provider == "custom":
+            if provider in {"custom", "minimax"}:
+                saved_api_base = current_llm.get("api_base") if provider == current_provider else ""
                 api_base = _prompt(
                     "API base URL",
-                    default=current_llm.get("api_base") or preset["api_base"],
+                    default=(saved_api_base if provider == "minimax" else current_llm.get("api_base"))
+                    or preset["api_base"],
                 )
             else:
                 api_base = preset["api_base"]
                 print(f"  API base: {api_base}")
+
+            if provider == "minimax":
+                print("  Recommended models: MiniMax-M3.1-Flash, MiniMax-M3 (or enter a custom model ID).")
 
             model_id = _prompt(
                 "Model ID",
